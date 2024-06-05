@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { num } from "starknet";
 import { deployer, expectRevertWithErrorMessage, manager } from "../lib";
-import { GIFT_AMOUNT, GIFT_MAX_FEE, GIFT_RECEIVER, setupClaim } from "./setupClaim";
+import { GIFT_AMOUNT, GIFT_MAX_FEE, setupClaim } from "./setupClaim";
 
 describe("Gifting", function () {
   let claimAccountClassHash: string;
@@ -12,10 +12,19 @@ describe("Gifting", function () {
 
   for (const useTxV3 of [false, true]) {
     it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
-      const { factory, claimAccount, claim, tokenContract } = await setupClaim(useTxV3);
-      // Deploy factory
+      const { factory, claimAccount, claim, tokenContract, receiver } = await setupClaim(useTxV3);
+      await factory.claim_internal(claim, receiver);
+
+      // Final check
+      const finalBalance = await tokenContract.balance_of(claimAccount.address);
+      expect(finalBalance < GIFT_MAX_FEE).to.be.true;
+      await tokenContract.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
+    });
+
+    it(`Test max fee too high`, async function () {
+      const { factory, claimAccount, claim, receiver } = await setupClaim(useTxV3);
       if (useTxV3) {
-        const estimate = await factory.estimateFee.claim_internal(claim, GIFT_RECEIVER);
+        const estimate = await factory.estimateFee.claim_internal(claim, receiver);
         const newResourceBounds = {
           ...estimate.resourceBounds,
           l2_gas: {
@@ -29,7 +38,7 @@ describe("Gifting", function () {
             [
               {
                 contractAddress: factory.address,
-                calldata: [claim, GIFT_RECEIVER],
+                calldata: [claim, receiver],
                 entrypoint: "claim_internal",
               },
             ],
@@ -39,20 +48,14 @@ describe("Gifting", function () {
         );
       } else {
         await expectRevertWithErrorMessage("gift-acc/insufficient-v1-fee", () =>
-          factory.claim_internal(claim, GIFT_RECEIVER, { maxFee: GIFT_MAX_FEE + 1n }),
+          factory.claim_internal(claim, receiver, { maxFee: GIFT_MAX_FEE + 1n }),
         );
       }
-      await factory.claim_internal(claim, GIFT_RECEIVER);
-
-      // Final check
-      const finalBalance = await tokenContract.balance_of(claimAccount.address);
-      expect(finalBalance < GIFT_MAX_FEE).to.be.true;
-      await tokenContract.balance_of(GIFT_RECEIVER).should.eventually.equal(GIFT_AMOUNT);
     });
   }
 
   it(`Test basic validation asserts`, async function () {
-    const { factory, claimAccount, claim } = await setupClaim();
+    const { factory, claimAccount, claim, receiver } = await setupClaim();
 
     const claimContract = await manager.loadContract(num.toHex(claimAccount.address));
 
@@ -67,7 +70,7 @@ describe("Gifting", function () {
     });
     fakeFactory.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
-      fakeFactory.claim_internal(claim, GIFT_RECEIVER, { maxFee: 400000000000000n }),
+      fakeFactory.claim_internal(claim, receiver, { maxFee: 400000000000000n }),
     );
 
     // wrong selector
@@ -79,25 +82,25 @@ describe("Gifting", function () {
       claimAccount.execute([
         {
           contractAddress: factory.address,
-          calldata: [claim, GIFT_RECEIVER],
+          calldata: [claim, receiver],
           entrypoint: "claim_internal",
         },
         {
           contractAddress: factory.address,
-          calldata: [claim, GIFT_RECEIVER],
+          calldata: [claim, receiver],
           entrypoint: "claim_internal",
         },
       ]),
     );
 
     // double claim
-    await factory.claim_internal(claim, GIFT_RECEIVER);
+    await factory.claim_internal(claim, receiver);
     await expectRevertWithErrorMessage("gift-acc/invalid-claim-nonce", () =>
       claimAccount.execute(
         [
           {
             contractAddress: factory.address,
-            calldata: [claim, GIFT_RECEIVER],
+            calldata: [claim, receiver],
             entrypoint: "claim_internal",
           },
         ],

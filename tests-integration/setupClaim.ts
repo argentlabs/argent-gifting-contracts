@@ -1,12 +1,11 @@
 import { expect } from "chai";
-import { Account, CallData, Contract, RPC, Uint256, hash, num, uint256 } from "starknet";
+import { Account, CallData, Contract, RPC, Uint256, ec, encode, hash, num, uint256 } from "starknet";
 import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
 
 export const GIFT_SIGNER = new LegacyStarknetKeyPair();
 export const CLAIM_PUB_KEY = GIFT_SIGNER.publicKey;
 export const GIFT_AMOUNT = 1000000000000000n;
 export const GIFT_MAX_FEE = 50000000000000n;
-export const GIFT_RECEIVER = "0x42";
 
 interface AccountConstructorArguments {
   sender: string;
@@ -21,12 +20,19 @@ interface Claim extends AccountConstructorArguments {
   class_hash: string;
 }
 
-export async function setupClaim(useTxV3 = false): Promise<{
+export async function setupClaim(
+  useTxV3 = false,
+  useRandomReceiver = true,
+): Promise<{
   factory: Contract;
   claimAccount: Account;
   claim: Claim;
   tokenContract: Contract;
+  receiver: string;
 }> {
+  // static receiver for gas profiling
+  const receiver = useRandomReceiver ? `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}` : "0x42";
+
   // claim account class hash is read from cache
   const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
   const factory = await manager.deployContract("GiftFactory", {
@@ -59,9 +65,9 @@ export async function setupClaim(useTxV3 = false): Promise<{
   };
 
   const claim: Claim = {
+    ...constructorArgs,
     factory: factory.address,
     class_hash: claimAccountClassHash,
-    ...constructorArgs,
   };
 
   const correctAddress = hash.calculateContractAddressFromHash(
@@ -75,10 +81,10 @@ export async function setupClaim(useTxV3 = false): Promise<{
   // Check balance of the claim contract is correct
   await tokenContract.balance_of(claimAddress).should.eventually.equal(GIFT_AMOUNT + GIFT_MAX_FEE);
   // Check balance receiver address == 0
-  await tokenContract.balance_of(GIFT_RECEIVER).should.eventually.equal(0n);
+  await tokenContract.balance_of(receiver).should.eventually.equal(0n);
 
   const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), GIFT_SIGNER, undefined, txVersion);
   factory.connect(claimAccount);
-  return { factory, claimAccount, claim, tokenContract };
+  return { factory, claimAccount, claim, tokenContract, receiver };
 }
