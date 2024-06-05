@@ -29,9 +29,9 @@ export async function setupClaim(
   receiver: string;
   giftSigner: LegacyStarknetKeyPair;
 }> {
-  const giftSigner = new LegacyStarknetKeyPair();
+  // static receiver / signer for gas profiling
+  const giftSigner = new LegacyStarknetKeyPair(useRandom ? undefined : "0x42");
   const claimPubKey = giftSigner.publicKey;
-  // static receiver for gas profiling
   const receiver = useRandom ? `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}` : "0x42";
 
   // claim account class hash is read from cache
