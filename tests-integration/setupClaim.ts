@@ -2,8 +2,6 @@ import { expect } from "chai";
 import { Account, CallData, Contract, RPC, Uint256, ec, encode, hash, num, uint256 } from "starknet";
 import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
 
-export const GIFT_SIGNER = new LegacyStarknetKeyPair();
-export const CLAIM_PUB_KEY = GIFT_SIGNER.publicKey;
 export const GIFT_AMOUNT = 1000000000000000n;
 export const GIFT_MAX_FEE = 50000000000000n;
 
@@ -22,16 +20,19 @@ interface Claim extends AccountConstructorArguments {
 
 export async function setupClaim(
   useTxV3 = false,
-  useRandomReceiver = true,
+  useRandom = true,
 ): Promise<{
   factory: Contract;
   claimAccount: Account;
   claim: Claim;
   tokenContract: Contract;
   receiver: string;
+  giftSigner: LegacyStarknetKeyPair;
 }> {
+  const giftSigner = new LegacyStarknetKeyPair();
+  const claimPubKey = giftSigner.publicKey;
   // static receiver for gas profiling
-  const receiver = useRandomReceiver ? `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}` : "0x42";
+  const receiver = useRandom ? `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}` : "0x42";
 
   // claim account class hash is read from cache
   const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
@@ -45,7 +46,7 @@ export async function setupClaim(
   tokenContract.connect(deployer);
   factory.connect(deployer);
   await tokenContract.approve(factory.address, GIFT_AMOUNT + GIFT_MAX_FEE);
-  await factory.deposit(GIFT_AMOUNT, GIFT_MAX_FEE, tokenContract.address, CLAIM_PUB_KEY);
+  await factory.deposit(GIFT_AMOUNT, GIFT_MAX_FEE, tokenContract.address, claimPubKey);
 
   // Ensure there is a contract for the claim
   const claimAddress = await factory.get_claim_address(
@@ -53,7 +54,7 @@ export async function setupClaim(
     GIFT_AMOUNT,
     GIFT_MAX_FEE,
     tokenContract.address,
-    CLAIM_PUB_KEY,
+    claimPubKey,
   );
 
   const constructorArgs: AccountConstructorArguments = {
@@ -61,13 +62,13 @@ export async function setupClaim(
     amount: uint256.bnToUint256(GIFT_AMOUNT),
     max_fee: GIFT_MAX_FEE,
     token: tokenContract.address,
-    claim_pubkey: CLAIM_PUB_KEY,
+    claim_pubkey: claimPubKey,
   };
 
   const claim: Claim = {
-    ...constructorArgs,
     factory: factory.address,
     class_hash: claimAccountClassHash,
+    ...constructorArgs,
   };
 
   const correctAddress = hash.calculateContractAddressFromHash(
@@ -84,7 +85,7 @@ export async function setupClaim(
   await tokenContract.balance_of(receiver).should.eventually.equal(0n);
 
   const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), GIFT_SIGNER, undefined, txVersion);
+  const claimAccount = new Account(manager, num.toHex(claimAddress), giftSigner, undefined, txVersion);
   factory.connect(claimAccount);
-  return { factory, claimAccount, claim, tokenContract, receiver };
+  return { factory, claimAccount, claim, tokenContract, receiver, giftSigner };
 }

@@ -12,8 +12,7 @@ describe("Factory", function () {
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory, tokenContract, claimAccount, claim, receiver } = await setupClaim(useTxV3);
-
-      const receiverDust = "0x43";
+      const receiverDust = `0x${Math.floor(Math.random() * 10)}`;
 
       await factory.claim_internal(claim, receiver);
 
@@ -36,6 +35,7 @@ describe("Factory", function () {
     const { factory, tokenContract, claimAccount, claim, receiver } = await setupClaim();
 
     const balanceSenderBefore = await tokenContract.balance_of(deployer.address);
+    factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
@@ -91,7 +91,7 @@ describe("Factory", function () {
       factory: factory.address,
       class_hash: claimAccountClassHash,
       sender: deployer.address,
-      GIFT_AMOUNT: uint256.bnToUint256(GIFT_AMOUNT),
+      amount: uint256.bnToUint256(GIFT_AMOUNT),
       max_fee: GIFT_MAX_FEE,
       token: tokenContract.address,
       claim_pubkey: claimPubkey,
