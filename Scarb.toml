@@ -1,0 +1,27 @@
+[package]
+name = "starknet_gifting"
+version = "0.1.0"
+edition = "2023_10"
+
+
+[dependencies]
+starknet = "2.6.3"
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.24.0" }
+openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.13.0" }
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.6.0" }
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[tool.fmt]
+max-line-length = 120
+sort-module-level-items = true
+
+[scripts]
+test = "snforge test"
+start-devnet = "docker build -t devnet . && docker run -d -p 127.0.0.1:5050:5050 devnet"
+kill-devnet = "docker ps -q --filter 'ancestor=devnet' | xargs docker stop"
+test-ts = "scarb --profile release build && yarn tsc && yarn mocha tests-integration/*.test.ts"
+profile = "scarb --profile release build && node --loader ts-node/esm scripts/profile.ts"
+format = "scarb fmt && yarn prettier --write ."
