@@ -14,8 +14,9 @@ mod GiftFactory {
 
     use starknet_gifting::contracts::interface::{
         IGiftAccount, IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments,
-        IGiftAccountDispatcher
+        IGiftAccountDispatcher, ITimelockUpgradeCallback
     };
+    use starknet_gifting::contracts::timelock_upgrade::{TimelockUpgradeComponent};
     use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize};
 
     // Ownable 
@@ -26,10 +27,15 @@ mod GiftFactory {
 
     // Pausable
     component!(path: PausableComponent, storage: pausable, event: PausableEvent);
-    // Pausable
     #[abi(embed_v0)]
     impl PausableImpl = PausableComponent::PausableImpl<ContractState>;
     impl PausableInternalImpl = PausableComponent::InternalImpl<ContractState>;
+
+
+    // TimelockUpgradeable
+    component!(path: TimelockUpgradeComponent, storage: timelock_upgrade, event: TimelockUpgradeEvent);
+    #[abi(embed_v0)]
+    impl TimelockUpgradeImpl = TimelockUpgradeComponent::TimelockUpgradeImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -37,6 +43,8 @@ mod GiftFactory {
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
         pausable: PausableComponent::Storage,
+        #[substorage(v0)]
+        timelock_upgrade: TimelockUpgradeComponent::Storage,
         claim_class_hash: ClassHash,
     }
 
@@ -47,6 +55,8 @@ mod GiftFactory {
         OwnableEvent: OwnableComponent::Event,
         #[flat]
         PausableEvent: PausableComponent::Event,
+        #[flat]
+        TimelockUpgradeEvent: TimelockUpgradeComponent::Event,
         GiftCreated: GiftCreated,
         GiftClaimed: GiftClaimed,
         GiftCanceled: GiftCanceled,
@@ -78,7 +88,6 @@ mod GiftFactory {
     struct GiftCanceled {}
 
     // TODO replace all fields with NonZero<T>
-    // TODO Upgrade? or will we just deploy a new factory with another claim_class_hash and logic attached
 
     #[constructor]
     fn constructor(ref self: ContractState, claim_class_hash: ClassHash, owner: ContractAddress) {
@@ -198,6 +207,16 @@ mod GiftFactory {
         }
     }
 
+
+    impl TimelockUpgradeCallbackImpl of ITimelockUpgradeCallback<ContractState> {
+        fn perform_upgrade(ref self: ContractState, new_implementation: ClassHash, data: Span<felt252>) {
+            // This should do some sanity checks 
+            // We should check that the new implementation is a valid implementation
+            // Execute the upgrade using replace_class_syscall(...)
+            core::panic_with_felt252('downgrade-not-allowed');
+        }
+    }
+
     #[external(v0)]
     fn pause(ref self: ContractState) {
         self.ownable.assert_only_owner();
@@ -209,7 +228,6 @@ mod GiftFactory {
         self.ownable.assert_only_owner();
         self.pausable._unpause();
     }
-
 
     #[generate_trait]
     impl Private of PrivateTrait {

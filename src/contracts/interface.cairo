@@ -29,6 +29,21 @@ trait IGiftFactory<TContractState> {
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
 }
 
+#[starknet::interface]
+trait ITimelockUpgrade<TContractState> {
+    fn propose_upgrade(ref self: TContractState, new_implementation: ClassHash);
+    fn cancel_upgrade(ref self: TContractState);
+    fn upgrade(ref self: TContractState, calldata: Array<felt252>);
+
+    fn get_proposed_implementation(self: @TContractState) -> ClassHash;
+    fn get_upgrade_ready_at(self: @TContractState) -> u64;
+}
+
+#[starknet::interface]
+trait ITimelockUpgradeCallback<TContractState> {
+    fn perform_upgrade(ref self: TContractState, new_implementation: ClassHash, data: Span<felt252>);
+}
+
 // TODO Align => Rename ClaimData to Claim OR  claim to claim_data 
 // Or even rename to GIFT? so that the user will see gifts in the interface
 #[starknet::interface]
