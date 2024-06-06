@@ -1,5 +1,5 @@
 import { deployer, getClaimExternalData, manager } from "../lib";
-import { setupClaim } from "./setupClaim";
+import { setupClaim, setupGiftProtocol } from "./setupClaim";
 
 describe("claim_external", function () {
   before(async () => {
@@ -8,7 +8,8 @@ describe("claim_external", function () {
 
   for (const useTxV3 of [false, true]) {
     it(`Testing claim_external flow using txV3: ${useTxV3}`, async function () {
-      const { factory, claimAccount, claim, receiver, giftSigner } = await setupClaim(useTxV3);
+      const { factory, claimAccountClassHash } = await setupGiftProtocol();
+      const { claimAccount, claim, receiver, giftSigner } = await setupClaim(factory, claimAccountClassHash, useTxV3);
 
       const claimExternalData = await getClaimExternalData({ receiver });
       const signature = await giftSigner.signMessage(claimExternalData, claimAccount.address);

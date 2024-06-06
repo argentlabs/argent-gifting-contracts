@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Account, RPC, num, uint256 } from "starknet";
 import { LegacyStarknetKeyPair, deployer, expectRevertWithErrorMessage, genericAccount, manager } from "../lib";
-import { GIFT_AMOUNT, GIFT_MAX_FEE, setupClaim } from "./setupClaim";
+import { GIFT_AMOUNT, GIFT_MAX_FEE, setupClaim, setupGiftProtocol } from "./setupClaim";
 
 describe("Factory", function () {
   let claimAccountClassHash: string;
@@ -11,8 +11,13 @@ describe("Factory", function () {
 
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
-      const { factory, tokenContract, claimAccount, claim, receiver } = await setupClaim(useTxV3);
-      const receiverDust = `0x${Math.floor(Math.random() * 10)}`;
+      const { factory, claimAccountClassHash } = await setupGiftProtocol();
+      const { claimAccount, claim, tokenContract, receiver } = await setupClaim(
+        factory,
+        claimAccountClassHash,
+        useTxV3,
+      );
+      const receiverDust = `0x2${Math.floor(Math.random() * 1000)}`;
 
       await factory.claim_internal(claim, receiver);
 
@@ -32,7 +37,8 @@ describe("Factory", function () {
   }
 
   it(`Test Cancel Claim`, async function () {
-    const { factory, tokenContract, claimAccount, claim, receiver } = await setupClaim();
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claimAccount, claim, tokenContract, receiver } = await setupClaim(factory, claimAccountClassHash);
 
     const balanceSenderBefore = await tokenContract.balance_of(deployer.address);
     factory.connect(deployer);
@@ -51,15 +57,12 @@ describe("Factory", function () {
 
   it(`Test pausable`, async function () {
     // Deploy factory
-    const factory = await manager.deployContract("GiftFactory", {
-      unique: true,
-      constructorCalldata: [claimAccountClassHash, deployer.address],
-    });
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
     const signer = new LegacyStarknetKeyPair();
     const claimPubkey = signer.publicKey;
     const GIFT_AMOUNT = 1000000000000000n;
     const GIFT_MAX_FEE = 50000000000000n;
-    const receiver = "0x45";
+    const receiver = `0x5${Math.floor(Math.random() * 1000)}`;
 
     // Make a gift
     const tokenContract = await manager.tokens.feeTokenContract(false);

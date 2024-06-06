@@ -18,11 +18,31 @@ interface Claim extends AccountConstructorArguments {
   class_hash: string;
 }
 
+const cache: Record<string, Contract> = {};
+
+export async function setupGiftProtocol(): Promise<{
+  factory: Contract;
+  claimAccountClassHash: string;
+}> {
+  const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
+  const cachedFactory = cache["GiftFactory"];
+  if (cachedFactory) {
+    return { factory: cachedFactory, claimAccountClassHash };
+  }
+  const factory = await manager.deployContract("GiftFactory", {
+    unique: true,
+    constructorCalldata: [claimAccountClassHash, deployer.address],
+  });
+  cache["GiftFactory"] = factory;
+  return { factory, claimAccountClassHash };
+}
+
 export async function setupClaim(
+  factory: Contract,
+  claimAccountClassHash: string,
   useTxV3 = false,
   useRandom = true,
 ): Promise<{
-  factory: Contract;
   claimAccount: Account;
   claim: Claim;
   tokenContract: Contract;
@@ -33,13 +53,6 @@ export async function setupClaim(
   const giftSigner = new LegacyStarknetKeyPair(useRandom ? undefined : "0x42");
   const claimPubKey = giftSigner.publicKey;
   const receiver = useRandom ? `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}` : "0x42";
-
-  // claim account class hash is read from cache
-  const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
-  const factory = await manager.deployContract("GiftFactory", {
-    unique: true,
-    constructorCalldata: [claimAccountClassHash, deployer.address],
-  });
 
   // Make a gift
   const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
@@ -87,5 +100,5 @@ export async function setupClaim(
   const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), giftSigner, undefined, txVersion);
   factory.connect(claimAccount);
-  return { factory, claimAccount, claim, tokenContract, receiver, giftSigner };
+  return { claimAccount, claim, tokenContract, receiver, giftSigner };
 }

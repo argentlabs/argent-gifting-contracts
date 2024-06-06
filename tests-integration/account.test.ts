@@ -1,18 +1,17 @@
 import { expect } from "chai";
 import { num } from "starknet";
 import { deployer, expectRevertWithErrorMessage, manager } from "../lib";
-import { GIFT_AMOUNT, GIFT_MAX_FEE, setupClaim } from "./setupClaim";
+import { GIFT_AMOUNT, GIFT_MAX_FEE, setupClaim, setupGiftProtocol } from "./setupClaim";
 
 describe("Gifting", function () {
-  let claimAccountClassHash: string;
-  before(async () => {
-    //  declare claim account
-    claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
-  });
-
   for (const useTxV3 of [false, true]) {
     it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
-      const { factory, claimAccount, claim, tokenContract, receiver } = await setupClaim(useTxV3);
+      const { factory, claimAccountClassHash } = await setupGiftProtocol();
+      const { claimAccount, claim, tokenContract, receiver } = await setupClaim(
+        factory,
+        claimAccountClassHash,
+        useTxV3,
+      );
       await factory.claim_internal(claim, receiver);
 
       // Final check
@@ -22,7 +21,12 @@ describe("Gifting", function () {
     });
 
     it(`Test max fee too high`, async function () {
-      const { factory, claimAccount, claim, receiver } = await setupClaim(useTxV3);
+      const { factory, claimAccountClassHash } = await setupGiftProtocol();
+      const { claimAccount, claim, tokenContract, receiver } = await setupClaim(
+        factory,
+        claimAccountClassHash,
+        useTxV3,
+      );
       if (useTxV3) {
         const estimate = await factory.estimateFee.claim_internal(claim, receiver);
         const newResourceBounds = {
@@ -55,7 +59,8 @@ describe("Gifting", function () {
   }
 
   it(`Test basic validation asserts`, async function () {
-    const { factory, claimAccount, claim, receiver } = await setupClaim();
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claimAccount, claim, receiver } = await setupClaim(factory, claimAccountClassHash);
 
     const claimContract = await manager.loadContract(num.toHex(claimAccount.address));
 
