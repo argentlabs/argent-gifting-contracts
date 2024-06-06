@@ -2,10 +2,7 @@
 use core::hash::{HashStateTrait, HashStateExTrait, Hash};
 use core::poseidon::{PoseidonTrait, HashState};
 use openzeppelin::token::erc20::interface::IERC20Dispatcher;
-use starknet::{
-    ContractAddress, account::Call, contract_address::contract_address_const, info::v2::ResourceBounds,
-    call_contract_syscall
-};
+use starknet::{ContractAddress, account::Call, contract_address::contract_address_const, call_contract_syscall};
 
 pub const TX_V1: felt252 = 1; // INVOKE
 pub const TX_V1_ESTIMATE: felt252 = consteval_int!(0x100000000000000000000000000000000 + 1); // 2**128 + TX_V1

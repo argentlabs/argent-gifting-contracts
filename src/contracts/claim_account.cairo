@@ -7,7 +7,7 @@ mod ClaimAccount {
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{
         ClassHash, account::Call, VALIDATED, call_contract_syscall, ContractAddress, get_contract_address,
-        get_caller_address, contract_address::contract_address_const, get_execution_info
+        get_caller_address, contract_address::contract_address_const, get_execution_info, info::v2::ResourceBounds,
     };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
@@ -96,7 +96,6 @@ mod ClaimAccount {
             assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
         }
     }
-
 
     fn compute_max_fee_v3(mut resource_bounds: Span<ResourceBounds>, tip: u128) -> u128 {
         let mut max_fee: u128 = 0;
