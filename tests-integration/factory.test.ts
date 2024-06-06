@@ -4,11 +4,6 @@ import { LegacyStarknetKeyPair, deployer, expectRevertWithErrorMessage, genericA
 import { GIFT_AMOUNT, GIFT_MAX_FEE, setupGift, setupGiftProtocol } from "./setupGift";
 
 describe("Factory", function () {
-  let claimAccountClassHash: string;
-  before(async () => {
-    claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
-  });
-
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory, claimAccountClassHash } = await setupGiftProtocol();
