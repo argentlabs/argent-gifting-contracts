@@ -2,19 +2,16 @@
 mod ClaimAccount {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
-    use core::starknet::event::EventEmitter;
-    use core::traits::TryInto;
-    use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{
-        ClassHash, account::Call, VALIDATED, call_contract_syscall, ContractAddress, get_contract_address,
-        get_caller_address, contract_address::contract_address_const, get_execution_info, info::v2::ResourceBounds,
+        account::Call, VALIDATED, call_contract_syscall, ContractAddress, get_contract_address, get_caller_address,
+        get_execution_info, info::v2::ResourceBounds,
     };
-    use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
     use starknet_gifting::contracts::interface::{IAccount, IGiftAccount, ClaimData, AccountConstructorArguments};
     use starknet_gifting::contracts::utils::{
         full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
     };
+
     #[storage]
     struct Storage {}
 
