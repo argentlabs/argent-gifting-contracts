@@ -3,18 +3,18 @@ import { num } from "starknet";
 import {
   GIFT_AMOUNT,
   GIFT_MAX_FEE,
+  defaultDepositTestSetup,
   deployer,
   expectRevertWithErrorMessage,
   manager,
-  setupGift,
   setupGiftProtocol,
 } from "../lib";
 
 describe("Gifting", function () {
   for (const useTxV3 of [false, true]) {
     it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
-      const { factory, claimAccountClassHash } = await setupGiftProtocol();
-      const { claimAccount, claim, tokenContract, receiver } = await setupGift(factory, claimAccountClassHash, useTxV3);
+      const { factory } = await setupGiftProtocol();
+      const { claim, receiver, claimAccount, tokenContract } = await defaultDepositTestSetup(factory);
       await factory.claim_internal(claim, receiver);
 
       const finalBalance = await tokenContract.balance_of(claimAccount.address);
@@ -23,8 +23,8 @@ describe("Gifting", function () {
     });
 
     it(`Test max fee too high`, async function () {
-      const { factory, claimAccountClassHash } = await setupGiftProtocol();
-      const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash, useTxV3);
+      const { factory } = await setupGiftProtocol();
+      const { claim, receiver, claimAccount } = await defaultDepositTestSetup(factory, useTxV3);
       if (useTxV3) {
         const estimate = await factory.estimateFee.claim_internal(claim, receiver);
         const newResourceBounds = {
@@ -57,8 +57,8 @@ describe("Gifting", function () {
   }
 
   it(`Test only protocol can call claim contract`, async function () {
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
+    const { factory } = await setupGiftProtocol();
+    const { claimAccount } = await defaultDepositTestSetup(factory);
     const claimContract = await manager.loadContract(num.toHex(claimAccount.address));
 
     claimContract.connect(claimAccount);
@@ -67,7 +67,7 @@ describe("Gifting", function () {
 
   it(`Test claim contract cant call another contract`, async function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
+    const { claim, receiver, claimAccount } = await defaultDepositTestSetup(factory);
 
     const fakeFactory = await manager.deployContract("GiftFactory", {
       unique: true,
@@ -80,8 +80,8 @@ describe("Gifting", function () {
   });
 
   it(`Test claim contract can only call 'claim_internal'`, async function () {
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
+    const { factory } = await setupGiftProtocol();
+    const { claim, receiver, claimAccount } = await defaultDepositTestSetup(factory);
 
     factory.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
@@ -90,8 +90,8 @@ describe("Gifting", function () {
   });
 
   it(`Test claim contract cant preform a multicall`, async function () {
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
+    const { factory } = await setupGiftProtocol();
+    const { claim, receiver, claimAccount } = await defaultDepositTestSetup(factory);
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       claimAccount.execute([
@@ -110,8 +110,8 @@ describe("Gifting", function () {
   });
 
   it(`Test cannot call 'claim_internal' twice`, async function () {
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
+    const { factory } = await setupGiftProtocol();
+    const { claim, receiver, claimAccount } = await defaultDepositTestSetup(factory);
 
     // double claim
     await factory.claim_internal(claim, receiver);

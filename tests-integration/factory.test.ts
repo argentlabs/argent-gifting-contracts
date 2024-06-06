@@ -1,22 +1,59 @@
 import { expect } from "chai";
-import { Account, RPC, num, uint256 } from "starknet";
+import { Account, CallData, RPC, hash, num, uint256 } from "starknet";
 import {
+  AccountConstructorArguments,
   GIFT_AMOUNT,
   GIFT_MAX_FEE,
   LegacyStarknetKeyPair,
+  defaultDepositTestSetup,
   deployer,
   expectRevertWithErrorMessage,
   genericAccount,
   manager,
-  setupGift,
   setupGiftProtocol,
 } from "../lib";
 
 describe("Factory", function () {
+  it(`Test calculate claim address`, async function () {
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { tokenContract, claimSigner } = await defaultDepositTestSetup(factory);
+    const a = factory.populateTransaction.get_claim_address(
+      claimAccountClassHash,
+      deployer.address,
+      GIFT_AMOUNT,
+      GIFT_MAX_FEE,
+      tokenContract.address,
+      claimSigner.publicKey,
+    );
+    const claimAddress = await factory.get_claim_address(
+      claimAccountClassHash,
+      deployer.address,
+      GIFT_AMOUNT,
+      GIFT_MAX_FEE,
+      tokenContract.address,
+      claimSigner.publicKey,
+    );
+
+    const constructorArgs: AccountConstructorArguments = {
+      sender: deployer.address,
+      amount: uint256.bnToUint256(GIFT_AMOUNT),
+      max_fee: GIFT_MAX_FEE,
+      token: tokenContract.address,
+      claim_pubkey: claimSigner.publicKey,
+    };
+
+    const correctAddress = hash.calculateContractAddressFromHash(
+      0,
+      claimAccountClassHash,
+      CallData.compile({ constructorArgs }),
+      factory.address,
+    );
+    expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
+  });
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
-      const { factory, claimAccountClassHash } = await setupGiftProtocol();
-      const { claimAccount, claim, tokenContract, receiver } = await setupGift(factory, claimAccountClassHash, useTxV3);
+      const { factory } = await setupGiftProtocol();
+      const { tokenContract, claim, receiver, claimAccount } = await defaultDepositTestSetup(factory);
       const receiverDust = `0x2${Math.floor(Math.random() * 1000)}`;
 
       await factory.claim_internal(claim, receiver);
@@ -37,8 +74,8 @@ describe("Factory", function () {
   }
 
   it(`Test Cancel Claim`, async function () {
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claimAccount, claim, tokenContract, receiver } = await setupGift(factory, claimAccountClassHash);
+    const { factory } = await setupGiftProtocol();
+    const { tokenContract, claim, receiver, claimAccount } = await defaultDepositTestSetup(factory);
 
     const balanceSenderBefore = await tokenContract.balance_of(deployer.address);
     factory.connect(deployer);
