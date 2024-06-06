@@ -107,9 +107,10 @@ mod GiftFactory {
             let sender = get_caller_address();
             let factory = get_contract_address();
             // TODO We could manually serialize for better performance
+            let class_hash = self.claim_class_hash.read();
             let constructor_arguments = AccountConstructorArguments { sender, amount, max_fee, token, claim_pubkey };
             let (claim_contract, _) = deploy_syscall(
-                self.claim_class_hash.read(), // class_hash
+                class_hash, // class_hash
                 0, // salt
                 serialize(@constructor_arguments).span(), // constructor data
                 false // deploy_from_zero
@@ -118,14 +119,7 @@ mod GiftFactory {
             self
                 .emit(
                     GiftCreated {
-                        claim_pubkey,
-                        factory,
-                        gift_address: claim_contract,
-                        class_hash: self.claim_class_hash.read(),
-                        sender,
-                        amount,
-                        max_fee,
-                        token,
+                        claim_pubkey, factory, gift_address: claim_contract, class_hash, sender, amount, max_fee, token,
                     }
                 );
             let transfer_status = IERC20Dispatcher { contract_address: token }
