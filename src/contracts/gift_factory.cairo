@@ -174,7 +174,7 @@ mod GiftFactory {
             self.transfer_from_account(claim, claim_address, claim.token, balance, receiver);
         }
 
-        fn get_claim_class_hash(self: @ContractState) -> ClassHash {
+        fn get_latest_claim_class_hash(self: @ContractState) -> ClassHash {
             self.claim_class_hash.read()
         }
 
