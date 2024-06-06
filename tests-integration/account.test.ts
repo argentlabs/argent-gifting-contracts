@@ -18,7 +18,7 @@ describe("Gifting", function () {
 
     it(`Test max fee too high`, async function () {
       const { factory, claimAccountClassHash } = await setupGiftProtocol();
-      const { claimAccount, claim, tokenContract, receiver } = await setupGift(factory, claimAccountClassHash, useTxV3);
+      const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash, useTxV3);
       if (useTxV3) {
         const estimate = await factory.estimateFee.claim_internal(claim, receiver);
         const newResourceBounds = {
