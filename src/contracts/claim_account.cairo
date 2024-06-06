@@ -36,7 +36,7 @@ mod ClaimAccount {
             let (claim, _): (ClaimData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
             assert(*to == claim.factory, 'gift-acc/invalid-call-to');
-            self.assert_valid_claim(claim);
+            assert_valid_claim(claim);
 
             let tx_info = execution_info.tx_info.unbox();
             // Isn't it an issue if for some reason it fails during execution?
@@ -83,18 +83,15 @@ mod ClaimAccount {
         fn execute_factory_calls(
             ref self: ContractState, claim: ClaimData, mut calls: Array<Call>
         ) -> Array<Span<felt252>> {
-            self.assert_valid_claim(claim);
+            assert_valid_claim(claim);
             assert(get_caller_address() == claim.factory, 'gift/only-factory');
             execute_multicall(calls.span())
         }
     }
 
-    #[generate_trait]
-    impl Private of PrivateTrait {
-        fn assert_valid_claim(self: @ContractState, claim: ClaimData) {
-            let calculated_address = calculate_claim_account_address(claim);
-            assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
-        }
+    fn assert_valid_claim(claim: ClaimData) {
+        let calculated_address = calculate_claim_account_address(claim);
+        assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
     }
 
     fn compute_max_fee_v3(mut resource_bounds: Span<ResourceBounds>, tip: u128) -> u128 {
