@@ -37,6 +37,19 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
   };
 }
 
+export interface AccountConstructorArguments {
+  sender: string;
+  amount: Uint256;
+  max_fee: bigint;
+  token: string;
+  claim_pubkey: bigint;
+}
+
+export interface Claim extends AccountConstructorArguments {
+  factory: string;
+  class_hash: string;
+}
+
 export function buildClaim(
   factory: Contract,
   claimAccountClassHash: string,
@@ -73,19 +86,6 @@ export async function claimExternal(
   factory.connect(account);
   const { transaction_hash } = await factory.claim_external(claim, receiver, signature);
   return transaction_hash;
-}
-
-export interface AccountConstructorArguments {
-  sender: string;
-  amount: Uint256;
-  max_fee: bigint;
-  token: string;
-  claim_pubkey: bigint;
-}
-
-export interface Claim extends AccountConstructorArguments {
-  factory: string;
-  class_hash: string;
 }
 
 export async function claimInternal(
