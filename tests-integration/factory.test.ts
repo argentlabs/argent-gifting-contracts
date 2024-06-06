@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Account, RPC, num, uint256 } from "starknet";
 import { LegacyStarknetKeyPair, deployer, expectRevertWithErrorMessage, genericAccount, manager } from "../lib";
-import { GIFT_AMOUNT, GIFT_MAX_FEE, setupGift, setupGiftProtocol } from "./setupGift";
+import { GIFT_AMOUNT, GIFT_MAX_FEE, setupGift, setupGiftProtocol } from "../lib/setupGift";
 
 describe("Factory", function () {
   for (const useTxV3 of [false, true]) {

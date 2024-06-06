@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { Account, CallData, Contract, RPC, Uint256, ec, encode, hash, num, uint256 } from "starknet";
-import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
+import { LegacyStarknetKeyPair, deployer, manager } from ".";
 
 export const GIFT_AMOUNT = 1000000000000000n;
 export const GIFT_MAX_FEE = 50000000000000n;
