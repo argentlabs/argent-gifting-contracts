@@ -2,19 +2,16 @@
 mod ClaimAccount {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
-    use core::starknet::event::EventEmitter;
-    use core::traits::TryInto;
-    use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{
-        ClassHash, account::Call, VALIDATED, call_contract_syscall, ContractAddress, get_contract_address,
-        get_caller_address, contract_address::contract_address_const, get_execution_info, info::v2::ResourceBounds,
+        account::Call, VALIDATED, call_contract_syscall, ContractAddress, get_contract_address, get_caller_address,
+        get_execution_info, info::v2::ResourceBounds,
     };
-    use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
     use starknet_gifting::contracts::interface::{IAccount, IGiftAccount, ClaimData, AccountConstructorArguments};
     use starknet_gifting::contracts::utils::{
         full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
     };
+
     #[storage]
     struct Storage {}
 
@@ -36,7 +33,7 @@ mod ClaimAccount {
             let (claim, _): (ClaimData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
             assert(*to == claim.factory, 'gift-acc/invalid-call-to');
-            self.assert_valid_claim(claim);
+            assert_valid_claim(claim);
 
             let tx_info = execution_info.tx_info.unbox();
             // Isn't it an issue if for some reason it fails during execution?
@@ -83,18 +80,15 @@ mod ClaimAccount {
         fn execute_factory_calls(
             ref self: ContractState, claim: ClaimData, mut calls: Array<Call>
         ) -> Array<Span<felt252>> {
-            self.assert_valid_claim(claim);
+            assert_valid_claim(claim);
             assert(get_caller_address() == claim.factory, 'gift/only-factory');
             execute_multicall(calls.span())
         }
     }
 
-    #[generate_trait]
-    impl Private of PrivateTrait {
-        fn assert_valid_claim(self: @ContractState, claim: ClaimData) {
-            let calculated_address = calculate_claim_account_address(claim);
-            assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
-        }
+    fn assert_valid_claim(claim: ClaimData) {
+        let calculated_address = calculate_claim_account_address(claim);
+        assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
     }
 
     fn compute_max_fee_v3(mut resource_bounds: Span<ResourceBounds>, tip: u128) -> u128 {

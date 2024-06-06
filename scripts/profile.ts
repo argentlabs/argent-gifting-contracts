@@ -16,7 +16,7 @@ const factory = await manager.deployContract("GiftFactory", {
 });
 
 for (const useTxV3 of [false, true]) {
-  const signer = new LegacyStarknetKeyPair();
+  const signer = new LegacyStarknetKeyPair(12n);
   const claimPubkey = signer.publicKey;
   const amount = 1000000000000000n;
   const maxFee = 50000000000000n;

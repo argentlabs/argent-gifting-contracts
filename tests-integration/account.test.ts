@@ -164,7 +164,7 @@ describe("Gifting", function () {
     const claim = {
       factory: factory.address,
       class_hash: claimAccountClassHash,
-      ...constructorArgs
+      ...constructorArgs,
     };
 
     // cant call another contract

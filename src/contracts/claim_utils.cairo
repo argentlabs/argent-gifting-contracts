@@ -1,5 +1,5 @@
 use openzeppelin::utils::deployments::calculate_contract_address_from_deploy_syscall;
-use starknet::{ContractAddress, contract_address_const};
+use starknet::ContractAddress;
 use starknet_gifting::contracts::interface::{ClaimData, AccountConstructorArguments};
 use starknet_gifting::contracts::utils::serialize;
 
