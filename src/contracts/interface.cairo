@@ -10,7 +10,6 @@ trait IAccount<TContractState> {
 #[starknet::interface]
 trait IGiftFactory<TContractState> {
     fn deposit(ref self: TContractState, amount: u256, max_fee: u128, token: ContractAddress, claim_pubkey: felt252);
-
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
     fn claim_external(ref self: TContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>);
     fn cancel(ref self: TContractState, claim: ClaimData);
