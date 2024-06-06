@@ -102,13 +102,11 @@ mod GiftFactory {
         ) {
             self.pausable.assert_not_paused();
             assert(token == STRK_ADDRESS() || token == ETH_ADDRESS(), 'gift-fac/invalid-token');
-            // TODO: Assert max_fee is not zero?
             assert(max_fee.into() < amount, 'gift-fac/fee-too-high');
 
             let sender = get_caller_address();
             let factory = get_contract_address();
             // TODO We could manually serialize for better performance
-            // TODO pubkey can be zero?
             let constructor_arguments = AccountConstructorArguments { sender, amount, max_fee, token, claim_pubkey };
             let (claim_contract, _) = deploy_syscall(
                 self.claim_class_hash.read(), // class_hash
@@ -139,7 +137,7 @@ mod GiftFactory {
             let claim_address = self.check_factory_and_get_account_address(claim);
             assert(get_caller_address() == claim_address, 'gift/only-claim-account');
             let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
-            assert(balance > claim.amount, 'gift-acc/gift-canceled');
+            assert(balance >= claim.amount, 'gift/already-claimed-or-cancel');
             self.transfer_from_account(claim, claim_address, claim.token, claim.amount, receiver);
             self.emit(GiftClaimed { receiver });
         }
@@ -151,22 +149,23 @@ mod GiftFactory {
             let claim_external_hash = ClaimExternal { claim, receiver }.get_message_hash_rev_1(claim_address);
             assert(
                 check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
-                'gift-acc/invalid-ext-signature'
+                'gift/invalid-ext-signature'
             );
 
             let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
+            assert(balance >= claim.amount, 'gift/already-claimed-or-cancel');
             self.transfer_from_account(claim, claim_address, claim.token, balance, receiver);
             self.emit(GiftClaimed { receiver });
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
             let claim_address = self.check_factory_and_get_account_address(claim);
-            assert(get_caller_address() == claim.sender, 'gift-acc/wrong-sender');
+            assert(get_caller_address() == claim.sender, 'gift/wrong-sender');
 
             let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
             // Won't that lead to the sender also being able to get the extra dust?
             // assert(balance > claim.max_fee, 'already claimed');
-            assert(balance > 0, 'gift-acc/already-claimed');
+            assert(balance > 0, 'gift/already-claimed');
             self.transfer_from_account(claim, claim_address, claim.token, balance, claim.sender);
             self.emit(GiftCanceled {});
         }
@@ -254,7 +253,7 @@ mod GiftFactory {
                     ]
                 );
             let transfer_status = full_deserialize::<bool>(*results.at(0)).expect('gift/invalid-result-calldata');
-            assert(transfer_status, 'gift-acc/transfer-failed');
+            assert(transfer_status, 'gift/transfer-failed');
         }
     }
 }
