@@ -13,8 +13,7 @@ mod ClaimAccount {
     use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
     use starknet_gifting::contracts::interface::{IAccount, IGiftAccount, ClaimData, AccountConstructorArguments};
     use starknet_gifting::contracts::utils::{
-        full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, compute_max_fee_v3,
-        execute_multicall
+        full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
     };
     #[storage]
     struct Storage {}
@@ -96,5 +95,20 @@ mod ClaimAccount {
             let calculated_address = calculate_claim_account_address(claim);
             assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
         }
+    }
+
+
+    fn compute_max_fee_v3(mut resource_bounds: Span<ResourceBounds>, tip: u128) -> u128 {
+        let mut max_fee: u128 = 0;
+        let mut max_tip: u128 = 0;
+        while let Option::Some(r) = resource_bounds
+            .pop_front() {
+                let max_resource_amount: u128 = (*r.max_amount).into();
+                max_fee += *r.max_price_per_unit * max_resource_amount;
+                if *r.resource == 'L2_GAS' {
+                    max_tip += tip * max_resource_amount;
+                }
+            };
+        max_fee + max_tip
     }
 }
