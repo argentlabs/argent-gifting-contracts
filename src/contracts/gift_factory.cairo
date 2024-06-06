@@ -180,6 +180,7 @@ mod GiftFactory {
 
         fn get_claim_address(
             self: @ContractState,
+            class_hash: ClassHash,
             sender: ContractAddress,
             amount: u256,
             max_fee: u128,
@@ -187,15 +188,7 @@ mod GiftFactory {
             claim_pubkey: felt252
         ) -> ContractAddress {
             calculate_claim_account_address(
-                ClaimData {
-                    factory: get_contract_address(),
-                    class_hash: self.claim_class_hash.read(),
-                    sender,
-                    amount,
-                    max_fee,
-                    token,
-                    claim_pubkey,
-                }
+                ClaimData { factory: get_contract_address(), class_hash, sender, amount, max_fee, token, claim_pubkey, }
             )
         }
     }

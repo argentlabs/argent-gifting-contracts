@@ -12,6 +12,7 @@ trait IGiftFactory<TContractState> {
     fn deposit(ref self: TContractState, amount: u256, max_fee: u128, token: ContractAddress, claim_pubkey: felt252);
     fn get_claim_address(
         self: @TContractState,
+        class_hash: ClassHash,
         sender: ContractAddress,
         amount: u256,
         max_fee: u128,
