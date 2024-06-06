@@ -1,66 +1,6 @@
-import {
-  Abi,
-  Account,
-  AllowArray,
-  Call,
-  CallData,
-  Contract,
-  DeployAccountContractPayload,
-  DeployContractResponse,
-  InvokeFunctionResponse,
-  RPC,
-  UniversalDetails,
-  num,
-  uint256,
-} from "starknet";
+import { Account, Call, CallData, RPC, uint256 } from "starknet";
 import { manager } from "./manager";
-import { KeyPair } from "./signers/signers";
 import { ethAddress, strkAddress } from "./tokens";
-
-export class ArgentAccount extends Account {
-  // Increase the gas limit by 30% to avoid failures due to gas estimation being too low with tx v3 and transactions the use escaping
-  override async deployAccount(
-    payload: DeployAccountContractPayload,
-    details?: UniversalDetails,
-  ): Promise<DeployContractResponse> {
-    details ||= {};
-    if (!details.skipValidate) {
-      details.skipValidate = false;
-    }
-    return super.deployAccount(payload, details);
-  }
-
-  override async execute(
-    calls: AllowArray<Call>,
-    abis?: Abi[],
-    details: UniversalDetails = {},
-  ): Promise<InvokeFunctionResponse> {
-    details ||= {};
-    if (!details.skipValidate) {
-      details.skipValidate = false;
-    }
-    if (details.resourceBounds) {
-      return super.execute(calls, abis, details);
-    }
-    const estimate = await this.estimateFee(calls, details);
-    return super.execute(calls, abis, {
-      ...details,
-      resourceBounds: {
-        ...estimate.resourceBounds,
-        l1_gas: {
-          ...estimate.resourceBounds.l1_gas,
-          max_amount: num.toHexString(num.addPercent(estimate.resourceBounds.l1_gas.max_amount, 30)),
-        },
-      },
-    });
-  }
-}
-
-export interface ArgentWallet {
-  account: ArgentAccount;
-  accountContract: Contract;
-  owner: KeyPair;
-}
 
 export const deployer = (() => {
   if (manager.isDevnet) {
@@ -87,15 +27,15 @@ export const genericAccount = (() => {
 
 export const deployerV3 = setDefaultTransactionVersionV3(deployer);
 
-export function setDefaultTransactionVersion(account: ArgentAccount, newVersion: boolean): Account {
+export function setDefaultTransactionVersion(account: Account, newVersion: boolean): Account {
   const newDefaultVersion = newVersion ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   if (account.transactionVersion === newDefaultVersion) {
     return account;
   }
-  return new ArgentAccount(account, account.address, account.signer, account.cairoVersion, newDefaultVersion);
+  return new Account(account, account.address, account.signer, account.cairoVersion, newDefaultVersion);
 }
 
-export function setDefaultTransactionVersionV3(account: ArgentAccount): ArgentAccount {
+export function setDefaultTransactionVersionV3(account: Account): Account {
   return setDefaultTransactionVersion(account, true);
 }
 

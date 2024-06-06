@@ -10,7 +10,6 @@ export * from "./contracts";
 export * from "./devnet";
 export * from "./expectations";
 export * from "./manager";
-export * from "./openZeppelinAccount";
 export * from "./receipts";
 export * from "./signers/legacy";
 export * from "./signers/signers";
