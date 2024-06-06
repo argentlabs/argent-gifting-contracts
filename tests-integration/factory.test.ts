@@ -17,14 +17,6 @@ describe("Factory", function () {
   it(`Test calculate claim address`, async function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
     const { tokenContract, claimSigner } = await defaultDepositTestSetup(factory);
-    const a = factory.populateTransaction.get_claim_address(
-      claimAccountClassHash,
-      deployer.address,
-      GIFT_AMOUNT,
-      GIFT_MAX_FEE,
-      tokenContract.address,
-      claimSigner.publicKey,
-    );
     const claimAddress = await factory.get_claim_address(
       claimAccountClassHash,
       deployer.address,

@@ -1,4 +1,4 @@
-import { Account, Contract, RPC, Uint256, ec, encode, num, shortString, uint256 } from "starknet";
+import { Account, CallData, Contract, RPC, Uint256, ec, encode, hash, num, shortString, uint256 } from "starknet";
 import { LegacyStarknetKeyPair, deployer, manager } from ".";
 import { GIFT_AMOUNT, GIFT_MAX_FEE } from "./deposit";
 
@@ -76,10 +76,23 @@ export async function claimExternal(
   factory: Contract,
   receiver: string,
   claim: Claim,
-  claimAccountAddress: string,
   giftSigner: LegacyStarknetKeyPair,
   account = deployer,
 ): Promise<string> {
+  const constructorArgs: AccountConstructorArguments = {
+    sender: deployer.address,
+    amount: claim.amount,
+    max_fee: claim.max_fee,
+    token: claim.token,
+    claim_pubkey: claim.claim_pubkey,
+  };
+  const claimAccountAddress = hash.calculateContractAddressFromHash(
+    0,
+    claim.class_hash,
+    CallData.compile({ constructorArgs }),
+    factory.address,
+  );
+
   const claimExternalData = await getClaimExternalData({ receiver });
   const signature = await giftSigner.signMessage(claimExternalData, claimAccountAddress);
 
