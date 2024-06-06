@@ -124,7 +124,7 @@ mod GiftFactory {
         }
 
         fn claim_internal(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
-            let claim_address = self.check_factory_and_get_account_address(claim);
+            let claim_address = self.check_claim_and_get_account_address(claim);
             assert(get_caller_address() == claim_address, 'gift/only-claim-account');
             let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
             assert(balance >= claim.amount, 'gift/already-claimed-or-cancel');
@@ -135,7 +135,7 @@ mod GiftFactory {
         fn claim_external(
             ref self: ContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>
         ) {
-            let claim_address = self.check_factory_and_get_account_address(claim);
+            let claim_address = self.check_claim_and_get_account_address(claim);
             let claim_external_hash = ClaimExternal { receiver }.get_message_hash_rev_1(claim_address);
             assert(
                 check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
@@ -149,7 +149,7 @@ mod GiftFactory {
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
-            let claim_address = self.check_factory_and_get_account_address(claim);
+            let claim_address = self.check_claim_and_get_account_address(claim);
             assert(get_caller_address() == claim.sender, 'gift/wrong-sender');
 
             let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
@@ -163,7 +163,7 @@ mod GiftFactory {
 
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
             self.ownable.assert_only_owner();
-            let claim_address = self.check_factory_and_get_account_address(claim);
+            let claim_address = self.check_claim_and_get_account_address(claim);
 
             let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
             assert(balance < claim.max_fee.into(), 'gift/not-yet-claimed');
@@ -213,8 +213,9 @@ mod GiftFactory {
 
     #[generate_trait]
     impl Private of PrivateTrait {
-        fn check_factory_and_get_account_address(self: @ContractState, claim: ClaimData) -> ContractAddress {
+        fn check_claim_and_get_account_address(self: @ContractState, claim: ClaimData) -> ContractAddress {
             assert(claim.factory == get_contract_address(), 'gift/invalid-factory-address');
+            assert(claim.class_hash == self.claim_class_hash.read(), 'gift/invalid-class-hash');
             calculate_claim_account_address(claim)
         }
 
