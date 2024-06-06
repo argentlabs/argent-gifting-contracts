@@ -3,8 +3,8 @@ mod ClaimAccount {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
     use starknet::{
-        account::Call, VALIDATED, call_contract_syscall, ContractAddress, get_contract_address, get_caller_address,
-        get_execution_info, info::v2::ResourceBounds,
+        TxInfo, account::Call, VALIDATED, syscalls::call_contract_syscall, ContractAddress, get_contract_address,
+        get_caller_address, get_execution_info
     };
     use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
     use starknet_gifting::contracts::interface::{IAccount, IGiftAccount, ClaimData, AccountConstructorArguments};
@@ -51,7 +51,7 @@ mod ClaimAccount {
             let tx_version = tx_info.version;
             if claim.token == STRK_ADDRESS() {
                 assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'gift-acc/invalid-tx3-version');
-                let tx_fee = compute_max_fee_v3(tx_info.resource_bounds, tx_info.tip);
+                let tx_fee = compute_max_fee_v3(tx_info, tx_info.tip);
                 assert(tx_fee <= claim.max_fee, 'gift-acc/max-fee-too-high-v3');
             } else if claim.token == ETH_ADDRESS() {
                 assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'gift-acc/invalid-tx1-version');
@@ -91,7 +91,8 @@ mod ClaimAccount {
         assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
     }
 
-    fn compute_max_fee_v3(mut resource_bounds: Span<ResourceBounds>, tip: u128) -> u128 {
+    fn compute_max_fee_v3(tx_info: TxInfo, tip: u128) -> u128 {
+        let mut resource_bounds = tx_info.resource_bounds;
         let mut max_fee: u128 = 0;
         let mut max_tip: u128 = 0;
         while let Option::Some(r) = resource_bounds
