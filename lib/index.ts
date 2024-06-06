@@ -15,6 +15,5 @@ export * from "./receipts";
 export * from "./signers/legacy";
 export * from "./signers/signers";
 export * from "./tokens";
-export * from "./upgrade";
 
 export type Constructor<T> = new (...args: any[]) => T;
