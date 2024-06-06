@@ -23,7 +23,6 @@ struct StarknetDomain {
 
 #[derive(Drop, Copy)]
 struct ClaimExternal {
-    claim: ClaimData,
     receiver: ContractAddress
 }
 
