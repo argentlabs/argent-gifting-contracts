@@ -10,7 +10,6 @@ describe("Gifting", function () {
       const { claimAccount, claim, tokenContract, receiver } = await setupGift(factory, claimAccountClassHash, useTxV3);
       await factory.claim_internal(claim, receiver);
 
-      // Final check
       const finalBalance = await tokenContract.balance_of(claimAccount.address);
       expect(finalBalance < GIFT_MAX_FEE).to.be.true;
       await tokenContract.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
@@ -50,17 +49,19 @@ describe("Gifting", function () {
     });
   }
 
-  it(`Test basic validation asserts`, async function () {
+  it(`Test only protocol can call claim contract`, async function () {
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
+    const claimContract = await manager.loadContract(num.toHex(claimAccount.address));
+
+    claimContract.connect(claimAccount);
+    await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
+  });
+
+  it(`Test claim contract cant call another contract`, async function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
     const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
 
-    const claimContract = await manager.loadContract(num.toHex(claimAccount.address));
-
-    // only protocol
-    claimContract.connect(claimAccount);
-    await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
-
-    // cant call another contract
     const fakeFactory = await manager.deployContract("GiftFactory", {
       unique: true,
       constructorCalldata: [claimAccountClassHash, deployer.address],
@@ -69,14 +70,22 @@ describe("Gifting", function () {
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
       fakeFactory.claim_internal(claim, receiver, { maxFee: 400000000000000n }),
     );
+  });
 
-    // wrong selector
+  it(`Test claim contract can only call 'claim_internal'`, async function () {
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
+
     factory.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
       factory.get_dust(claim, receiver, { maxFee: 400000000000000n }),
     );
+  });
 
-    // multicall
+  it(`Test claim contract cant preform a multicall`, async function () {
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
+
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       claimAccount.execute([
         {
@@ -91,6 +100,11 @@ describe("Gifting", function () {
         },
       ]),
     );
+  });
+
+  it(`Test cannot call 'claim_internal' twice`, async function () {
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claimAccount, claim, receiver } = await setupGift(factory, claimAccountClassHash);
 
     // double claim
     await factory.claim_internal(claim, receiver);
