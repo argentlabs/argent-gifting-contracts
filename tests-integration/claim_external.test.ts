@@ -25,6 +25,7 @@ describe("claim_external", function () {
     await factory.deposit(amount, maxFee, tokenContract.address, claimPubkey);
 
     const claimAddress = await factory.get_claim_address(
+      claimAccountClassHash,
       deployer.address,
       amount,
       maxFee,

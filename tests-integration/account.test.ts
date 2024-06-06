@@ -28,6 +28,7 @@ describe("Gifting", function () {
 
       // Ensure there is a contract for the claim
       const claimAddress = await factory.get_claim_address(
+        claimAccountClassHash,
         deployer.address,
         amount,
         maxFee,
@@ -74,7 +75,7 @@ describe("Gifting", function () {
             max_price_per_unit: num.toHexString(4),
           },
         };
-        await expectRevertWithErrorMessage("gift-acc/insufficient-v3-fee", () =>
+        await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
           claimAccount.execute(
             [
               {
@@ -88,7 +89,7 @@ describe("Gifting", function () {
           ),
         );
       } else {
-        await expectRevertWithErrorMessage("gift-acc/insufficient-v1-fee", () =>
+        await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
           factory.claim_internal(claim, receiver, { maxFee: maxFee + 1n }),
         );
       }
@@ -124,6 +125,7 @@ describe("Gifting", function () {
 
     // Ensure there is a contract for the claim
     const claimAddress = await factory.get_claim_address(
+      claimAccountClassHash,
       deployer.address,
       amount,
       maxFee,
@@ -131,9 +133,7 @@ describe("Gifting", function () {
       claimPubkey,
     );
 
-    const claim = {
-      factory: factory.address,
-      class_hash: claimAccountClassHash,
+    const constructorArgs = {
       sender: deployer.address,
       amount: uint256.bnToUint256(amount),
       max_fee: maxFee,
@@ -141,8 +141,13 @@ describe("Gifting", function () {
       claim_pubkey: claimPubkey,
     };
 
-    const constructorCalldata = CallData.compile(claim);
-    const correctAddress = hash.calculateContractAddressFromHash(0, claimAccountClassHash, constructorCalldata, 0);
+    const constructorCalldata = CallData.compile(constructorArgs);
+    const correctAddress = hash.calculateContractAddressFromHash(
+      0,
+      claimAccountClassHash,
+      constructorCalldata,
+      factory.address,
+    );
     expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
 
     // Check balance of the claim contract is correct
@@ -155,6 +160,12 @@ describe("Gifting", function () {
     // only protocol
     claimContract.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
+
+    const claim = {
+      factory: factory.address,
+      class_hash: claimAccountClassHash,
+      ...constructorArgs
+    };
 
     // cant call another contract
     fakeFactory.connect(claimAccount);
