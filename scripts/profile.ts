@@ -34,6 +34,7 @@ for (const useTxV3 of [false, true]) {
 
   // Ensure there is a contract for the claim
   const claimAddress = await factory.get_claim_address(
+    claimAccountClassHash,
     deployer.address,
     amount,
     maxFee,

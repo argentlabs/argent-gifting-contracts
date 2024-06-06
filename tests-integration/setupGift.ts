@@ -37,7 +37,7 @@ export async function setupGiftProtocol(): Promise<{
   return { factory, claimAccountClassHash };
 }
 
-export async function setupClaim(
+export async function setupGift(
   factory: Contract,
   claimAccountClassHash: string,
   useTxV3 = false,
@@ -63,6 +63,7 @@ export async function setupClaim(
 
   // Ensure there is a contract for the claim
   const claimAddress = await factory.get_claim_address(
+    claimAccountClassHash,
     deployer.address,
     GIFT_AMOUNT,
     GIFT_MAX_FEE,

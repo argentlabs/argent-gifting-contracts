@@ -7,14 +7,13 @@ mod ClaimAccount {
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{
         ClassHash, account::Call, VALIDATED, call_contract_syscall, ContractAddress, get_contract_address,
-        get_caller_address, contract_address::contract_address_const, get_execution_info
+        get_caller_address, contract_address::contract_address_const, get_execution_info, info::v2::ResourceBounds,
     };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
     use starknet_gifting::contracts::interface::{IAccount, IGiftAccount, ClaimData, AccountConstructorArguments};
     use starknet_gifting::contracts::utils::{
-        full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, compute_max_fee_v3,
-        execute_multicall
+        full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
     };
     #[storage]
     struct Storage {}
@@ -56,12 +55,10 @@ mod ClaimAccount {
             if claim.token == STRK_ADDRESS() {
                 assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'gift-acc/invalid-tx3-version');
                 let tx_fee = compute_max_fee_v3(tx_info.resource_bounds, tx_info.tip);
-                // TODO: should this error be max fee too high?
-                assert(tx_fee <= claim.max_fee, 'gift-acc/insufficient-v3-fee');
+                assert(tx_fee <= claim.max_fee, 'gift-acc/max-fee-too-high-v3');
             } else if claim.token == ETH_ADDRESS() {
                 assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'gift-acc/invalid-tx1-version');
-                // TODO: should this error be max fee too high?
-                assert(tx_info.max_fee <= claim.max_fee, 'gift-acc/insufficient-v1-fee');
+                assert(tx_info.max_fee <= claim.max_fee, 'gift-acc/max-fee-too-high-v1');
             } else {
                 core::panic_with_felt252('gift-acc/invalid-token');
             }
@@ -98,5 +95,19 @@ mod ClaimAccount {
             let calculated_address = calculate_claim_account_address(claim);
             assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
         }
+    }
+
+    fn compute_max_fee_v3(mut resource_bounds: Span<ResourceBounds>, tip: u128) -> u128 {
+        let mut max_fee: u128 = 0;
+        let mut max_tip: u128 = 0;
+        while let Option::Some(r) = resource_bounds
+            .pop_front() {
+                let max_resource_amount: u128 = (*r.max_amount).into();
+                max_fee += *r.max_price_per_unit * max_resource_amount;
+                if *r.resource == 'L2_GAS' {
+                    max_tip += tip * max_resource_amount;
+                }
+            };
+        max_fee + max_tip
     }
 }
