@@ -1,7 +1,14 @@
 import { expect } from "chai";
 import { num } from "starknet";
-import { deployer, expectRevertWithErrorMessage, manager } from "../lib";
-import { GIFT_AMOUNT, GIFT_MAX_FEE, setupGift, setupGiftProtocol } from "../lib/setupGift";
+import {
+  GIFT_AMOUNT,
+  GIFT_MAX_FEE,
+  deployer,
+  expectRevertWithErrorMessage,
+  manager,
+  setupGift,
+  setupGiftProtocol,
+} from "../lib";
 
 describe("Gifting", function () {
   for (const useTxV3 of [false, true]) {

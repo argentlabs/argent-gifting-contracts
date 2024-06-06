@@ -1,5 +1,4 @@
-import { deployer, getClaimExternalData } from "../lib";
-import { setupGift, setupGiftProtocol } from "./setupGift";
+import { deployer, getClaimExternalData, setupGift, setupGiftProtocol } from "../lib";
 
 describe("claim_external", function () {
   for (const useTxV3 of [false, true]) {

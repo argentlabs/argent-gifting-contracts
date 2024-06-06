@@ -11,6 +11,7 @@ export * from "./devnet";
 export * from "./expectations";
 export * from "./manager";
 export * from "./receipts";
+export * from "./setupGift";
 export * from "./signers/legacy";
 export * from "./signers/signers";
 export * from "./tokens";
