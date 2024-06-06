@@ -92,8 +92,7 @@ export async function claimInternal(
   factory: Contract,
   tokenContract: Contract,
   claimSigner: LegacyStarknetKeyPair,
-  receiverAddress = "0x42",
-  forcedGiftPrivateKey = false,
+  forcedGiftPrivateKey = "0x42",
   useTxV3 = false,
   giftAmount = GIFT_AMOUNT,
   giftMaxFee = GIFT_MAX_FEE,
@@ -101,9 +100,7 @@ export async function claimInternal(
   claimAccount: Account;
   receiver: string;
 }> {
-  const receiver = forcedGiftPrivateKey
-    ? receiverAddress
-    : `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
+  const receiver = forcedGiftPrivateKey || `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
   const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
   const claimAddress = await factory.get_claim_address(
     claimAccountClassHash,
