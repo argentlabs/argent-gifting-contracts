@@ -49,13 +49,13 @@ mod ClaimAccount {
                 'invalid-signature'
             );
             let tx_version = tx_info.version;
-            if claim.token == STRK_ADDRESS() {
+            if claim.fee_token == STRK_ADDRESS() {
                 assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'gift-acc/invalid-tx3-version');
                 let tx_fee = compute_max_fee_v3(tx_info.resource_bounds, tx_info.tip);
-                assert(tx_fee <= claim.max_fee, 'gift-acc/max-fee-too-high-v3');
-            } else if claim.token == ETH_ADDRESS() {
+                assert(tx_fee <= claim.fee_amount, 'gift-acc/max-fee-too-high-v3');
+            } else if claim.fee_token == ETH_ADDRESS() {
                 assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'gift-acc/invalid-tx1-version');
-                assert(tx_info.max_fee <= claim.max_fee, 'gift-acc/max-fee-too-high-v1');
+                assert(tx_info.max_fee <= claim.fee_amount, 'gift-acc/max-fee-too-high-v1');
             } else {
                 core::panic_with_felt252('gift-acc/invalid-token');
             }

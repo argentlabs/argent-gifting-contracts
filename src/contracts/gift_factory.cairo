@@ -68,9 +68,10 @@ mod GiftFactory {
         gift_address: ContractAddress,
         class_hash: ClassHash,
         factory: ContractAddress,
-        amount: u256,
-        max_fee: u128,
-        token: ContractAddress,
+        gift_token: ContractAddress,
+        gift_amount: u256,
+        fee_token: ContractAddress,
+        fee_amount: u128,
     }
 
     // TODO Do we need a different event for external claims?
@@ -94,17 +95,26 @@ mod GiftFactory {
     #[abi(embed_v0)]
     impl GiftFactoryImpl of IGiftFactory<ContractState> {
         fn deposit(
-            ref self: ContractState, amount: u256, max_fee: u128, token: ContractAddress, claim_pubkey: felt252
+            ref self: ContractState,
+            gift_token: ContractAddress,
+            gift_amount: u256,
+            fee_token: ContractAddress,
+            fee_amount: u128,
+            claim_pubkey: felt252
         ) {
             self.pausable.assert_not_paused();
-            assert(token == STRK_ADDRESS() || token == ETH_ADDRESS(), 'gift-fac/invalid-token');
-            assert(max_fee.into() < amount, 'gift-fac/fee-too-high');
+            assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
+            if gift_token == fee_token {
+                assert(fee_amount.into() < gift_amount, 'gift-fac/fee-too-high');
+            }
 
             let sender = get_caller_address();
             let factory = get_contract_address();
             // TODO We could manually serialize for better performance
             let class_hash = self.claim_class_hash.read();
-            let constructor_arguments = AccountConstructorArguments { sender, amount, max_fee, token, claim_pubkey };
+            let constructor_arguments = AccountConstructorArguments {
+                sender, gift_token, gift_amount, fee_token, fee_amount, claim_pubkey
+            };
             let (claim_contract, _) = deploy_syscall(
                 class_hash, // class_hash
                 0, // salt
@@ -115,20 +125,38 @@ mod GiftFactory {
             self
                 .emit(
                     GiftCreated {
-                        claim_pubkey, factory, gift_address: claim_contract, class_hash, sender, amount, max_fee, token,
+                        claim_pubkey,
+                        factory,
+                        gift_address: claim_contract,
+                        class_hash,
+                        sender,
+                        gift_token,
+                        gift_amount,
+                        fee_token,
+                        fee_amount
                     }
                 );
-            let transfer_status = IERC20Dispatcher { contract_address: token }
-                .transfer_from(get_caller_address(), claim_contract, amount + max_fee.into());
-            assert(transfer_status, 'gift-fac/transfer-failed');
+
+            if (gift_token == fee_token) {
+                let transfer_status = IERC20Dispatcher { contract_address: gift_token }
+                    .transfer_from(get_caller_address(), claim_contract, gift_amount + fee_amount.into());
+                assert(transfer_status, 'gift-fac/transfer-failed');
+            } else {
+                let transfer_gift_status = IERC20Dispatcher { contract_address: gift_token }
+                    .transfer_from(get_caller_address(), claim_contract, gift_amount);
+                assert(transfer_gift_status, 'gift-fac/transfer-gift-failed');
+                let transfer_fee_status = IERC20Dispatcher { contract_address: fee_token }
+                    .transfer_from(get_caller_address(), claim_contract, fee_amount.into());
+                assert(transfer_fee_status, 'gift-fac/transfer-fee-failed');
+            }
         }
 
         fn claim_internal(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
             let claim_address = self.check_claim_and_get_account_address(claim);
             assert(get_caller_address() == claim_address, 'gift/only-claim-account');
-            let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
-            assert(balance >= claim.amount, 'gift/already-claimed-or-cancel');
-            self.transfer_from_account(claim, claim_address, claim.token, claim.amount, receiver);
+            let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
+            assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
+            self.transfer_from_account(claim, claim_address, claim.gift_token, claim.gift_amount, receiver);
             self.emit(GiftClaimed { receiver });
         }
 
@@ -141,10 +169,10 @@ mod GiftFactory {
                 check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
                 'gift/invalid-ext-signature'
             );
-
-            let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
-            assert(balance >= claim.amount, 'gift/already-claimed-or-cancel');
-            self.transfer_from_account(claim, claim_address, claim.token, balance, receiver);
+            let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
+            assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
+            // TODO: cheaper to just leave the dust than transfer it? add a flag? transfer to the receiver or the relayer?
+            self.transfer_from_account(claim, claim_address, claim.gift_token, balance, receiver);
             self.emit(GiftClaimed { receiver });
         }
 
@@ -152,22 +180,35 @@ mod GiftFactory {
             let claim_address = self.check_claim_and_get_account_address(claim);
             assert(get_caller_address() == claim.sender, 'gift/wrong-sender');
 
-            let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
-            // Won't that lead to the sender also being able to get the extra dust?
-            // assert(balance > claim.max_fee, 'already claimed');
-            assert(balance > 0, 'gift/already-claimed');
-            self.transfer_from_account(claim, claim_address, claim.token, balance, claim.sender);
+            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
+            assert(gift_balance > 0, 'gift/already-claimed');
+            if claim.gift_token == claim.fee_token {
+                // Sender also gets the dust
+                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, claim.sender);
+            } else {
+                // TODO: cheaper to just leave the dust than transfer it? add a flag?
+                // TODO: create a multicall to make it cheaper
+                let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
+                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, claim.sender);
+                self.transfer_from_account(claim, claim_address, claim.fee_token, fee_balance, claim.sender);
+            }
+
             self.emit(GiftCanceled {});
         }
-
 
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
             self.ownable.assert_only_owner();
             let claim_address = self.check_claim_and_get_account_address(claim);
-
-            let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
-            assert(balance < claim.max_fee.into(), 'gift/not-yet-claimed');
-            self.transfer_from_account(claim, claim_address, claim.token, balance, receiver);
+            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
+            if claim.gift_token == claim.fee_token {
+                assert(gift_balance < claim.fee_amount.into(), 'gift/not-yet-claimed');
+                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, receiver);
+            } else {
+                assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
+                let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
+                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, receiver);
+                self.transfer_from_account(claim, claim_address, claim.fee_token, fee_balance, claim.sender);
+            }
         }
 
         fn get_latest_claim_class_hash(self: @ContractState) -> ClassHash {
@@ -178,13 +219,23 @@ mod GiftFactory {
             self: @ContractState,
             class_hash: ClassHash,
             sender: ContractAddress,
-            amount: u256,
-            max_fee: u128,
-            token: ContractAddress,
+            gift_token: ContractAddress,
+            gift_amount: u256,
+            fee_token: ContractAddress,
+            fee_amount: u128,
             claim_pubkey: felt252
         ) -> ContractAddress {
             calculate_claim_account_address(
-                ClaimData { factory: get_contract_address(), class_hash, sender, amount, max_fee, token, claim_pubkey, }
+                ClaimData {
+                    factory: get_contract_address(),
+                    class_hash,
+                    sender,
+                    gift_amount,
+                    gift_token,
+                    fee_token,
+                    fee_amount,
+                    claim_pubkey,
+                }
             )
         }
     }

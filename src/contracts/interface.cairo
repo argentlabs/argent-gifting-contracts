@@ -9,7 +9,14 @@ trait IAccount<TContractState> {
 
 #[starknet::interface]
 trait IGiftFactory<TContractState> {
-    fn deposit(ref self: TContractState, amount: u256, max_fee: u128, token: ContractAddress, claim_pubkey: felt252);
+    fn deposit(
+        ref self: TContractState,
+        gift_token: ContractAddress,
+        gift_amount: u256,
+        fee_token: ContractAddress,
+        fee_amount: u128,
+        claim_pubkey: felt252
+    );
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
     fn claim_external(ref self: TContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>);
     fn cancel(ref self: TContractState, claim: ClaimData);
@@ -20,9 +27,10 @@ trait IGiftFactory<TContractState> {
         self: @TContractState,
         class_hash: ClassHash,
         sender: ContractAddress,
-        amount: u256,
-        max_fee: u128,
-        token: ContractAddress,
+        gift_token: ContractAddress,
+        gift_amount: u256,
+        fee_token: ContractAddress,
+        fee_amount: u128,
         claim_pubkey: felt252
     ) -> ContractAddress;
 }
@@ -54,17 +62,19 @@ struct ClaimData {
     factory: ContractAddress,
     class_hash: ClassHash,
     sender: ContractAddress,
-    amount: u256,
-    max_fee: u128,
-    token: ContractAddress,
+    gift_token: ContractAddress,
+    gift_amount: u256,
+    fee_token: ContractAddress,
+    fee_amount: u128,
     claim_pubkey: felt252
 }
 
 #[derive(Serde, Drop, Copy)]
 struct AccountConstructorArguments {
     sender: ContractAddress,
-    amount: u256,
-    max_fee: u128,
-    token: ContractAddress,
+    gift_token: ContractAddress,
+    gift_amount: u256,
+    fee_token: ContractAddress,
+    fee_amount: u128,
     claim_pubkey: felt252
 }

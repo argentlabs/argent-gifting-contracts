@@ -12,14 +12,14 @@ use super::setup::{deploy_gifting_normal, deploy_gifting_broken_erc20, GiftingSe
 
 
 #[test]
-#[should_panic(expected: ('gift-fac/invalid-token',))]
+#[should_panic(expected: ('gift-fac/invalid-fee-token',))]
 fn test_deposit_correct_token() {
     let GiftingSetup { mock_eth, mock_strk, gift_factory, .. } = deploy_gifting_normal();
 
     start_cheat_caller_address(gift_factory.contract_address, DEPOSITOR());
-    gift_factory.deposit(10, 5, mock_eth.contract_address, CLAIM_PUB_KEY());
-    gift_factory.deposit(20, 10, mock_strk.contract_address, CLAIM_PUB_KEY());
-    gift_factory.deposit(10, 5, UNAUTHORIZED_ERC20(), CLAIM_PUB_KEY());
+    gift_factory.deposit(mock_eth.contract_address, 10, mock_eth.contract_address, 5, CLAIM_PUB_KEY());
+    gift_factory.deposit(mock_strk.contract_address, 20, mock_strk.contract_address, 10, CLAIM_PUB_KEY());
+    gift_factory.deposit(UNAUTHORIZED_ERC20(), 10, UNAUTHORIZED_ERC20(), 5, CLAIM_PUB_KEY());
 
     assert(mock_eth.balance_of(gift_factory.contract_address) == 10, 'ETH deposit failed');
     assert(mock_strk.balance_of(gift_factory.contract_address) == 20, 'STRK deposit failed');
@@ -31,7 +31,7 @@ fn test_transfer_from_fail() {
     let GiftingSetup { mock_eth, gift_factory, .. } = deploy_gifting_broken_erc20();
 
     start_cheat_caller_address(gift_factory.contract_address, DEPOSITOR());
-    gift_factory.deposit(10, 5, mock_eth.contract_address, CLAIM_PUB_KEY());
+    gift_factory.deposit(mock_eth.contract_address, 10, mock_eth.contract_address, 5, CLAIM_PUB_KEY());
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn test_transfer_from_fail() {
 fn test_deposit_max_fee_same_as_amount() {
     let GiftingSetup { mock_eth, gift_factory, .. } = deploy_gifting_normal();
     start_cheat_caller_address(gift_factory.contract_address, DEPOSITOR());
-    gift_factory.deposit(10, 10, mock_eth.contract_address, CLAIM_PUB_KEY());
+    gift_factory.deposit(mock_eth.contract_address, 10, mock_eth.contract_address, 10, CLAIM_PUB_KEY());
 }
 
 #[test]
@@ -47,29 +47,32 @@ fn test_deposit_max_fee_same_as_amount() {
 fn test_deposit_max_fee_too_high() {
     let GiftingSetup { mock_eth, gift_factory, .. } = deploy_gifting_normal();
     start_cheat_caller_address(gift_factory.contract_address, DEPOSITOR());
-    gift_factory.deposit(10, 12, mock_eth.contract_address, CLAIM_PUB_KEY());
+    gift_factory.deposit(mock_eth.contract_address, 10, mock_eth.contract_address, 12, CLAIM_PUB_KEY());
 }
 
 #[test]
 fn test_claim_account_deployed() {
     let GiftingSetup { mock_eth, gift_factory, claim_class_hash, .. } = deploy_gifting_normal();
-    let amount = 10;
-    let max_fee = 5;
+    let gift_token = mock_eth.contract_address;
+    let gift_amount = 10;
+    let fee_token = mock_eth.contract_address;
+    let fee_amount = 5;
 
     let claim_data = ClaimData {
         factory: gift_factory.contract_address,
         class_hash: claim_class_hash,
         sender: DEPOSITOR(),
-        amount,
-        max_fee,
-        token: mock_eth.contract_address,
+        gift_token,
+        gift_amount,
+        fee_token,
+        fee_amount,
         claim_pubkey: CLAIM_PUB_KEY(),
     };
 
     let calculated_claim_address = calculate_claim_account_address(claim_data);
 
     start_cheat_caller_address(gift_factory.contract_address, DEPOSITOR());
-    gift_factory.deposit(amount, max_fee, mock_eth.contract_address, CLAIM_PUB_KEY());
+    gift_factory.deposit(gift_token, gift_amount, fee_token, fee_amount, CLAIM_PUB_KEY());
 
     // Check that the claim account was deployed by getting class hash at that address 
     // un-deployed claim account should return 0
@@ -82,9 +85,10 @@ fn test_claim_account_deployed() {
         .get_claim_address(
             claim_data.class_hash,
             claim_data.sender,
-            claim_data.amount,
-            claim_data.max_fee,
-            claim_data.token,
+            claim_data.gift_token,
+            claim_data.gift_amount,
+            claim_data.fee_token,
+            claim_data.fee_amount,
             claim_data.claim_pubkey
         );
     assert!(calculated_claim_address == get_claim_address, "Claim address not calculated correctly");
@@ -94,18 +98,22 @@ fn test_claim_account_deployed() {
 #[should_panic(expected: ('Caller is not the owner',))]
 fn test_get_dust_only_owner() {
     let GiftingSetup { mock_eth, gift_factory, claim_class_hash, .. } = deploy_gifting_normal();
-    let amount = 10;
-    let max_fee = 5;
+    let gift_token = mock_eth.contract_address;
+    let gift_amount = 10;
+    let fee_token = mock_eth.contract_address;
+    let fee_amount = 5;
+
     start_cheat_caller_address(gift_factory.contract_address, DEPOSITOR());
-    gift_factory.deposit(10, 5, mock_eth.contract_address, CLAIM_PUB_KEY());
+    gift_factory.deposit(gift_token, 10, fee_token, 5, CLAIM_PUB_KEY());
 
     let claim_data = ClaimData {
         factory: gift_factory.contract_address,
         class_hash: claim_class_hash,
         sender: DEPOSITOR(),
-        amount,
-        max_fee,
-        token: mock_eth.contract_address,
+        gift_token,
+        gift_amount,
+        fee_token,
+        fee_amount,
         claim_pubkey: CLAIM_PUB_KEY(),
     };
     gift_factory.get_dust(claim_data, CLAIMER());
