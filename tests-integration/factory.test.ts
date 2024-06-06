@@ -28,6 +28,7 @@ describe("Factory", function () {
 
       // Ensure there is a contract for the claim
       const claimAddress = await factory.get_claim_address(
+        claimAccountClassHash,
         deployer.address,
         amount,
         maxFee,
@@ -94,6 +95,7 @@ describe("Factory", function () {
 
     // Ensure there is a contract for the claim
     const claimAddress = await factory.get_claim_address(
+      claimAccountClassHash,
       deployer.address,
       amount,
       maxFee,
@@ -130,7 +132,7 @@ describe("Factory", function () {
     await tokenContract.balance_of(claimAddress).should.eventually.equal(0n);
 
     factory.connect(claimAccount);
-    await expectRevertWithErrorMessage("gift-acc/gift-canceled", () => factory.claim_internal(claim, receiver));
+    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () => factory.claim_internal(claim, receiver));
   });
 
   it(`Test pausable`, async function () {
@@ -166,6 +168,7 @@ describe("Factory", function () {
 
     // Ensure there is a contract for the claim
     const claimAddress = await factory.get_claim_address(
+      claimAccountClassHash,
       deployer.address,
       amount,
       maxFee,

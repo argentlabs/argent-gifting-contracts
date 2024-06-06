@@ -2,10 +2,7 @@
 use core::hash::{HashStateTrait, HashStateExTrait, Hash};
 use core::poseidon::{PoseidonTrait, HashState};
 use openzeppelin::token::erc20::interface::IERC20Dispatcher;
-use starknet::{
-    ContractAddress, account::Call, contract_address::contract_address_const, info::v2::ResourceBounds,
-    call_contract_syscall
-};
+use starknet::{ContractAddress, account::Call, contract_address::contract_address_const, call_contract_syscall};
 
 pub const TX_V1: felt252 = 1; // INVOKE
 pub const TX_V1_ESTIMATE: felt252 = consteval_int!(0x100000000000000000000000000000000 + 1); // 2**128 + TX_V1
@@ -35,21 +32,6 @@ fn serialize<E, impl ESerde: Serde<E>>(value: @E) -> Array<felt252> {
     let mut output = array![];
     ESerde::serialize(value, ref output);
     output
-}
-
-
-fn compute_max_fee_v3(mut resource_bounds: Span<ResourceBounds>, tip: u128) -> u128 {
-    let mut max_fee: u128 = 0;
-    let mut max_tip: u128 = 0;
-    while let Option::Some(r) = resource_bounds
-        .pop_front() {
-            let max_resource_amount: u128 = (*r.max_amount).into();
-            max_fee += *r.max_price_per_unit * max_resource_amount;
-            if *r.resource == 'L2_GAS' {
-                max_tip += tip * max_resource_amount;
-            }
-        };
-    max_fee + max_tip
 }
 
 fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {

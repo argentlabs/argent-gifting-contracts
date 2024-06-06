@@ -34,7 +34,7 @@ fn deploy_gifting_broken_erc20() -> GiftingSetup {
     ];
     let (factory_contract_address, _) = factory_contract.deploy(@factory_calldata).expect('Failed to deploy factory');
     let gift_factory = IGiftFactoryDispatcher { contract_address: factory_contract_address };
-    assert(gift_factory.get_claim_class_hash() == claim_contract.class_hash, 'Incorrect factory setup');
+    assert(gift_factory.get_latest_claim_class_hash() == claim_contract.class_hash, 'Incorrect factory setup');
 
     GiftingSetup {
         mock_eth: broken_erc20, mock_strk: broken_erc20, gift_factory, claim_class_hash: claim_contract.class_hash
@@ -83,7 +83,7 @@ fn deploy_gifting_normal() -> GiftingSetup {
     ];
     let (factory_contract_address, _) = factory_contract.deploy(@factory_calldata).expect('Failed to deploy factory');
     let gift_factory = IGiftFactoryDispatcher { contract_address: factory_contract_address };
-    assert(gift_factory.get_claim_class_hash() == claim_contract.class_hash, 'Incorrect factory setup');
+    assert(gift_factory.get_latest_claim_class_hash() == claim_contract.class_hash, 'Incorrect factory setup');
 
     start_cheat_caller_address(mock_eth_address, OWNER());
     start_cheat_caller_address(mock_strk.contract_address, OWNER());
