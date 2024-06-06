@@ -15,7 +15,7 @@ trait IGiftFactory<TContractState> {
     fn cancel(ref self: TContractState, claim: ClaimData);
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
 
-    fn get_claim_class_hash(self: @TContractState) -> ClassHash;
+    fn get_latest_claim_class_hash(self: @TContractState) -> ClassHash;
     fn get_claim_address(
         self: @TContractState,
         class_hash: ClassHash,

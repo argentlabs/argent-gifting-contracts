@@ -75,12 +75,17 @@ fn test_claim_account_deployed() {
     // un-deployed claim account should return 0
     let fetched_claim_class_hash = get_class_hash(calculated_claim_address);
     assert(claim_class_hash == fetched_claim_class_hash, 'Claim account not deployed');
-    assert(claim_class_hash == gift_factory.get_claim_class_hash(), 'Incorrect claim class hash');
+    assert(claim_class_hash == gift_factory.get_latest_claim_class_hash(), 'Incorrect claim class hash');
 
     // Check that factory calculates claim address correctly
     let get_claim_address = gift_factory
         .get_claim_address(
-            claim_data.sender, claim_data.amount, claim_data.max_fee, claim_data.token, claim_data.claim_pubkey
+            claim_data.class_hash,
+            claim_data.sender,
+            claim_data.amount,
+            claim_data.max_fee,
+            claim_data.token,
+            claim_data.claim_pubkey
         );
     assert!(calculated_claim_address == get_claim_address, "Claim address not calculated correctly");
 }

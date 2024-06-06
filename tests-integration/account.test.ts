@@ -164,7 +164,7 @@ describe("Gifting", function () {
 
     // wrong selector
     factory.connect(claimAccount);
-    await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () => factory.get_claim_class_hash());
+    await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () => factory.get_latest_claim_class_hash());
 
     // multicall
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
