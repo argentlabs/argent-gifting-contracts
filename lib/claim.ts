@@ -56,14 +56,14 @@ export function buildClaim(
   giftAmount: bigint,
   giftMaxFee: bigint,
   tokenContract: Contract,
-  claimSigner: LegacyStarknetKeyPair,
+  claimPubkey: bigint,
 ): Claim {
   const constructorArgs: AccountConstructorArguments = {
     sender: deployer.address,
     amount: uint256.bnToUint256(giftAmount),
     max_fee: giftMaxFee,
     token: tokenContract.address,
-    claim_pubkey: claimSigner.publicKey,
+    claim_pubkey: claimPubkey,
   };
   return {
     factory: factory.address,
@@ -91,8 +91,9 @@ export async function claimExternal(
 export async function claimInternal(
   factory: Contract,
   tokenContract: Contract,
-  claimSigner: LegacyStarknetKeyPair,
-  giftPrivateKey = "0x42",
+  claimSignerPrivateKey: string,
+  claimSignerPublicKey: bigint,
+  receiverAddress = "0x42",
   useTxV3 = false,
   giftAmount = GIFT_AMOUNT,
   giftMaxFee = GIFT_MAX_FEE,
@@ -100,7 +101,7 @@ export async function claimInternal(
   claimAccount: Account;
   receiver: string;
 }> {
-  const receiver = giftPrivateKey || `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
+  const receiver = receiverAddress || `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
   const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
   const claimAddress = await factory.get_claim_address(
     claimAccountClassHash,
@@ -108,11 +109,11 @@ export async function claimInternal(
     giftAmount,
     giftMaxFee,
     tokenContract.address,
-    claimSigner.publicKey,
+    claimSignerPublicKey,
   );
-  const claim = buildClaim(factory, claimAccountClassHash, giftAmount, giftMaxFee, tokenContract, claimSigner);
+  const claim = buildClaim(factory, claimAccountClassHash, giftAmount, giftMaxFee, tokenContract, claimSignerPublicKey);
   const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), claimSigner, undefined, txVersion);
+  const claimAccount = new Account(manager, num.toHex(claimAddress), claimSignerPrivateKey, undefined, txVersion);
   factory.connect(claimAccount);
   await factory.claim_internal(claim, receiver);
   return { claimAccount, receiver };

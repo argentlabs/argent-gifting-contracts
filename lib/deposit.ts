@@ -59,7 +59,14 @@ export async function defaultDepositTestSetup(
     factory.address,
   );
 
-  const claim = buildClaim(factory, claimAccountClassHash, giftAmount, giftMaxFee, tokenContract, claimSigner);
+  const claim = buildClaim(
+    factory,
+    claimAccountClassHash,
+    giftAmount,
+    giftMaxFee,
+    tokenContract,
+    claimSigner.publicKey,
+  );
 
   const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), claimSigner, undefined, txVersion);
