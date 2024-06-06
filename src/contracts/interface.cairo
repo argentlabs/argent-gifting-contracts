@@ -10,6 +10,13 @@ trait IAccount<TContractState> {
 #[starknet::interface]
 trait IGiftFactory<TContractState> {
     fn deposit(ref self: TContractState, amount: u256, max_fee: u128, token: ContractAddress, claim_pubkey: felt252);
+
+    fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
+    fn claim_external(ref self: TContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>);
+    fn cancel(ref self: TContractState, claim: ClaimData);
+    fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
+
+    fn get_claim_class_hash(self: @TContractState) -> ClassHash;
     fn get_claim_address(
         self: @TContractState,
         class_hash: ClassHash,
@@ -19,15 +26,6 @@ trait IGiftFactory<TContractState> {
         token: ContractAddress,
         claim_pubkey: felt252
     ) -> ContractAddress;
-    fn get_claim_class_hash(ref self: TContractState) -> ClassHash;
-
-    fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
-
-    fn claim_external(ref self: TContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>);
-
-    fn cancel(ref self: TContractState, claim: ClaimData);
-
-    fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
 }
 
 #[starknet::interface]
