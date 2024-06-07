@@ -23,9 +23,10 @@ describe("Factory", function () {
     const claimAddress = await factory.get_claim_address(
       claim.class_hash,
       deployer.address,
-      GIFT_AMOUNT,
-      GIFT_MAX_FEE,
-      claim.token,
+      claim.gift_token,
+      claim.gift_amount,
+      claim.fee_token,
+      claim.fee_amount,
       claim.claim_pubkey,
     );
 
@@ -41,7 +42,7 @@ describe("Factory", function () {
 
       await claimInternal(claim, receiver, claimPrivateKey);
       const claimAddress = calculateClaimAddress(claim);
-      const token = await manager.loadContract(claim.token);
+      const token = await manager.loadContract(claim.gift_token);
 
       // Final check
 
@@ -63,7 +64,7 @@ describe("Factory", function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-    const token = await manager.loadContract(claim.token);
+    const token = await manager.loadContract(claim.gift_token);
     const claimAddress = calculateClaimAddress(claim);
 
     const balanceSenderBefore = await token.balance_of(deployer.address);
@@ -73,7 +74,7 @@ describe("Factory", function () {
     // Check balance of the sender is correct
     await token
       .balance_of(deployer.address)
-      .should.eventually.equal(balanceSenderBefore + claim.amount + claim.max_fee - txFee);
+      .should.eventually.equal(balanceSenderBefore + claim.gift_amount + claim.fee_amount - txFee);
     // Check balance claim address address == 0
     await token.balance_of(claimAddress).should.eventually.equal(0n);
 
@@ -100,7 +101,7 @@ describe("Factory", function () {
     factory.connect(deployer);
     await factory.pause();
     await expectRevertWithErrorMessage("Pausable: paused", () =>
-      factory.deposit(GIFT_AMOUNT, GIFT_MAX_FEE, tokenContract.address, claimSigner.publicKey),
+      factory.deposit(tokenContract.address, GIFT_AMOUNT, tokenContract.address, GIFT_MAX_FEE, claimSigner.publicKey),
     );
 
     await factory.unpause();

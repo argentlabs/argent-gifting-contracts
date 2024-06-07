@@ -38,9 +38,10 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
 
 export interface AccountConstructorArguments {
   sender: string;
-  amount: bigint;
-  max_fee: bigint;
-  token: string;
+  gift_token: string;
+  gift_amount: bigint;
+  fee_token: string;
+  fee_amount: bigint;
   claim_pubkey: bigint;
 }
 
@@ -52,7 +53,7 @@ export interface Claim extends AccountConstructorArguments {
 export function buildCallDataClaim(claim: Claim) {
   return {
     ...claim,
-    amount: uint256.bnToUint256(claim.amount),
+    gift_amount: uint256.bnToUint256(claim.gift_amount),
   };
 }
 
@@ -84,7 +85,7 @@ export async function claimInternal(
 ): Promise<TransactionReceipt> {
   const claimAddress = calculateClaimAddress(claim);
 
-  const txVersion = useTxv3(claim.token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
+  const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), claimSignerPrivateKey, undefined, txVersion);
   return (await claimAccount.execute(
     [

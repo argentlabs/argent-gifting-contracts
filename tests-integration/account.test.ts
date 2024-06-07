@@ -6,6 +6,7 @@ import {
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
+  deployer,
   expectRevertWithErrorMessage,
   manager,
   randomReceiver,
@@ -18,14 +19,14 @@ describe("Gifting", function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, useTxV3);
       const receiver = randomReceiver();
-      await claimInternal(claim, receiver, claimPrivateKey);
-
       const claimAddress = calculateClaimAddress(claim);
 
-      const token = await manager.loadContract(claim.token);
+      await claimInternal(claim, receiver, claimPrivateKey);
+
+      const token = await manager.loadContract(claim.gift_token);
       const finalBalance = await token.balance_of(claimAddress);
-      expect(finalBalance < claim.max_fee).to.be.true;
-      await token.balance_of(receiver).should.eventually.equal(claim.amount);
+      expect(finalBalance < claim.fee_amount).to.be.true;
+      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
     });
 
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
@@ -74,33 +75,31 @@ describe("Gifting", function () {
     await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
   });
 
-  // it.only(`Test claim contract cant call another contract`, async function () {
-  //   const { factory, claimAccountClassHash } = await setupGiftProtocol();
-  //   const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
-  //   const receiver = randomReceiver();
+  it.only(`Test claim contract cant call another contract`, async function () {
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
 
-  //   const fakeFactory = await manager.deployContract("GiftFactory", {
-  //     unique: true,
-  //     constructorCalldata: [claimAccountClassHash, deployer.address],
-  //   });
+    const fakeFactory = await manager.deployContract("GiftFactory", {
+      unique: true,
+      constructorCalldata: [claimAccountClassHash, deployer.address],
+    });
 
-  //   const fakeClaim = { ...claim, factory: fakeFactory.address };
-  //   const claimAddress = calculateClaimAddress(claim);
+    const claimAddress = calculateClaimAddress(claim);
 
-  //   const claimAccount = new Account(
-  //     manager,
-  //     num.toHex(claimAddress),
-  //     claimPrivateKey,
-  //     undefined,
-  //     RPC.ETransactionVersion.V2,
-  //   );
-  //   fakeFactory.connect(claimAccount);
-  //   await fakeFactory.claim_internal(buildCallDataClaim(fakeClaim), receiver, { maxFee: 400000000000000n });
+    const claimAccount = new Account(
+      manager,
+      num.toHex(claimAddress),
+      claimPrivateKey,
+      undefined,
+      RPC.ETransactionVersion.V2,
+    );
+    fakeFactory.connect(claimAccount);
 
-  //   // await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
-  //   //   claimInternal(fakeClaim, receiver, claimPrivateKey),
-  //   // );
-  // });
+    await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
+      fakeFactory.claim_internal(buildCallDataClaim(claim), receiver, { maxFee: 400000000000000n }),
+    );
+  });
 
   it(`Test claim contract can only call 'claim_internal'`, async function () {
     const { factory } = await setupGiftProtocol();
