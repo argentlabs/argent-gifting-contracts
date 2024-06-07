@@ -50,6 +50,7 @@ mod GiftFactory {
         timelock_upgrade: TimelockUpgradeComponent::Storage,
         claim_class_hash: ClassHash,
     }
+
     #[derive(Drop, Copy)]
     struct TransferFromAccount {
         token: ContractAddress,
@@ -118,6 +119,7 @@ mod GiftFactory {
             self.pausable.assert_not_paused();
             assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
             if gift_token == fee_token {
+                // This is needed so we can tell if an gift has been claimed or not just by looking at the balances
                 assert(fee_amount.into() < gift_amount, 'gift-fac/fee-too-high');
             }
 
@@ -220,11 +222,10 @@ mod GiftFactory {
             self.ownable.assert_only_owner();
             let claim_address = self.check_claim_and_get_account_address(claim);
             let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
+            assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
             if claim.gift_token == claim.fee_token {
-                assert(gift_balance < claim.fee_amount.into(), 'gift/not-yet-claimed');
                 self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, receiver);
             } else {
-                assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
                 let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
                 self.transfer_from_account(claim, claim_address, claim.fee_token, fee_balance, claim.sender);
             }
