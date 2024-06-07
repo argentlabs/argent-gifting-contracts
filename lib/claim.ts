@@ -1,4 +1,15 @@
-import { Account, CallData, Contract, RPC, Uint256, ec, encode, hash, num, shortString, uint256 } from "starknet";
+import {
+  Account,
+  CallData,
+  Contract,
+  RPC,
+  TransactionReceipt,
+  Uint256,
+  hash,
+  num,
+  shortString,
+  uint256,
+} from "starknet";
 import { LegacyStarknetKeyPair, deployer, manager } from ".";
 import { GIFT_AMOUNT, GIFT_MAX_FEE } from "./deposit";
 
@@ -76,9 +87,9 @@ export async function claimExternal(
   factory: Contract,
   receiver: string,
   claim: Claim,
-  giftSigner: LegacyStarknetKeyPair,
+  giftPrivateKey: string,
   account = deployer,
-): Promise<string> {
+): Promise<TransactionReceipt> {
   const constructorArgs: AccountConstructorArguments = {
     sender: deployer.address,
     amount: claim.amount,
@@ -93,12 +104,12 @@ export async function claimExternal(
     factory.address,
   );
 
+  const giftSigner = new LegacyStarknetKeyPair(giftPrivateKey);
   const claimExternalData = await getClaimExternalData({ receiver });
   const signature = await giftSigner.signMessage(claimExternalData, claimAccountAddress);
 
   factory.connect(account);
-  const { transaction_hash } = await factory.claim_external(claim, receiver, signature);
-  return transaction_hash;
+  return await factory.claim_external(claim, receiver, signature);
 }
 
 export async function claimInternal(
@@ -106,15 +117,11 @@ export async function claimInternal(
   tokenContract: Contract,
   claimSignerPrivateKey: string,
   claimSignerPublicKey: bigint,
-  receiverAddress = "0x42",
+  receiver = "0x42",
   useTxV3 = false,
   giftAmount = GIFT_AMOUNT,
   giftMaxFee = GIFT_MAX_FEE,
-): Promise<{
-  claimAccount: Account;
-  receiver: string;
-}> {
-  const receiver = receiverAddress || `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
+): Promise<TransactionReceipt> {
   const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
   const claimAddress = await factory.get_claim_address(
     claimAccountClassHash,
@@ -128,6 +135,5 @@ export async function claimInternal(
   const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), claimSignerPrivateKey, undefined, txVersion);
   factory.connect(claimAccount);
-  await factory.claim_internal(claim, receiver);
-  return { claimAccount, receiver };
+  return await factory.claim_internal(claim, receiver);
 }

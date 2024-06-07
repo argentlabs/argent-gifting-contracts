@@ -1,5 +1,5 @@
-import { Account, CallData, Contract, RPC, ec, encode, hash, num, uint256 } from "starknet";
-import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, buildClaim, deployer, manager } from "./";
+import { CallData, Contract, hash, uint256 } from "starknet";
+import { AccountConstructorArguments, LegacyStarknetKeyPair, deployer, manager } from "./";
 
 export const GIFT_AMOUNT = 1000000000000000n;
 export const GIFT_MAX_FEE = 50000000000000n;
@@ -24,21 +24,18 @@ export async function deposit(
 export async function defaultDepositTestSetup(
   factory: Contract,
   useTxV3 = false,
-  forcedGiftPrivateKey = false,
+  giftPrivateKey?: string,
   giftAmount = GIFT_AMOUNT,
   giftMaxFee = GIFT_MAX_FEE,
 ): Promise<{
-  claimAccount: Account;
+  claimAddress: string;
   tokenContract: Contract;
   claimSigner: LegacyStarknetKeyPair;
-  claim: Claim;
-  receiver: string;
 }> {
   const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
 
-  // static signer / receiver for gas profiling
-  const receiver = forcedGiftPrivateKey ? "0x42" : `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
-  const claimSigner = new LegacyStarknetKeyPair(forcedGiftPrivateKey ? "0x42" : undefined);
+  // static signer  for gas profiling
+  const claimSigner = new LegacyStarknetKeyPair(giftPrivateKey || "0x42");
   const claimPubKey = claimSigner.publicKey;
   await deposit(factory, tokenContract, claimPubKey);
 
@@ -59,17 +56,5 @@ export async function defaultDepositTestSetup(
     factory.address,
   );
 
-  const claim = buildClaim(
-    factory,
-    claimAccountClassHash,
-    giftAmount,
-    giftMaxFee,
-    tokenContract,
-    claimSigner.publicKey,
-  );
-
-  const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), claimSigner, undefined, txVersion);
-  factory.connect(claimAccount);
-  return { claimAccount, tokenContract, claimSigner, claim, receiver };
+  return { claimAddress, tokenContract, claimSigner };
 }

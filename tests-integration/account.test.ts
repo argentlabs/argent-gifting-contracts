@@ -3,6 +3,7 @@ import { num } from "starknet";
 import {
   GIFT_AMOUNT,
   GIFT_MAX_FEE,
+  claimInternal,
   defaultDepositTestSetup,
   deployer,
   expectRevertWithErrorMessage,
@@ -14,10 +15,11 @@ describe("Gifting", function () {
   for (const useTxV3 of [false, true]) {
     it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, receiver, claimAccount, tokenContract } = await defaultDepositTestSetup(factory);
-      await factory.claim_internal(claim, receiver);
+      const { tokenContract, claimSigner, claimAddress } = await defaultDepositTestSetup(factory);
+      const receiver = `0x2${Math.floor(Math.random() * 1000)}`;
+      await claimInternal(factory, tokenContract, claimSigner.privateKey, claimSigner.publicKey, receiver, useTxV3);
 
-      const finalBalance = await tokenContract.balance_of(claimAccount.address);
+      const finalBalance = await tokenContract.balance_of(claimAddress);
       expect(finalBalance < GIFT_MAX_FEE).to.be.true;
       await tokenContract.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
     });
