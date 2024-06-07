@@ -290,7 +290,6 @@ mod GiftFactory {
             calculate_claim_account_address(claim)
         }
 
-
         fn transfer_from_account(
             self: @ContractState,
             claim: ClaimData,
