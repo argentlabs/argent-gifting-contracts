@@ -3,7 +3,7 @@ use starknet::ContractAddress;
 use starknet_gifting::contracts::interface::{ClaimData, AccountConstructorArguments};
 use starknet_gifting::contracts::utils::serialize;
 
-fn calculate_claim_account_address(claim: ClaimData) -> ContractAddress {
+pub fn calculate_claim_account_address(claim: ClaimData) -> ContractAddress {
     let constructor_arguments = AccountConstructorArguments {
         sender: claim.sender,
         amount: claim.amount,

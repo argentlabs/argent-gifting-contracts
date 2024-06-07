@@ -3,7 +3,7 @@ use starknet::{ContractAddress, get_tx_info, get_contract_address};
 use starknet_gifting::contracts::interface::ClaimData;
 
 /// @notice Defines the function to generate the SNIP-12 revision 1 compliant message hash
-trait IOffChainMessageHashRev1<T> {
+pub trait IOffChainMessageHashRev1<T> {
     fn get_message_hash_rev_1(self: @T, account: ContractAddress) -> felt252;
 }
 
@@ -22,8 +22,8 @@ struct StarknetDomain {
 }
 
 #[derive(Drop, Copy)]
-struct ClaimExternal {
-    receiver: ContractAddress
+pub struct ClaimExternal {
+    pub receiver: ContractAddress
 }
 
 const STARKNET_DOMAIN_TYPE_HASH_REV_1: felt252 =

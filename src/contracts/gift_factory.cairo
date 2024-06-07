@@ -4,7 +4,9 @@ mod GiftFactory {
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::PausableComponent;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
-    use starknet::{ClassHash, ContractAddress, deploy_syscall, get_caller_address, get_contract_address, account::Call};
+    use starknet::{
+        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call
+    };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::claim_utils::{calculate_claim_account_address};
 
