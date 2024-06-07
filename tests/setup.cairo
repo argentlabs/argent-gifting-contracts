@@ -9,14 +9,14 @@ use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
 
 use super::constants::{OWNER, DEPOSITOR, CLAIMER};
 
-struct GiftingSetup {
-    mock_eth: IERC20Dispatcher,
-    mock_strk: IERC20Dispatcher,
-    gift_factory: IGiftFactoryDispatcher,
-    claim_class_hash: ClassHash,
+pub struct GiftingSetup {
+    pub mock_eth: IERC20Dispatcher,
+    pub mock_strk: IERC20Dispatcher,
+    pub gift_factory: IGiftFactoryDispatcher,
+    pub claim_class_hash: ClassHash,
 }
 
-fn deploy_gifting_broken_erc20() -> GiftingSetup {
+pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
     let broken_erc20 = declare("BrokenERC20").expect('Failed to declare broken ERC20');
     let mut broken_erc20_calldata: Array<felt252> = array![];
     let (broken_erc20_address, _) = broken_erc20
@@ -41,7 +41,7 @@ fn deploy_gifting_broken_erc20() -> GiftingSetup {
     }
 }
 
-fn deploy_gifting_normal() -> GiftingSetup {
+pub fn deploy_gifting_normal() -> GiftingSetup {
     let erc20_supply = 1_000_000_000_000_000_000_u256;
 
     let mock_erc20 = declare("MockERC20").expect('Failed to declare ERC20');
