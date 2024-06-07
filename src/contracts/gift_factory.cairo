@@ -1,6 +1,3 @@
-use starknet::{ContractAddress, account::Call};
-use starknet_gifting::contracts::utils::{serialize};
-
 #[starknet::contract]
 mod GiftFactory {
     use core::array::ArrayTrait;
@@ -20,7 +17,6 @@ mod GiftFactory {
     };
     use starknet_gifting::contracts::timelock_upgrade::TimelockUpgradeComponent;
     use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize};
-    use super::build_transfer_call;
 
     // Ownable 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -311,10 +307,9 @@ mod GiftFactory {
             mut transfers: Span<TransferFromAccount>,
         ) {
             let mut calls: Array<Call> = array![];
-            while let Option::Some(transfer) = transfers
-                .pop_front() {
-                    calls.append(build_transfer_call(*transfer.token, *transfer.amount, *transfer.receiver));
-                };
+            while let Option::Some(transfer) = transfers.pop_front() {
+                calls.append((*transfer).into());
+            };
             let calls_len = calls.len();
 
             let mut results = IGiftAccountDispatcher { contract_address: claim_address }
@@ -327,8 +322,14 @@ mod GiftFactory {
                 }
         }
     }
-}
 
-fn build_transfer_call(token: ContractAddress, amount: u256, receiver: ContractAddress,) -> Call {
-    Call { to: token, selector: selector!("transfer"), calldata: serialize(@(receiver, amount)).span() }
+    impl TransferFromAccountIntoCall of Into<TransferFromAccount, Call> {
+        fn into(self: TransferFromAccount) -> Call {
+            Call {
+                to: self.token,
+                selector: selector!("transfer"),
+                calldata: array![self.receiver.into(), self.amount.low.into(), self.amount.high.into()].span()
+            }
+        }
+    }
 }
