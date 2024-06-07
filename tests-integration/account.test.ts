@@ -75,7 +75,7 @@ describe("Gifting", function () {
     await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
   });
 
-  it.only(`Test claim contract cant call another contract`, async function () {
+  it(`Test claim contract cant call another contract`, async function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
