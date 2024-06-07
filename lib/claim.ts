@@ -100,11 +100,7 @@ export async function claimInternal(
   )) as TransactionReceipt;
 }
 
-export const randomReceiver = (): string => {
-  return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
-};
-
-export function useTxv3(tokenAddress: string): boolean {
+function useTxv3(tokenAddress: string): boolean {
   if (tokenAddress === ethAddress) {
     return false;
   } else if (tokenAddress === strkAddress) {
@@ -112,3 +108,7 @@ export function useTxv3(tokenAddress: string): boolean {
   }
   throw new Error(`Unsupported token`);
 }
+
+export const randomReceiver = (): string => {
+  return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
+};
