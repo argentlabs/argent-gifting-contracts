@@ -1,7 +1,8 @@
 import { expect } from "chai";
-import { num } from "starknet";
+import { Account, RPC, num } from "starknet";
 import {
   GIFT_MAX_FEE,
+  buildCallDataClaim,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
@@ -56,69 +57,103 @@ describe("Gifting", function () {
     });
   }
 
-  // it(`Test only protocol can call claim contract`, async function () {
-  //   const { factory } = await setupGiftProtocol();
+  it(`Test only protocol can call claim contract`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+
+    const claimAddress = calculateClaimAddress(claim);
+
+    const claimAccount = new Account(
+      manager,
+      num.toHex(claimAddress),
+      claimPrivateKey,
+      undefined,
+      RPC.ETransactionVersion.V2,
+    );
+    const claimContract = await manager.loadContract(claimAddress);
+    claimContract.connect(claimAccount);
+    await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
+  });
+
+  // it.only(`Test claim contract cant call another contract`, async function () {
+  //   const { factory, claimAccountClassHash } = await setupGiftProtocol();
   //   const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
   //   const receiver = randomReceiver();
 
-  //   await expectRevertWithErrorMessage("gift-acc/only-protocol", () =>
-  //     claimInternal(factory, tokenContract, claimClassHash, claimPrivateKey, receiver),
+  //   const fakeFactory = await manager.deployContract("GiftFactory", {
+  //     unique: true,
+  //     constructorCalldata: [claimAccountClassHash, deployer.address],
+  //   });
+
+  //   const fakeClaim = { ...claim, factory: fakeFactory.address };
+  //   const claimAddress = calculateClaimAddress(claim);
+
+  //   const claimAccount = new Account(
+  //     manager,
+  //     num.toHex(claimAddress),
+  //     claimPrivateKey,
+  //     undefined,
+  //     RPC.ETransactionVersion.V2,
   //   );
+  //   fakeFactory.connect(claimAccount);
+  //   await fakeFactory.claim_internal(buildCallDataClaim(fakeClaim), receiver, { maxFee: 400000000000000n });
+
+  //   // await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
+  //   //   claimInternal(fakeClaim, receiver, claimPrivateKey),
+  //   // );
   // });
 
-  // it(`Test claim contract cant call another contract`, async function () {
-  //   const { factory } = await setupGiftProtocol();
-  //   const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
-  //   const receiver = randomReceiver();
+  it(`Test claim contract can only call 'claim_internal'`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
 
-  //   const claimFakeFactory = { ...claim, factory: "0x123" };
-  //   await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
-  //     claimInternal(claimFakeFactory, claimPrivateKey, receiver),
-  //   );
-  // });
+    const claimAddress = calculateClaimAddress(claim);
 
-  // it(`Test claim contract can only call 'claim_internal'`, async function () {
-  //   const { factory } = await setupGiftProtocol();
-  //   const { tokenContract, claimAddress, claimClassHash, claimPrivateKey } = await defaultDepositTestSetup(factory);
-  //   const receiver = randomReceiver();
+    const claimAccount = new Account(
+      manager,
+      num.toHex(claimAddress),
+      claimPrivateKey,
+      undefined,
+      RPC.ETransactionVersion.V2,
+    );
 
-  //   const claimAccount = new Account(manager, num.toHex(claimAddress), claimPrivateKey, undefined);
+    factory.connect(claimAccount);
+    await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
+      factory.get_dust(claim, receiver, { maxFee: 400000000000000n }),
+    );
+  });
 
-  //   let claim = buildClaim(
-  //     factory,
-  //     claimAccountClassHash,
-  //     GIFT_AMOUNT,
-  //     GIFT_MAX_FEE,
-  //     tokenContract,
-  //     claimSigner.publicKey,
-  //   );
+  it(`Test claim contract cant preform a multicall`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
 
-  //   factory.connect(claimAccount);
-  //   await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
-  //     factory.get_dust(claim, receiver, { maxFee: 400000000000000n }),
-  //   );
-  // });
+    const claimAddress = calculateClaimAddress(claim);
 
-  // it(`Test claim contract cant preform a multicall`, async function () {
-  //   const { factory } = await setupGiftProtocol();
-  //   const { tokenContract, claimSigner } = await defaultDepositTestSetup(factory);
-  //   const receiver = randomReceiver();
+    const claimAccount = new Account(
+      manager,
+      num.toHex(claimAddress),
+      claimPrivateKey,
+      undefined,
+      RPC.ETransactionVersion.V2,
+    );
 
-  //   await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
-  //     claimAccount.execute([
-  //       {
-  //         contractAddress: factory.address,
-  //         calldata: [claim, receiver],
-  //         entrypoint: "claim_internal",
-  //       },
-  //       {
-  //         contractAddress: factory.address,
-  //         calldata: [claim, receiver],
-  //         entrypoint: "claim_internal",
-  //       },
-  //     ]),
-  //   );
-  // });
+    await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
+      claimAccount.execute([
+        {
+          contractAddress: factory.address,
+          calldata: [buildCallDataClaim(claim), receiver],
+          entrypoint: "claim_internal",
+        },
+        {
+          contractAddress: factory.address,
+          calldata: [buildCallDataClaim(claim), receiver],
+          entrypoint: "claim_internal",
+        },
+      ]),
+    );
+  });
 
   it(`Test cannot call 'claim_internal' twice`, async function () {
     const { factory } = await setupGiftProtocol();
