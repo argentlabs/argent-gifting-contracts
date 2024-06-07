@@ -82,7 +82,7 @@ describe("Factory", function () {
     );
   });
 
-  it.only(`Test pausable`, async function () {
+  it(`Test pausable`, async function () {
     // Deploy factory
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
