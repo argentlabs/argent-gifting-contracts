@@ -1,7 +1,8 @@
 #[starknet::component]
-mod TimelockUpgradeComponent {
+pub mod TimelockUpgradeComponent {
+    use core::num::traits::Zero;
     use openzeppelin::access::ownable::{OwnableComponent, OwnableComponent::InternalTrait};
-    use starknet::{get_block_timestamp, Zeroable, ClassHash};
+    use starknet::{get_block_timestamp, ClassHash};
     use starknet_gifting::contracts::interface::{
         ITimelockUpgrade, ITimelockUpgradeCallback, ITimelockUpgradeCallbackLibraryDispatcher,
         ITimelockUpgradeCallbackDispatcherTrait
@@ -13,14 +14,14 @@ mod TimelockUpgradeComponent {
     const VALID_WINDOW_PERIOD: u64 = 604800; // 7 * 24 * 60 * 60;  // 7 days
 
     #[storage]
-    struct Storage {
+    pub struct Storage {
         pending_implementation: ClassHash,
         ready_at: u64,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         UpgradeProposed: UpgradeProposed,
         UpgradeCancelled: UpgradeCancelled,
         Upgraded: Upgraded,
@@ -99,7 +100,7 @@ mod TimelockUpgradeComponent {
         }
 
         fn reset_storage(ref self: ComponentState<TContractState>) {
-            self.pending_implementation.write(Zeroable::zero());
+            self.pending_implementation.write(Zero::zero());
             self.ready_at.write(0);
         }
     }

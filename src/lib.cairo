@@ -1,11 +1,11 @@
-mod contracts {
+pub mod contracts {
     mod claim_account;
     mod claim_hash;
-    mod claim_utils;
+    pub mod claim_utils;
     mod gift_factory;
-    mod interface;
+    pub mod interface;
     mod timelock_upgrade;
-    mod utils;
+    pub mod utils;
 }
 
 mod mocks {

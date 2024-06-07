@@ -2,7 +2,9 @@
 use core::hash::{HashStateTrait, HashStateExTrait, Hash};
 use core::poseidon::{PoseidonTrait, HashState};
 use openzeppelin::token::erc20::interface::IERC20Dispatcher;
-use starknet::{ContractAddress, account::Call, contract_address::contract_address_const, call_contract_syscall};
+use starknet::{
+    ContractAddress, account::Call, contract_address::contract_address_const, syscalls::call_contract_syscall
+};
 
 pub const TX_V1: felt252 = 1; // INVOKE
 pub const TX_V1_ESTIMATE: felt252 = consteval_int!(0x100000000000000000000000000000000 + 1); // 2**128 + TX_V1
@@ -19,7 +21,7 @@ pub fn ETH_ADDRESS() -> ContractAddress {
 
 // Tries to deserialize the given data into.
 // The data must only contain the returned value and nothing else
-fn full_deserialize<E, impl ESerde: Serde<E>, impl EDrop: Drop<E>>(mut data: Span<felt252>) -> Option<E> {
+pub fn full_deserialize<E, impl ESerde: Serde<E>, impl EDrop: Drop<E>>(mut data: Span<felt252>) -> Option<E> {
     let parsed_value: E = ESerde::deserialize(ref data)?;
     if data.is_empty() {
         Option::Some(parsed_value)
@@ -28,13 +30,13 @@ fn full_deserialize<E, impl ESerde: Serde<E>, impl EDrop: Drop<E>>(mut data: Spa
     }
 }
 
-fn serialize<E, impl ESerde: Serde<E>>(value: @E) -> Array<felt252> {
+pub fn serialize<E, impl ESerde: Serde<E>>(value: @E) -> Array<felt252> {
     let mut output = array![];
     ESerde::serialize(value, ref output);
     output
 }
 
-fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {
+pub fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {
     let mut result = array![];
     let mut index = 0;
     while let Option::Some(call) = calls

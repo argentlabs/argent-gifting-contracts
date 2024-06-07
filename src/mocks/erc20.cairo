@@ -59,7 +59,7 @@ mod MockERC20 {
 mod BrokenERC20 {
     use openzeppelin::token::erc20::interface::IERC20;
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
-    use starknet::{info::{get_caller_address}, ContractAddress};
+    use starknet::{get_caller_address, ContractAddress};
 
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
