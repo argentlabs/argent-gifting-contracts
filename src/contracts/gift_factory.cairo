@@ -57,6 +57,7 @@ mod GiftFactory {
         TimelockUpgradeEvent: TimelockUpgradeComponent::Event,
         GiftCreated: GiftCreated,
         GiftClaimed: GiftClaimed,
+        GiftClaimedExternal: GiftClaimedExternal,
         GiftCanceled: GiftCanceled,
     }
 
@@ -75,7 +76,6 @@ mod GiftFactory {
         token: ContractAddress,
     }
 
-    // TODO Do we need a different event for external claims?
     #[derive(Drop, starknet::Event)]
     struct GiftClaimed {
         #[key]
@@ -83,9 +83,13 @@ mod GiftFactory {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GiftCanceled {}
+    struct GiftClaimedExternal {
+        #[key]
+        receiver: ContractAddress
+    }
 
-    // TODO replace all fields with NonZero<T>
+    #[derive(Drop, starknet::Event)]
+    struct GiftCanceled {}
 
     #[constructor]
     fn constructor(ref self: ContractState, claim_class_hash: ClassHash, owner: ContractAddress) {
@@ -104,7 +108,7 @@ mod GiftFactory {
 
             let sender = get_caller_address();
             let factory = get_contract_address();
-            // TODO We could manually serialize for better performance
+            // TODO We could manually serialize for better performance but then we loose the type safety
             let class_hash = self.claim_class_hash.read();
             let constructor_arguments = AccountConstructorArguments { sender, amount, max_fee, token, claim_pubkey };
             let (claim_contract, _) = deploy_syscall(
@@ -147,7 +151,7 @@ mod GiftFactory {
             let balance = IERC20Dispatcher { contract_address: claim.token }.balance_of(claim_address);
             assert(balance >= claim.amount, 'gift/already-claimed-or-cancel');
             self.transfer_from_account(claim, claim_address, claim.token, balance, receiver);
-            self.emit(GiftClaimed { receiver });
+            self.emit(GiftClaimedExternal { receiver });
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
