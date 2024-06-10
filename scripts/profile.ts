@@ -3,6 +3,7 @@ import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
+// TODO Add possibility to "mix" gift_token and fee_token 
 
 const profiler = newProfiler(manager);
 
@@ -29,16 +30,17 @@ for (const useTxV3 of [false, true]) {
   await tokenContract.approve(factory.address, amount + maxFee);
   await profiler.profile(
     `Deposit (txV3: ${useTxV3})`,
-    await factory.deposit(amount, maxFee, tokenContract.address, claimPubkey),
+    await factory.deposit(tokenContract.address, amount, tokenContract.address, maxFee, claimPubkey),
   );
 
   // Ensure there is a contract for the claim
   const claimAddress = await factory.get_claim_address(
     claimAccountClassHash,
     deployer.address,
-    amount,
-    maxFee,
     tokenContract.address,
+    amount,
+    tokenContract.address,
+    maxFee,
     claimPubkey,
   );
 
@@ -46,9 +48,10 @@ for (const useTxV3 of [false, true]) {
     factory: factory.address,
     class_hash: claimAccountClassHash,
     sender: deployer.address,
-    amount: uint256.bnToUint256(amount),
-    max_fee: maxFee,
-    token: tokenContract.address,
+    gift_token: tokenContract.address,
+    gift_amount: uint256.bnToUint256(amount),
+    fee_token: tokenContract.address,
+    fee_amount: maxFee,
     claim_pubkey: claimPubkey,
   };
 
