@@ -16,49 +16,78 @@ const factory = await manager.deployContract("GiftFactory", {
   constructorCalldata: [claimAccountClassHash, deployer.address],
 });
 
-for (const useTxV3 of [false, true]) {
-  const signer = new LegacyStarknetKeyPair(12n);
-  const claimPubkey = signer.publicKey;
-  const amount = 1000000000000000n;
-  const maxFee = 50000000000000n;
-  const receiver = "0x42";
+const ethContract = await manager.tokens.ethContract();
+const strkContract = await manager.tokens.strkContract();
 
-  // Make a gift
-  const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
-  await profiler.profile(
-    `Deposit (txV3: ${useTxV3})`,
-    await deployer.execute([
-      tokenContract.populateTransaction.approve(factory.address, amount + maxFee),
-      factory.populateTransaction.deposit(tokenContract.address, amount, tokenContract.address, maxFee, claimPubkey),
-    ]),
-  );
+const tokens = [
+  { giftTokenContract: ethContract, unit: "WEI" },
+  { giftTokenContract: strkContract, unit: "FRI" },
+];
 
-  // Ensure there is a contract for the claim
-  const claimAddress = await factory.get_claim_address(
-    claimAccountClassHash,
-    deployer.address,
-    tokenContract.address,
-    amount,
-    tokenContract.address,
-    maxFee,
-    claimPubkey,
-  );
+for (const { giftTokenContract, unit } of tokens) {
+  for (const useTxV3 of [false, true]) {
+    const signer = new LegacyStarknetKeyPair(12n);
+    const claimPubkey = signer.publicKey;
+    const amount = 1000000000000000n;
+    const maxFee = 50000000000000n;
+    await manager.mint(deployer.address, amount, unit);
+    await manager.mint(deployer.address, maxFee, manager.tokens.unitTokenContract(useTxV3));
+    const receiver = "0x42";
 
-  const claim = {
-    factory: factory.address,
-    class_hash: claimAccountClassHash,
-    sender: deployer.address,
-    gift_token: tokenContract.address,
-    gift_amount: uint256.bnToUint256(amount),
-    fee_token: tokenContract.address,
-    fee_amount: maxFee,
-    claim_pubkey: claimPubkey,
-  };
+    // Make a gift
+    const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
+    console.log(`${giftTokenContract.address} ${feeTokenContract.address}`);
+    const calls = [];
+    if (giftTokenContract.address === feeTokenContract.address) {
+      calls.push(giftTokenContract.populateTransaction.approve(factory.address, amount + maxFee));
+    } else {
+      calls.push(giftTokenContract.populateTransaction.approve(factory.address, amount));
+      calls.push(feeTokenContract.populateTransaction.approve(factory.address, maxFee));
+    }
+    calls.push(
+      factory.populateTransaction.deposit(
+        giftTokenContract.address,
+        amount,
+        feeTokenContract.address,
+        maxFee,
+        claimPubkey,
+      ),
+    );
+    await profiler.profile(
+      `Deposit ${unit} (fee: ${manager.tokens.unitTokenContract(useTxV3)})`,
+      await deployer.execute(calls),
+    );
 
-  const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), signer, undefined, txVersion);
-  factory.connect(claimAccount);
-  await profiler.profile(`Claim (txV3: ${useTxV3})`, await factory.claim_internal(claim, receiver));
+    // Ensure there is a contract for the claim
+    const claimAddress = await factory.get_claim_address(
+      claimAccountClassHash,
+      deployer.address,
+      giftTokenContract.address,
+      amount,
+      feeTokenContract.address,
+      maxFee,
+      claimPubkey,
+    );
+
+    const claim = {
+      factory: factory.address,
+      class_hash: claimAccountClassHash,
+      sender: deployer.address,
+      gift_token: giftTokenContract.address,
+      gift_amount: uint256.bnToUint256(amount),
+      fee_token: feeTokenContract.address,
+      fee_amount: maxFee,
+      claim_pubkey: claimPubkey,
+    };
+
+    const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
+    const claimAccount = new Account(manager, num.toHex(claimAddress), signer, undefined, txVersion);
+    factory.connect(claimAccount);
+    await profiler.profile(
+      `Claim  ${unit} (txV3: ${manager.tokens.unitTokenContract(useTxV3)})`,
+      await factory.claim_internal(claim, receiver),
+    );
+  }
 }
 
 profiler.printSummary();

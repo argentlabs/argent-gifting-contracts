@@ -16,8 +16,9 @@ export const WithDevnet = <T extends Constructor<RpcProvider>>(Base: T) =>
       return super.waitForTransaction(transactionHash, { retryInterval, ...options });
     }
 
-    async mintEth(address: string, amount: number | bigint) {
-      await this.handlePost("mint", { address, amount: Number(amount) });
+    // unit should be "WEI" | "FRI" but as a shortcut we allow any string ATM (To be fixed)
+    async mint(address: string, amount: number | bigint, unit: string) {
+      await this.handlePost("mint", { address, amount: Number(amount), unit });
     }
 
     async increaseTime(timeInSeconds: number | bigint) {
