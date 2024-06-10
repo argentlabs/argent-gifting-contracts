@@ -58,7 +58,7 @@ for (const { giftTokenContract, unit } of tokens) {
       await deployer.execute(calls),
     );
 
-    // Get account claiming address 
+    // Get account claiming address
     const claimAddress = await factory.get_claim_address(
       claimAccountClassHash,
       deployer.address,
