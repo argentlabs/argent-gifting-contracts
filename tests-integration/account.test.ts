@@ -1,215 +1,169 @@
 import { expect } from "chai";
-import { Account, CallData, RPC, hash, num, uint256 } from "starknet";
-import { LegacyStarknetKeyPair, deployer, expectRevertWithErrorMessage, manager } from "../lib";
+import { Account, RPC, num } from "starknet";
+import {
+  GIFT_MAX_FEE,
+  buildCallDataClaim,
+  calculateClaimAddress,
+  claimInternal,
+  defaultDepositTestSetup,
+  deployer,
+  expectRevertWithErrorMessage,
+  manager,
+  randomReceiver,
+  setupGiftProtocol,
+} from "../lib";
 
 describe("Gifting", function () {
-  const signer = new LegacyStarknetKeyPair();
-  const claimPubkey = signer.publicKey;
-  const amount = 1000000000000000n;
-  const maxFee = 50000000000000n;
-  const receiver = "0x42";
-
   for (const useTxV3 of [false, true]) {
     it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
-      await manager.restartDevnetAndClearClassCache();
-      // Deploy factory
-      const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
-      const factory = await manager.deployContract("GiftFactory", {
-        unique: true,
-        constructorCalldata: [claimAccountClassHash, deployer.address],
-      });
+      const { factory } = await setupGiftProtocol();
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, useTxV3);
+      const receiver = randomReceiver();
+      const claimAddress = calculateClaimAddress(claim);
 
-      // Make a gift
-      const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
-      tokenContract.connect(deployer);
-      factory.connect(deployer);
-      await tokenContract.approve(factory.address, amount + maxFee);
-      await factory.deposit(amount, maxFee, tokenContract.address, claimPubkey);
+      await claimInternal(claim, receiver, claimPrivateKey);
 
-      // Ensure there is a contract for the claim
-      const claimAddress = await factory.get_claim_address(
-        claimAccountClassHash,
-        deployer.address,
-        amount,
-        maxFee,
-        tokenContract.address,
-        claimPubkey,
-      );
+      const token = await manager.loadContract(claim.gift_token);
+      const finalBalance = await token.balance_of(claimAddress);
+      expect(finalBalance < claim.fee_amount).to.be.true;
+      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
+    });
 
-      const constructorArgs = {
-        sender: deployer.address,
-        amount: uint256.bnToUint256(amount),
-        max_fee: maxFee,
-        token: tokenContract.address,
-        claim_pubkey: claimPubkey,
-      };
-      const claim = {
-        factory: factory.address,
-        class_hash: claimAccountClassHash,
-        ...constructorArgs,
-      };
-
-      const correctAddress = hash.calculateContractAddressFromHash(
-        0,
-        claimAccountClassHash,
-        CallData.compile(constructorArgs),
-        factory.address,
-      );
-      expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
-
-      // Check balance of the claim contract is correct
-      await tokenContract.balance_of(claimAddress).should.eventually.equal(amount + maxFee);
-      // Check balance receiver address == 0
-      await tokenContract.balance_of(receiver).should.eventually.equal(0n);
-
-      const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-      const claimAccount = new Account(manager, num.toHex(claimAddress), signer, undefined, txVersion);
-      factory.connect(claimAccount);
+    it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, useTxV3);
+      const receiver = randomReceiver();
       if (useTxV3) {
-        const estimate = await factory.estimateFee.claim_internal(claim, receiver);
         const newResourceBounds = {
-          ...estimate.resourceBounds,
           l2_gas: {
-            ...estimate.resourceBounds.l2_gas,
-            max_amount: maxFee + 1n,
-            max_price_per_unit: num.toHexString(4),
+            max_amount: num.toHexString(GIFT_MAX_FEE),
+            max_price_per_unit: num.toHexString(1),
+          },
+          l1_gas: {
+            max_amount: num.toHexString(10),
+            max_price_per_unit: num.toHexString(36000000000n), // Current devnet gas price
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
-          claimAccount.execute(
-            [
-              {
-                contractAddress: factory.address,
-                calldata: [claim, receiver],
-                entrypoint: "claim_internal",
-              },
-            ],
-            undefined,
-            { resourceBounds: newResourceBounds, tip: 1 },
-          ),
+          claimInternal(claim, receiver, claimPrivateKey, { resourceBounds: newResourceBounds, tip: 1 }),
         );
       } else {
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
-          factory.claim_internal(claim, receiver, { maxFee: maxFee + 1n }),
+          claimInternal(claim, receiver, claimPrivateKey, {
+            maxFee: GIFT_MAX_FEE + 1n,
+          }),
         );
       }
-      await factory.claim_internal(claim, receiver);
-
-      // Final check
-      const finalBalance = await tokenContract.balance_of(claimAddress);
-      expect(finalBalance < maxFee).to.be.true;
-      await tokenContract.balance_of(receiver).should.eventually.equal(amount);
     });
   }
 
-  it(`Test basic validation asserts`, async function () {
-    await manager.restartDevnetAndClearClassCache();
-    // Deploy factory
-    const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
-    const factory = await manager.deployContract("GiftFactory", {
-      unique: true,
-      constructorCalldata: [claimAccountClassHash, deployer.address],
-    });
+  it(`Test only protocol can call claim contract`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+
+    const claimAddress = calculateClaimAddress(claim);
+
+    const claimAccount = new Account(
+      manager,
+      num.toHex(claimAddress),
+      claimPrivateKey,
+      undefined,
+      RPC.ETransactionVersion.V2,
+    );
+    const claimContract = await manager.loadContract(claimAddress);
+    claimContract.connect(claimAccount);
+    await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
+  });
+
+  it(`Test claim contract cant call another contract`, async function () {
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
 
     const fakeFactory = await manager.deployContract("GiftFactory", {
       unique: true,
       constructorCalldata: [claimAccountClassHash, deployer.address],
     });
 
-    // Make a gift
-    const tokenContract = await manager.tokens.feeTokenContract(false);
-    tokenContract.connect(deployer);
-    factory.connect(deployer);
-    await tokenContract.approve(factory.address, amount + maxFee);
-    await factory.deposit(amount, maxFee, tokenContract.address, claimPubkey);
+    const claimAddress = calculateClaimAddress(claim);
 
-    // Ensure there is a contract for the claim
-    const claimAddress = await factory.get_claim_address(
-      claimAccountClassHash,
-      deployer.address,
-      amount,
-      maxFee,
-      tokenContract.address,
-      claimPubkey,
+    const claimAccount = new Account(
+      manager,
+      num.toHex(claimAddress),
+      claimPrivateKey,
+      undefined,
+      RPC.ETransactionVersion.V2,
     );
-
-    const constructorArgs = {
-      sender: deployer.address,
-      amount: uint256.bnToUint256(amount),
-      max_fee: maxFee,
-      token: tokenContract.address,
-      claim_pubkey: claimPubkey,
-    };
-
-    const constructorCalldata = CallData.compile(constructorArgs);
-    const correctAddress = hash.calculateContractAddressFromHash(
-      0,
-      claimAccountClassHash,
-      constructorCalldata,
-      factory.address,
-    );
-    expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
-
-    // Check balance of the claim contract is correct
-    await tokenContract.balance_of(claimAddress).should.eventually.equal(amount + maxFee);
-    // Check balance receiver address == 0
-    await tokenContract.balance_of(receiver).should.eventually.equal(0n);
-
-    const claimContract = await manager.loadContract(num.toHex(claimAddress));
-    const claimAccount = new Account(manager, claimContract.address, signer, undefined, RPC.ETransactionVersion.V2);
-    // only protocol
-    claimContract.connect(claimAccount);
-    await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
-
-    const claim = {
-      factory: factory.address,
-      class_hash: claimAccountClassHash,
-      ...constructorArgs,
-    };
-
-    // cant call another contract
     fakeFactory.connect(claimAccount);
+
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
-      fakeFactory.claim_internal(claim, receiver, { maxFee: 400000000000000n }),
+      fakeFactory.claim_internal(buildCallDataClaim(claim), receiver, { maxFee: 400000000000000n }),
+    );
+  });
+
+  it(`Test claim contract can only call 'claim_internal'`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
+
+    const claimAddress = calculateClaimAddress(claim);
+
+    const claimAccount = new Account(
+      manager,
+      num.toHex(claimAddress),
+      claimPrivateKey,
+      undefined,
+      RPC.ETransactionVersion.V2,
     );
 
-    // wrong selector
     factory.connect(claimAccount);
-    await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () => factory.get_latest_claim_class_hash());
+    await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
+      factory.get_dust(claim, receiver, { maxFee: 400000000000000n }),
+    );
+  });
 
-    // multicall
+  it(`Test claim contract cant preform a multicall`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
+
+    const claimAddress = calculateClaimAddress(claim);
+
+    const claimAccount = new Account(
+      manager,
+      num.toHex(claimAddress),
+      claimPrivateKey,
+      undefined,
+      RPC.ETransactionVersion.V2,
+    );
+
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       claimAccount.execute([
         {
           contractAddress: factory.address,
-          calldata: [claim, receiver],
+          calldata: [buildCallDataClaim(claim), receiver],
           entrypoint: "claim_internal",
         },
         {
           contractAddress: factory.address,
-          calldata: [claim, receiver],
+          calldata: [buildCallDataClaim(claim), receiver],
           entrypoint: "claim_internal",
         },
       ]),
     );
-
-    // double claim
-    await factory.claim_internal(claim, receiver);
-    await expectRevertWithErrorMessage("gift-acc/invalid-claim-nonce", () =>
-      claimAccount.execute(
-        [
-          {
-            contractAddress: factory.address,
-            calldata: [claim, receiver],
-            entrypoint: "claim_internal",
-          },
-        ],
-        undefined,
-        { skipValidate: false },
-      ),
-    );
   });
 
+  it(`Test cannot call 'claim_internal' twice`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
+
+    // double claim
+    await claimInternal(claim, receiver, claimPrivateKey);
+    await expectRevertWithErrorMessage("gift-acc/invalid-claim-nonce", () =>
+      claimInternal(claim, receiver, claimPrivateKey, { skipValidate: false }),
+    );
+  });
   // TODO Tests:
   // - claim_external
   // - check with wrong claim data
