@@ -1,5 +1,5 @@
-import { shortString } from "starknet";
-import { manager } from ".";
+import { Account, RPC, TransactionReceipt, UniversalDetails, ec, encode, num, shortString, uint256 } from "starknet";
+import { LegacyStarknetKeyPair, calculateClaimAddress, deployer, ethAddress, manager, strkAddress } from ".";
 
 const typesRev1 = {
   StarknetDomain: [
@@ -35,3 +35,80 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
     message: { ...claimExternal },
   };
 }
+
+export interface AccountConstructorArguments {
+  sender: string;
+  gift_token: string;
+  gift_amount: bigint;
+  fee_token: string;
+  fee_amount: bigint;
+  claim_pubkey: bigint;
+}
+
+export interface Claim extends AccountConstructorArguments {
+  factory: string;
+  class_hash: string;
+}
+
+export function buildCallDataClaim(claim: Claim) {
+  return {
+    ...claim,
+    gift_amount: uint256.bnToUint256(claim.gift_amount),
+  };
+}
+
+export async function claimExternal(
+  claim: Claim,
+  receiver: string,
+  giftPrivateKey: string,
+  account = deployer,
+): Promise<TransactionReceipt> {
+  const claimAddress = calculateClaimAddress(claim);
+  const giftSigner = new LegacyStarknetKeyPair(giftPrivateKey);
+  const claimExternalData = await getClaimExternalData({ receiver });
+  const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
+
+  return (await account.execute([
+    {
+      contractAddress: claim.factory,
+      calldata: [buildCallDataClaim(claim), receiver, signature],
+      entrypoint: "claim_external",
+    },
+  ])) as TransactionReceipt;
+}
+
+export async function claimInternal(
+  claim: Claim,
+  receiver: string,
+  claimSignerPrivateKey: string,
+  details?: UniversalDetails,
+): Promise<TransactionReceipt> {
+  const claimAddress = calculateClaimAddress(claim);
+
+  const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
+  const claimAccount = new Account(manager, num.toHex(claimAddress), claimSignerPrivateKey, undefined, txVersion);
+  return (await claimAccount.execute(
+    [
+      {
+        contractAddress: claim.factory,
+        calldata: [buildCallDataClaim(claim), receiver],
+        entrypoint: "claim_internal",
+      },
+    ],
+    undefined,
+    { ...details },
+  )) as TransactionReceipt;
+}
+
+function useTxv3(tokenAddress: string): boolean {
+  if (tokenAddress === ethAddress) {
+    return false;
+  } else if (tokenAddress === strkAddress) {
+    return true;
+  }
+  throw new Error(`Unsupported token`);
+}
+
+export const randomReceiver = (): string => {
+  return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
+};
