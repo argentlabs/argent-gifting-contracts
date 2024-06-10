@@ -9,6 +9,13 @@ pub trait IAccount<TContractState> {
 
 #[starknet::interface]
 pub trait IGiftFactory<TContractState> {
+    /// @notice Create a new claim
+    /// @dev TODO Anything dev?
+    /// @param gift_token The erc20 token address of the gift
+    /// @param gift_amount The amount of the gift
+    /// @param fee_token The erc20 token address of the fee (can ONLY be ETH or STARK address)
+    /// @param fee_amount The amount of the fee
+    /// @param claim_pubkey The public key of the claimer
     fn deposit(
         ref self: TContractState,
         gift_token: ContractAddress,
@@ -17,12 +24,35 @@ pub trait IGiftFactory<TContractState> {
         fee_amount: u128,
         claim_pubkey: felt252
     );
+
+    /// @notice Allows a claim account contract to claim the gift
+    /// @dev TODO Anything dev?
+    /// @param claim The claim data
+    /// @param receiver The address of the receiver
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
+
+    /// @notice Allows a contract to claim the gift given a valid SNIP-12 signature
+    /// @dev Will claim the balance of the gift. The fee will be left if it is a different token
+    /// @param claim The claim data
+    /// @param receiver The address of the receiver
+    /// @param signature The signature of the claimer of the ClaimExternal { receiver }
     fn claim_external(ref self: TContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>);
+
+    /// @notice Allows the sender of a gift to cancel his gift 
+    /// @dev Will refund both the gift and the fee
+    /// @param claim The claim data of the gift to cancel
     fn cancel(ref self: TContractState, claim: ClaimData);
+
+    /// @notice Allows the owner of the factory to claim the dust (leftovers) of a claim
+    /// @dev Only allowed if the gift has been claimed
+    /// @param claim The claim data of the claimed gift 
+    /// @param receiver The address of the receiver
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
 
+    /// @notice Retrieve the current class_hash used for creating a gift account
     fn get_latest_claim_class_hash(self: @TContractState) -> ClassHash;
+
+    /// @notice Get the address of the claim account contract given all parameters
     fn get_claim_address(
         self: @TContractState,
         class_hash: ClassHash,
