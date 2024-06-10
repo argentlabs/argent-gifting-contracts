@@ -97,6 +97,10 @@ pub trait ITimelockUpgrade<TContractState> {
 
 #[starknet::interface]
 pub trait ITimelockUpgradeCallback<TContractState> {
+    /// @notice Perform the upgrade to the proposed implementation
+    /// @dev Empty now as the upgrade logic will be done in the contract we upgrade to
+    /// @param new_implementation The class hash of the new implementation
+    /// @param data The data to be used for the upgrade
     fn perform_upgrade(ref self: TContractState, new_implementation: ClassHash, data: Span<felt252>);
 }
 
