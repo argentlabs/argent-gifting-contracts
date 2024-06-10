@@ -11,9 +11,9 @@ pub trait IAccount<TContractState> {
 pub trait IGiftFactory<TContractState> {
     /// @notice Create a new claim
     /// @dev TODO Anything dev?
-    /// @param gift_token The erc20 token address of the gift
+    /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
-    /// @param fee_token The erc20 token address of the fee (can ONLY be ETH or STARK address)
+    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address)
     /// @param fee_amount The amount of the fee
     /// @param claim_pubkey The public key of the claimer
     fn deposit(
@@ -26,7 +26,6 @@ pub trait IGiftFactory<TContractState> {
     );
 
     /// @notice Allows a claim account contract to claim the gift
-    /// @dev TODO Anything dev?
     /// @param claim The claim data
     /// @param receiver The address of the receiver
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
@@ -38,7 +37,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param signature The signature of the claimer of the ClaimExternal { receiver }
     fn claim_external(ref self: TContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>);
 
-    /// @notice Allows the sender of a gift to cancel his gift 
+    /// @notice Allows the sender of a gift to cancel their gift
     /// @dev Will refund both the gift and the fee
     /// @param claim The claim data of the gift to cancel
     fn cancel(ref self: TContractState, claim: ClaimData);
@@ -53,6 +52,13 @@ pub trait IGiftFactory<TContractState> {
     fn get_latest_claim_class_hash(self: @TContractState) -> ClassHash;
 
     /// @notice Get the address of the claim account contract given all parameters
+    /// @param class_hash The class hash
+    /// @param sender The address of the sender
+    /// @param gift_token The ERC-20 token address of the gift
+    /// @param gift_amount The amount of the gift
+    /// @param fee_token The ERC-20 token address of the fee
+    /// @param fee_amount The amount of the fee
+    /// @param claim_pubkey The public key of the claimer
     fn get_claim_address(
         self: @TContractState,
         class_hash: ClassHash,
