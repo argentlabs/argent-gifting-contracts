@@ -98,19 +98,34 @@ pub trait ITimelockUpgrade<TContractState> {
 #[starknet::interface]
 pub trait ITimelockUpgradeCallback<TContractState> {
     /// @notice Perform the upgrade to the proposed implementation
-    /// @dev Currently empty as the upgrade logic will be handled in the contract we upgrade to.
+    /// @dev Currently empty as the upgrade logic will be handled in the contract we upgrade to
     /// @param new_implementation The class hash of the new implementation
     /// @param data The data to be used for the upgrade
     fn perform_upgrade(ref self: TContractState, new_implementation: ClassHash, data: Span<felt252>);
 }
 
-// TODO Align => Rename ClaimData to Claim OR  claim to claim_data 
-// Or even rename to GIFT? so that the user will see gifts in the interface
+
 #[starknet::interface]
 pub trait IGiftAccount<TContractState> {
+    /// @notice Allows the factory to perform an array of calls on the account
+    /// @dev Can only be called by the factory
+    /// @param claim The claim data
+    /// @param calls The array of calls to be executed by the account
     fn execute_factory_calls(ref self: TContractState, claim: ClaimData, calls: Array<Call>) -> Array<Span<felt252>>;
 }
 
+// TODO Align => Rename ClaimData to Claim OR  claim to claim_data 
+// Or even rename to GIFT? so that the user will see gifts in the interface
+
+/// @notice Struct representing the data required for a gift claim
+/// @param factory The address of the factory
+/// @param class_hash The class hash of the gift
+/// @param sender The address of the sender
+/// @param gift_token The ERC-20 token address of the gift
+/// @param gift_amount The amount of the gift
+/// @param fee_token The ERC-20 token address of the fee
+/// @param fee_amount The amount of the fee
+/// @param claim_pubkey The public key of the claimer
 #[derive(Serde, Drop, Copy)]
 pub struct ClaimData {
     pub factory: ContractAddress,
@@ -123,6 +138,14 @@ pub struct ClaimData {
     pub claim_pubkey: felt252
 }
 
+/// @notice Struct representing the arguments required for constructing a gift account
+/// @dev This will be used to determine the address of the gift account
+/// @param sender The address of the sender
+/// @param gift_token The ERC-20 token address of the gift
+/// @param gift_amount The amount of the gift
+/// @param fee_token The ERC-20 token address of the fee
+/// @param fee_amount The amount of the fee
+/// @param claim_pubkey The public key of the claimer
 #[derive(Serde, Drop, Copy)]
 pub struct AccountConstructorArguments {
     pub sender: ContractAddress,
