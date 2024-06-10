@@ -23,15 +23,15 @@ for (const useTxV3 of [false, true]) {
   const maxFee = 50000000000000n;
   const receiver = "0x42";
 
-  // Make a gift
-  const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
-  tokenContract.connect(deployer);
-  factory.connect(deployer);
-  await tokenContract.approve(factory.address, amount + maxFee);
-  await profiler.profile(
-    `Deposit (txV3: ${useTxV3})`,
-    await factory.deposit(tokenContract.address, amount, tokenContract.address, maxFee, claimPubkey),
-  );
+    // Make a gift
+    const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
+    await profiler.profile(
+      `Deposit (txV3: ${useTxV3})`,
+      await deployer.execute([
+        tokenContract.populateTransaction.approve(factory.address, amount + maxFee),
+        factory.populateTransaction.deposit(tokenContract.address, amount, tokenContract.address, maxFee, claimPubkey),
+      ]),
+    );
 
   // Ensure there is a contract for the claim
   const claimAddress = await factory.get_claim_address(
