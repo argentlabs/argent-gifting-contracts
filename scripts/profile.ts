@@ -3,7 +3,7 @@ import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
-// TODO Add possibility to "mix" gift_token and fee_token 
+// TODO Add possibility to "mix" gift_token and fee_token
 
 const profiler = newProfiler(manager);
 
