@@ -29,9 +29,11 @@ for (const { giftTokenContract, unit } of tokens) {
     const claimPubkey = signer.publicKey;
     const amount = 1000000000000000n;
     const maxFee = 50000000000000n;
+    const receiver = "0x42";
+
+    // Mint tokens
     await manager.mint(deployer.address, amount, unit);
     await manager.mint(deployer.address, maxFee, manager.tokens.unitTokenContract(useTxV3));
-    const receiver = "0x42";
 
     // Make a gift
     const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
