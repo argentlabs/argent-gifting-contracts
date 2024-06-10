@@ -73,11 +73,25 @@ pub trait IGiftFactory<TContractState> {
 
 #[starknet::interface]
 pub trait ITimelockUpgrade<TContractState> {
+    /// @notice Propose a new implementation for the contract to upgrade to
+    /// @dev There is a 7 day window to be able to perform the upgrade then the upgrade can be performed for a window of 7 days
+    /// @dev If there is an ongoing upgrade the previous proposition will be overwritten
+    /// @param new_implementation The class hash of the new implementation
     fn propose_upgrade(ref self: TContractState, new_implementation: ClassHash);
+
+    /// @notice Cancel the upgrade proposition
+    /// @dev Will fail if there is no ongoing upgrade
     fn cancel_upgrade(ref self: TContractState);
+
+    /// @notice Perform the upgrade to the proposed implementation
+    /// @dev There is a 7 day window to be able to perform the upgrade then the upgrade can be performed for a window of 7 days
+    /// @param calldata The calldata to be used for the upgrade by perform_upgrade()
     fn upgrade(ref self: TContractState, calldata: Array<felt252>);
 
+    /// @notice Gets the proposed implementation
     fn get_proposed_implementation(self: @TContractState) -> ClassHash;
+
+    /// @notice Gets the upgrade ready at timestamp
     fn get_upgrade_ready_at(self: @TContractState) -> u64;
 }
 
