@@ -3,7 +3,6 @@ import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
-// TODO Add possibility to "mix" gift_token and fee_token
 
 const profiler = newProfiler(manager);
 
@@ -36,7 +35,6 @@ for (const { giftTokenContract, unit } of tokens) {
 
     // Make a gift
     const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
-    console.log(`${giftTokenContract.address} ${feeTokenContract.address}`);
     const calls = [];
     if (giftTokenContract.address === feeTokenContract.address) {
       calls.push(giftTokenContract.populateTransaction.approve(factory.address, amount + maxFee));
@@ -54,7 +52,7 @@ for (const { giftTokenContract, unit } of tokens) {
       ),
     );
     await profiler.profile(
-      `Deposit ${unit} (fee: ${manager.tokens.unitTokenContract(useTxV3)})`,
+      `Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
       await deployer.execute(calls),
     );
 
@@ -84,7 +82,7 @@ for (const { giftTokenContract, unit } of tokens) {
     const claimAccount = new Account(manager, num.toHex(claimAddress), signer, undefined, txVersion);
     factory.connect(claimAccount);
     await profiler.profile(
-      `Claim  ${unit} (txV3: ${manager.tokens.unitTokenContract(useTxV3)})`,
+      `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
       await factory.claim_internal(claim, receiver),
     );
   }
