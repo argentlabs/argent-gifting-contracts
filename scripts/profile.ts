@@ -19,8 +19,8 @@ const ethContract = await manager.tokens.ethContract();
 const strkContract = await manager.tokens.strkContract();
 
 const tokens = [
-  { giftTokenContract: ethContract, unit: "WEI" },
-  { giftTokenContract: strkContract, unit: "FRI" },
+  { giftTokenContract: ethContract, unit: "WEI" as RPC.PriceUnit },
+  { giftTokenContract: strkContract, unit: "FRI" as RPC.PriceUnit },
 ];
 
 for (const { giftTokenContract, unit } of tokens) {

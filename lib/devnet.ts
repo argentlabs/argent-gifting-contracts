@@ -1,4 +1,4 @@
-import { RawArgs, RpcProvider } from "starknet";
+import { RPC, RawArgs, RpcProvider } from "starknet";
 import { Constructor } from ".";
 
 export const dumpFolderPath = "./dump";
@@ -16,8 +16,7 @@ export const WithDevnet = <T extends Constructor<RpcProvider>>(Base: T) =>
       return super.waitForTransaction(transactionHash, { retryInterval, ...options });
     }
 
-    // unit should be "WEI" | "FRI" but as a shortcut we allow any string ATM (To be fixed)
-    async mint(address: string, amount: number | bigint, unit: string) {
+    async mint(address: string, amount: number | bigint, unit: RPC.PriceUnit) {
       await this.handlePost("mint", { address, amount: Number(amount), unit });
     }
 
