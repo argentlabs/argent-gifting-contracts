@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Account, RPC, num } from "starknet";
+import { Account, RPC, byteArray, num, uint256 } from "starknet";
 import {
   GIFT_MAX_FEE,
   buildCallDataClaim,
@@ -14,6 +14,30 @@ import {
 } from "../lib";
 
 describe("Gifting", function () {
+  it.only(`Testing simple claim flow using txV3`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const reentrant = await manager.deployContract("ReentrantERC20", {
+      unique: true,
+      constructorCalldata: [
+        byteArray.byteArrayFromString("USDC"),
+        byteArray.byteArrayFromString("USDC"),
+        uint256.bnToUint256(100e18),
+        deployer.address,
+        factory.address,
+      ],
+    });
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, "0x123456", reentrant.address);
+    const receiver = "0x9999";
+    const claimAddress = calculateClaimAddress(claim);
+
+    await claimInternal(claim, receiver, claimPrivateKey);
+
+    const token = await manager.loadContract(claim.gift_token);
+    const finalBalance = await token.balance_of(claimAddress);
+    expect(finalBalance < claim.fee_amount).to.be.true;
+    await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
+  });
+
   for (const useTxV3 of [false, true]) {
     it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
