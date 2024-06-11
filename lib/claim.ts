@@ -37,7 +37,6 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
 }
 
 export class Claim {
-  signer: LegacyStarknetKeyPair;
   constructor(
     public factory: string,
     public class_hash: string,
@@ -46,19 +45,45 @@ export class Claim {
     public gift_amount: bigint,
     public fee_token: string,
     public fee_amount: bigint,
-    signer = new LegacyStarknetKeyPair(),
-  ) {
-    this.signer = signer;
-    // needs a signer instead of a public key
-    // get fn claim_pubkey
-  }
+    public signer = new LegacyStarknetKeyPair(), // TODO This shouldn't be public?
+  ) {}
 
   get claim_pubkey(): bigint {
     return this.signer.publicKey;
   }
 
-  get claim_address(): string {
+  get claimAddress(): string {
     return calculateClaimAddress(this);
+  }
+
+  get callDataClaim() {
+    return {
+      ...this,
+      gift_amount: uint256.bnToUint256(this.gift_amount),
+    };
+  }
+
+  public async claimInternal(receiver: string, details?: UniversalDetails): Promise<TransactionReceipt> {
+    const claimAddress = this.claimAddress;
+
+    const txVersion = useTxv3(this.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
+    const claimAccount = new Account(manager, num.toHex(claimAddress), this.signer, undefined, txVersion);
+    console.log("this");
+    console.log(this);
+    console.log(this.claimAddress)
+    console.log("claimAccount");
+    console.log(claimAccount);
+    return (await claimAccount.execute(
+      [
+        {
+          contractAddress: this.factory,
+          calldata: [this.callDataClaim, receiver],
+          entrypoint: "claim_internal",
+        },
+      ],
+      undefined,
+      { ...details },
+    )) as TransactionReceipt;
   }
 }
 
@@ -70,16 +95,10 @@ export function buildCallDataClaim(claim: Claim) {
 }
 
 // Move this onto the claim class
-export async function claimExternal(
-  claim: Claim,
-  receiver: string,
-  giftPrivateKey: string,
-  account = deployer,
-): Promise<TransactionReceipt> {
+export async function claimExternal(claim: Claim, receiver: string, account = deployer): Promise<TransactionReceipt> {
   const claimAddress = calculateClaimAddress(claim);
-  const giftSigner = new LegacyStarknetKeyPair(giftPrivateKey);
   const claimExternalData = await getClaimExternalData({ receiver });
-  const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
+  const signature = await claim.signer.signMessage(claimExternalData, claimAddress);
 
   return (await account.execute([
     {
@@ -90,18 +109,17 @@ export async function claimExternal(
   ])) as TransactionReceipt;
 }
 
-
 // Move this onto the claim class
 export async function claimInternal(
   claim: Claim,
   receiver: string,
-  claimSignerPrivateKey: string,
   details?: UniversalDetails,
 ): Promise<TransactionReceipt> {
   const claimAddress = calculateClaimAddress(claim);
 
   const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), claimSignerPrivateKey, undefined, txVersion);
+  const claimAccount = new Account(manager, num.toHex(claimAddress), claim.signer, undefined, txVersion);
+  console.log(claim);
   return (await claimAccount.execute(
     [
       {

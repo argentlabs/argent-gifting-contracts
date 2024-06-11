@@ -19,9 +19,9 @@ describe("Gifting", function () {
       const { factory } = await setupGiftProtocol();
       const claim = await defaultDepositTestSetup(factory, useTxV3);
       const receiver = randomReceiver();
-      const claimAddress = claim.claim_address
+      const claimAddress = claim.claimAddress;
 
-      await claimInternal(claim, receiver, claim.signer.privateKey);
+      await claim.claimInternal(receiver);
 
       const token = await manager.loadContract(claim.gift_token);
       const finalBalance = await token.balance_of(claimAddress);
@@ -45,11 +45,11 @@ describe("Gifting", function () {
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
-          claimInternal(claim, receiver, claim.signer.privateKey, { resourceBounds: newResourceBounds, tip: 1 }),
+          claimInternal(claim, receiver, { resourceBounds: newResourceBounds, tip: 1 }),
         );
       } else {
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
-          claimInternal(claim, receiver, claim.signer.privateKey, {
+          claimInternal(claim, receiver, {
             maxFee: GIFT_MAX_FEE + 1n,
           }),
         );
@@ -97,7 +97,7 @@ describe("Gifting", function () {
     fakeFactory.connect(claimAccount);
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
-      fakeFactory.claim_internal(buildCallDataClaim(claim), receiver, { maxFee: 400000000000000n }),
+      fakeFactory.claim_internal(claim.callDataClaim, receiver, { maxFee: 400000000000000n }),
     );
   });
 
@@ -159,9 +159,9 @@ describe("Gifting", function () {
     const receiver = randomReceiver();
 
     // double claim
-    await claimInternal(claim, receiver, claim.signer.privateKey);
+    await claimInternal(claim, receiver);
     await expectRevertWithErrorMessage("gift-acc/invalid-claim-nonce", () =>
-      claimInternal(claim, receiver, claim.signer.privateKey, { skipValidate: false }),
+      claimInternal(claim, receiver, { skipValidate: false }),
     );
   });
   // TODO Tests:

@@ -40,7 +40,7 @@ describe("Factory", function () {
       const receiver = randomReceiver();
       const receiverDust = randomReceiver();
 
-      await claimInternal(claim, receiver, claim.signer.privateKey);
+      await claimInternal(claim, receiver);
       const claimAddress = calculateClaimAddress(claim);
       const token = await manager.loadContract(claim.gift_token);
 
@@ -78,9 +78,7 @@ describe("Factory", function () {
     // Check balance claim address address == 0
     await token.balance_of(claimAddress).should.eventually.equal(0n);
 
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal(claim, receiver, claim.signer.privateKey),
-    );
+    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () => claimInternal(claim, receiver));
   });
 
   it(`Test pausable`, async function () {
@@ -106,7 +104,7 @@ describe("Factory", function () {
 
     await factory.unpause();
     const claim = await defaultDepositTestSetup(factory, false);
-    await claimInternal(claim, receiver, claimSigner.privateKey);
+    await claimInternal(claim, receiver);
 
     // Final check
     const claimAddress = calculateClaimAddress(claim);

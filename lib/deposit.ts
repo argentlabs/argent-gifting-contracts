@@ -33,7 +33,7 @@ export async function deposit(
 export async function defaultDepositTestSetup(
   factory: Contract,
   useTxV3 = false,
-  signer?: LegacyStarknetKeyPair,
+  signer = new LegacyStarknetKeyPair(),
   giftTokenAddress?: string,
   giftAmount = GIFT_AMOUNT,
   giftMaxFee = GIFT_MAX_FEE,
@@ -51,7 +51,7 @@ export async function defaultDepositTestSetup(
     giftMaxFee,
     signer,
   );
-  
+
   await deposit(
     deployer,
     giftAmount,
@@ -66,7 +66,7 @@ export async function defaultDepositTestSetup(
 }
 
 export function calculateClaimAddress(claim: Claim): string {
-  const claimAddress = hash.calculateContractAddressFromHash(
+  return hash.calculateContractAddressFromHash(
     0,
     claim.class_hash,
     CallData.compile({
@@ -79,5 +79,4 @@ export function calculateClaimAddress(claim: Claim): string {
     }),
     claim.factory,
   );
-  return claimAddress;
 }
