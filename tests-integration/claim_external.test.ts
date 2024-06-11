@@ -68,13 +68,7 @@ describe("claim_external", function () {
     const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
 
     await expectRevertWithErrorMessage("gift/invalid-factory-address", () =>
-      deployer.execute([
-        {
-          contractAddress: factory.address,
-          calldata: [buildCallDataClaim(claim), receiver, signature],
-          entrypoint: "claim_external",
-        },
-      ]),
+      deployer.execute(factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, signature)),
     );
   });
 
@@ -141,13 +135,7 @@ describe("claim_external", function () {
     const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
     const claimExternalData = await getClaimExternalData({ receiver });
     const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
-    await deployer.execute([
-      {
-        contractAddress: claim.factory,
-        calldata: [buildCallDataClaim(claim), receiver, signature],
-        entrypoint: "claim_external",
-      },
-    ]);
+    await deployer.execute(factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, signature));
 
     claim.gift_token = claim.fee_token;
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
