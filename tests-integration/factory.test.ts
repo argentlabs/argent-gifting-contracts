@@ -19,12 +19,12 @@ describe("Factory", function () {
     const claim = await defaultDepositTestSetup(factory);
 
     const claimAddress = await factory.get_claim_address(
-      claim.class_hash,
+      claim.classHash,
       deployer.address,
-      claim.gift_token,
-      claim.gift_amount,
-      claim.fee_token,
-      claim.fee_amount,
+      claim.giftToken,
+      claim.giftAmount,
+      claim.feeToken,
+      claim.feeAmount,
       claim.claim_pubkey,
     );
     expect(claimAddress).to.be.equal(num.toBigInt(claim.claimAddress));
@@ -38,7 +38,7 @@ describe("Factory", function () {
       const receiverDust = randomReceiver();
 
       await claim.claimInternal(receiver);
-      const token = await manager.loadContract(claim.gift_token);
+      const token = await manager.loadContract(claim.giftToken);
 
       // Final check
 
@@ -60,7 +60,7 @@ describe("Factory", function () {
     const { factory } = await setupGiftProtocol();
     const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-    const token = await manager.loadContract(claim.gift_token);
+    const token = await manager.loadContract(claim.giftToken);
 
     const balanceSenderBefore = await token.balance_of(deployer.address);
     factory.connect(deployer);
@@ -69,7 +69,7 @@ describe("Factory", function () {
     // Check balance of the sender is correct
     await token
       .balance_of(deployer.address)
-      .should.eventually.equal(balanceSenderBefore + claim.gift_amount + claim.fee_amount - txFee);
+      .should.eventually.equal(balanceSenderBefore + claim.giftAmount + claim.feeAmount - txFee);
     // Check balance claim address address == 0
     await token.balance_of(claim.claimAddress).should.eventually.equal(0n);
 

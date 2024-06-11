@@ -50,12 +50,12 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
 export class Claim {
   constructor(
     public factory: string,
-    public class_hash: string, // TODO REMOVE ALL underscores
+    public classHash: string,
     public sender: string,
-    public gift_token: string,
-    public gift_amount: bigint,
-    public fee_token: string,
-    public fee_amount: bigint,
+    public giftToken: string,
+    public giftAmount: bigint,
+    public feeToken: string,
+    public feeAmount: bigint,
     public signer = new LegacyStarknetKeyPair(), // TODO This shouldn't be public?
   ) {}
 
@@ -66,13 +66,13 @@ export class Claim {
   get claimAddress(): string {
     return hash.calculateContractAddressFromHash(
       0,
-      this.class_hash,
+      this.classHash,
       CallData.compile({
         sender: this.sender,
-        gift_token: this.gift_token,
-        gift_amount: uint256.bnToUint256(this.gift_amount),
-        fee_token: this.fee_token,
-        fee_amount: this.fee_amount,
+        giftToken: this.giftToken,
+        gift_amount: uint256.bnToUint256(this.giftAmount),
+        fee_token: this.feeToken,
+        fee_amount: this.feeAmount,
         claim_pubkey: this.claim_pubkey,
       }),
       this.factory,
@@ -82,18 +82,18 @@ export class Claim {
   get callDataClaim() {
     return {
       factory: this.factory,
-      class_hash: this.class_hash,
+      class_hash: this.classHash,
       sender: this.sender,
-      gift_token: this.gift_token,
-      gift_amount: uint256.bnToUint256(this.gift_amount),
-      fee_token: this.fee_token,
-      fee_amount: this.fee_amount,
+      gift_token: this.giftToken,
+      gift_amount: uint256.bnToUint256(this.giftAmount),
+      fee_token: this.feeToken,
+      fee_amount: this.feeAmount,
       claim_pubkey: this.claim_pubkey,
     };
   }
 
   public async claimInternal(receiver: string, details?: UniversalDetails): Promise<TransactionReceipt> {
-    const txVersion = useTxv3(this.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
+    const txVersion = useTxv3(this.feeToken) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
     const claimAccount = new Account(manager, this.claimAddress, this.signer, undefined, txVersion);
     return (await claimAccount.execute(
       [

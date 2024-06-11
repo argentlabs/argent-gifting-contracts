@@ -20,10 +20,10 @@ describe("Gifting", function () {
 
       await claim.claimInternal(receiver);
 
-      const token = await manager.loadContract(claim.gift_token);
+      const token = await manager.loadContract(claim.giftToken);
       const finalBalance = await token.balance_of(claimAddress);
-      expect(finalBalance < claim.fee_amount).to.be.true;
-      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
+      expect(finalBalance < claim.feeAmount).to.be.true;
+      await token.balance_of(receiver).should.eventually.equal(claim.giftAmount);
     });
 
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
