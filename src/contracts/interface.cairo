@@ -15,7 +15,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param gift_amount The amount of the gift
     /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address)
     /// @param fee_amount The amount of the fee
-    /// @param claim_pubkey The public key of the claimer
+    /// @param claim_pubkey The public key associated with the gift
     fn deposit(
         ref self: TContractState,
         gift_token: ContractAddress,
@@ -58,7 +58,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param gift_amount The amount of the gift
     /// @param fee_token The ERC-20 token address of the fee
     /// @param fee_amount The amount of the fee
-    /// @param claim_pubkey The public key of the claimer
+    /// @param claim_pubkey The public key associated with the gift
     fn get_claim_address(
         self: @TContractState,
         class_hash: ClassHash,
@@ -86,13 +86,13 @@ pub trait IGiftAccount<TContractState> {
 
 /// @notice Struct representing the data required for a gift claim
 /// @param factory The address of the factory
-/// @param class_hash The class hash of the gift
+/// @param class_hash The class hash of the gift account
 /// @param sender The address of the sender
 /// @param gift_token The ERC-20 token address of the gift
 /// @param gift_amount The amount of the gift
 /// @param fee_token The ERC-20 token address of the fee
 /// @param fee_amount The amount of the fee
-/// @param claim_pubkey The public key of the claimer
+/// @param claim_pubkey The public key associated with the gift
 #[derive(Serde, Drop, Copy)]
 pub struct ClaimData {
     pub factory: ContractAddress,
@@ -112,7 +112,7 @@ pub struct ClaimData {
 /// @param gift_amount The amount of the gift
 /// @param fee_token The ERC-20 token address of the fee
 /// @param fee_amount The amount of the fee
-/// @param claim_pubkey The public key of the claimer
+/// @param claim_pubkey The public key associated with the gift
 #[derive(Serde, Drop, Copy)]
 pub struct AccountConstructorArguments {
     pub sender: ContractAddress,
