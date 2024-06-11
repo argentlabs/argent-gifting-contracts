@@ -1,5 +1,5 @@
-import { Account, RPC, num, uint256 } from "starknet";
-import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
+import { Account, RPC, num } from "starknet";
+import { Claim, LegacyStarknetKeyPair, calculateClaimAddress, deployer, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -58,27 +58,19 @@ for (const { giftTokenContract, unit } of tokens) {
       await deployer.execute(calls),
     );
 
-    // Get account claiming address
-    const claimAddress = await factory.get_claim_address(
-      claimAccountClassHash,
-      deployer.address,
-      giftTokenContract.address,
-      amount,
-      feeTokenContract.address,
-      maxFee,
-      claimPubkey,
-    );
-
-    const claim = {
+    const claim: Claim = {
       factory: factory.address,
       class_hash: claimAccountClassHash,
       sender: deployer.address,
       gift_token: giftTokenContract.address,
-      gift_amount: uint256.bnToUint256(amount),
+      gift_amount: amount,
       fee_token: feeTokenContract.address,
       fee_amount: maxFee,
       claim_pubkey: claimPubkey,
     };
+    
+    // Get account claiming address
+    const claimAddress = await calculateClaimAddress(claim);
 
     const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
     const claimAccount = new Account(manager, num.toHex(claimAddress), signer, undefined, txVersion);
