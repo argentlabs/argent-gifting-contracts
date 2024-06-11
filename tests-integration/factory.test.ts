@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ec, encode, num } from "starknet";
+import { CallData, byteArray, ec, encode, num, uint256 } from "starknet";
 import {
   GIFT_AMOUNT,
   GIFT_MAX_FEE,
@@ -60,7 +60,7 @@ describe("Factory", function () {
     });
   }
 
-  it(`Test Cancel Claim`, async function () {
+  it(`Cancel Claim (fee_token == gift_token)`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
@@ -81,6 +81,53 @@ describe("Factory", function () {
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
       claimInternal(claim, receiver, claimPrivateKey),
     );
+  });
+
+  it(`Cancel Claim (fee_token != gift_token)`, async function () {
+    const erc = await manager.deployContract("MockERC20", {
+      unique: true,
+      constructorCalldata: CallData.compile([
+        byteArray.byteArrayFromString("ETHER"),
+        byteArray.byteArrayFromString("ETH"),
+        uint256.bnToUint256(100e18),
+        deployer.address,
+        deployer.address,
+      ]),
+    });
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, erc.address);
+    const receiver = randomReceiver();
+    const gifToken = await manager.loadContract(claim.gift_token);
+    const feeToken = await manager.loadContract(claim.fee_token);
+    const claimAddress = calculateClaimAddress(claim);
+
+    const balanceSenderBeforeGiftToken = await gifToken.balance_of(deployer.address);
+    const balanceSenderBeforeFeeToken = await feeToken.balance_of(deployer.address);
+    factory.connect(deployer);
+    const { transaction_hash } = await factory.cancel(claim);
+    const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
+    // Check balance of the sender is correct
+    await gifToken
+      .balance_of(deployer.address)
+      .should.eventually.equal(balanceSenderBeforeGiftToken + claim.gift_amount);
+    await feeToken
+      .balance_of(deployer.address)
+      .should.eventually.equal(balanceSenderBeforeFeeToken + claim.fee_amount - txFee);
+    // Check balance claim address address == 0
+    await gifToken.balance_of(claimAddress).should.eventually.equal(0n);
+    await feeToken.balance_of(claimAddress).should.eventually.equal(0n);
+
+    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
+      claimInternal(claim, receiver, claimPrivateKey),
+    );
+  });
+
+  it(`Cancel Claim wrong sender`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim } = await defaultDepositTestSetup(factory);
+
+    factory.connect(genericAccount);
+    await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
   });
 
   it(`Test pausable`, async function () {
