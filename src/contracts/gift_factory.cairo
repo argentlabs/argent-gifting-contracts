@@ -3,7 +3,6 @@ use starknet_gifting::contracts::utils::{serialize};
 
 #[starknet::contract]
 mod GiftFactory {
-    use core::array::ArrayTrait;
     use core::ecdsa::check_ecdsa_signature;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::PausableComponent;
@@ -179,6 +178,7 @@ mod GiftFactory {
             ref self: ContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>
         ) {
             let claim_address = self.check_claim_and_get_account_address(claim);
+            // TODO: Any point checking receiver? i.e. not 0
             let claim_external_hash = ClaimExternal { receiver }.get_message_hash_rev_1(claim_address);
             assert(
                 check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
