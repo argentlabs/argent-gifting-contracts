@@ -32,6 +32,7 @@ pub trait ITimelockUpgradeCallback<TContractState> {
     /// @param data The data to be used for the upgrade
     fn perform_upgrade(ref self: TContractState, new_implementation: ClassHash, data: Span<felt252>);
 }
+
 #[starknet::component]
 pub mod TimelockUpgradeComponent {
     use core::num::traits::Zero;
