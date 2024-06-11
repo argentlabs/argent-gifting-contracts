@@ -12,14 +12,13 @@ mod GiftFactory {
         ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call
     };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::claim_utils::{calculate_claim_account_address};
-
     use starknet_gifting::contracts::interface::{
         IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        ITimelockUpgradeCallback
     };
-    use starknet_gifting::contracts::timelock_upgrade::TimelockUpgradeComponent;
-    use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize};
+    use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
+    use starknet_gifting::contracts::utils::{
+        calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
+    };
     use super::build_transfer_call;
 
     // Ownable 

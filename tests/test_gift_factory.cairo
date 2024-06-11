@@ -3,10 +3,10 @@ use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20Disp
 use openzeppelin::utils::deployments::calculate_contract_address_from_deploy_syscall;
 use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address, get_class_hash};
-use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
 use starknet_gifting::contracts::interface::{
     IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait, ClaimData
 };
+use starknet_gifting::contracts::utils::calculate_claim_account_address;
 use super::constants::{DEPOSITOR, CLAIMER, UNAUTHORIZED_ERC20, CLAIM_PUB_KEY};
 use super::setup::{deploy_gifting_normal, deploy_gifting_broken_erc20, GiftingSetup};
 

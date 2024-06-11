@@ -6,10 +6,10 @@ mod ClaimAccount {
         TxInfo, account::Call, VALIDATED, syscalls::call_contract_syscall, ContractAddress, get_contract_address,
         get_caller_address, get_execution_info
     };
-    use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
     use starknet_gifting::contracts::interface::{IAccount, IGiftAccount, ClaimData, AccountConstructorArguments};
     use starknet_gifting::contracts::utils::{
-        full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
+        calculate_claim_account_address, full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3,
+        TX_V3_ESTIMATE
     };
 
     #[storage]
@@ -104,5 +104,34 @@ mod ClaimAccount {
                 }
             };
         max_fee + max_tip
+    }
+
+    fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {
+        let mut result = array![];
+        let mut index = 0;
+        while let Option::Some(call) = calls
+            .pop_front() {
+                match call_contract_syscall(*call.to, *call.selector, *call.calldata) {
+                    Result::Ok(retdata) => {
+                        result.append(retdata);
+                        index += 1;
+                    },
+                    Result::Err(revert_reason) => {
+                        let mut data = array!['argent/multicall-failed', index];
+                        data.append_all(revert_reason.span());
+                        panic(data);
+                    },
+                }
+            };
+        result
+    }
+
+    #[generate_trait]
+    impl ArrayExt<T, +Drop<T>, +Copy<T>> of ArrayExtTrait<T> {
+        fn append_all(ref self: Array<T>, mut value: Span<T>) {
+            while let Option::Some(item) = value.pop_front() {
+                self.append(*item);
+            };
+        }
     }
 }

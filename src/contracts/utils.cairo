@@ -1,10 +1,6 @@
-// TODO Just temp atm, plz split this file
-use core::hash::{HashStateTrait, HashStateExTrait, Hash};
-use core::poseidon::{PoseidonTrait, HashState};
-use openzeppelin::token::erc20::interface::IERC20Dispatcher;
-use starknet::{
-    ContractAddress, account::Call, contract_address::contract_address_const, syscalls::call_contract_syscall
-};
+use openzeppelin::utils::deployments::calculate_contract_address_from_deploy_syscall;
+use starknet::{ContractAddress, account::Call, contract_address::contract_address_const};
+use starknet_gifting::contracts::interface::{ClaimData, AccountConstructorArguments};
 
 pub const TX_V1: felt252 = 1; // INVOKE
 pub const TX_V1_ESTIMATE: felt252 = consteval_int!(0x100000000000000000000000000000000 + 1); // 2**128 + TX_V1
@@ -36,31 +32,24 @@ pub fn serialize<E, impl ESerde: Serde<E>>(value: @E) -> Array<felt252> {
     output
 }
 
-pub fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {
-    let mut result = array![];
-    let mut index = 0;
-    while let Option::Some(call) = calls
-        .pop_front() {
-            match call_contract_syscall(*call.to, *call.selector, *call.calldata) {
-                Result::Ok(retdata) => {
-                    result.append(retdata);
-                    index += 1;
-                },
-                Result::Err(revert_reason) => {
-                    let mut data = array!['argent/multicall-failed', index];
-                    data.append_all(revert_reason.span());
-                    panic(data);
-                },
-            }
-        };
-    result
-}
-
-#[generate_trait]
-impl ArrayExt<T, +Drop<T>, +Copy<T>> of ArrayExtTrait<T> {
-    fn append_all(ref self: Array<T>, mut value: Span<T>) {
-        while let Option::Some(item) = value.pop_front() {
-            self.append(*item);
-        };
-    }
+/// @notice Computes the ContractAddress of an account corresponding to a given claim
+/// @dev The salt used is 0, as the account contract is not expected to be deployed multiple times
+/// @dev The deployer_address is the factory address, as the account contract is deployed by the factory
+/// @param claim The claim data
+/// @return The ContractAddress of the account contract
+pub fn calculate_claim_account_address(claim: ClaimData) -> ContractAddress {
+    let constructor_arguments = AccountConstructorArguments {
+        sender: claim.sender,
+        gift_token: claim.gift_token,
+        gift_amount: claim.gift_amount,
+        fee_token: claim.fee_token,
+        fee_amount: claim.fee_amount,
+        claim_pubkey: claim.claim_pubkey
+    };
+    calculate_contract_address_from_deploy_syscall(
+        0, // salt
+        claim.class_hash, // class_hash
+        serialize(@constructor_arguments).span(), // constructor_data
+        claim.factory
+    )
 }
