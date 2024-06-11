@@ -1,6 +1,5 @@
 use core::poseidon::poseidon_hash_span;
-use starknet::{ContractAddress, get_tx_info, get_contract_address};
-use starknet_gifting::contracts::interface::ClaimData;
+use starknet::{ContractAddress, get_tx_info};
 
 /// @notice Defines the function to generate the SNIP-12 revision 1 compliant message hash
 pub trait IOffChainMessageHashRev1<T> {

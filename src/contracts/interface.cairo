@@ -10,7 +10,7 @@ pub trait IAccount<TContractState> {
 #[starknet::interface]
 pub trait IGiftFactory<TContractState> {
     /// @notice Create a new claim
-    /// @dev TODO Anything dev?
+    /// @dev This function can be paused by the owner of the factory and prevent any further deposits
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
     /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address)
@@ -26,12 +26,13 @@ pub trait IGiftFactory<TContractState> {
     );
 
     /// @notice Allows a claim account contract to claim the gift
+    /// @dev Can only be called by a claim account contract
     /// @param claim The claim data
     /// @param receiver The address of the receiver
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
 
     /// @notice Allows a contract to claim the gift given a valid SNIP-12 signature
-    /// @dev Will claim the balance of the gift. The fee will be left if it is a different token
+    /// @dev Will claim the balance of the gift. The fee will be left if it is a different token than the gift
     /// @param claim The claim data
     /// @param receiver The address of the receiver
     /// @param signature The signature of the claimer of the ClaimExternal { receiver }

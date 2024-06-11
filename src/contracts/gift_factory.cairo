@@ -1,9 +1,5 @@
-use starknet::{ContractAddress, account::Call};
-use starknet_gifting::contracts::utils::{serialize};
-
 #[starknet::contract]
 mod GiftFactory {
-    use core::array::ArrayTrait;
     use core::ecdsa::check_ecdsa_signature;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::PausableComponent;
@@ -19,7 +15,6 @@ mod GiftFactory {
     use starknet_gifting::contracts::utils::{
         calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
     };
-    use super::build_transfer_call;
 
     // Ownable 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -326,8 +321,9 @@ mod GiftFactory {
                 }
         }
     }
-}
 
-fn build_transfer_call(token: ContractAddress, amount: u256, receiver: ContractAddress,) -> Call {
-    Call { to: token, selector: selector!("transfer"), calldata: serialize(@(receiver, amount)).span() }
+
+    fn build_transfer_call(token: ContractAddress, amount: u256, receiver: ContractAddress,) -> Call {
+        Call { to: token, selector: selector!("transfer"), calldata: serialize(@(receiver, amount)).span() }
+    }
 }
