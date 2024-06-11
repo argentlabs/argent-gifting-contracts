@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { CallData, byteArray, ec, encode, num, uint256 } from "starknet";
+import { ec, encode, num } from "starknet";
 import {
   GIFT_AMOUNT,
   GIFT_MAX_FEE,
@@ -7,6 +7,7 @@ import {
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
+  deployMockERC20,
   deployer,
   expectRevertWithErrorMessage,
   genericAccount,
@@ -84,18 +85,9 @@ describe("Factory", function () {
   });
 
   it(`Cancel Claim (fee_token != gift_token)`, async function () {
-    const erc = await manager.deployContract("MockERC20", {
-      unique: true,
-      constructorCalldata: CallData.compile([
-        byteArray.byteArrayFromString("USDC"),
-        byteArray.byteArrayFromString("USDC"),
-        uint256.bnToUint256(100e18),
-        deployer.address,
-        deployer.address,
-      ]),
-    });
+    const mockERC20 = await deployMockERC20();
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, erc.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
     const receiver = randomReceiver();
     const gifToken = await manager.loadContract(claim.gift_token);
     const feeToken = await manager.loadContract(claim.fee_token);
@@ -154,18 +146,9 @@ describe("Factory", function () {
   });
 
   it(`Cancel Claim: gift/already-claimed (gift_token != fee_token)`, async function () {
-    const erc = await manager.deployContract("MockERC20", {
-      unique: true,
-      constructorCalldata: CallData.compile([
-        byteArray.byteArrayFromString("USDC"),
-        byteArray.byteArrayFromString("USDC"),
-        uint256.bnToUint256(100e18),
-        deployer.address,
-        deployer.address,
-      ]),
-    });
+    const mockERC20 = await deployMockERC20();
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, erc.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
     const receiver = randomReceiver();
 
     await claimInternal(claim, receiver, claimPrivateKey);

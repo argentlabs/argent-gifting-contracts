@@ -1,10 +1,10 @@
-import { CallData, byteArray, uint256 } from "starknet";
 import {
   LegacyStarknetKeyPair,
   buildCallDataClaim,
   calculateClaimAddress,
   claimExternal,
   defaultDepositTestSetup,
+  deployMockERC20,
   deployer,
   expectRevertWithErrorMessage,
   getClaimExternalData,
@@ -131,18 +131,9 @@ describe("claim_external", function () {
   });
 
   it(`Cannot replay signature to claim all tokens`, async function () {
-    const erc = await manager.deployContract("MockERC20", {
-      unique: true,
-      constructorCalldata: CallData.compile([
-        byteArray.byteArrayFromString("USDC"),
-        byteArray.byteArrayFromString("USDC"),
-        uint256.bnToUint256(100e18),
-        deployer.address,
-        deployer.address,
-      ]),
-    });
+    const mockERC20 = await deployMockERC20();
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, erc.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
     const receiver = randomReceiver();
 
     const claimAddress = calculateClaimAddress(claim);
