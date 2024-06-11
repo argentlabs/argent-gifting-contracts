@@ -27,18 +27,18 @@ Gifts can be canceled by the sender provided that they have not been claimed yet
 
 ## Factory Operations
 This section outlines all the operations that the factory is allowed to perform.  
-As we use Openzeppelin's Ownable Component, this factory has an owner.
+As we use OpenZeppelin's Ownable component, this factory has an owner.
 
-### Get dust
-The factory has a function allowing it to claim the dust left. This action can only be done AFTER a claim was performed.
+### Get Dust
+The factory has a function allowing it to claim the dust left on an account. This action can only be done after a claim has been performed. This can also be used to recover in case a user has sent some tokens to the account.
 
 ### Pausable
-The factory has the possibility to pause all the deposits. However it cannot prevent any claim from happening, it cannot prevent any cancelling too.
+The owner has the capability to pause all deposits. However, it cannot prevent any claims from happening, nor can it prevent any cancellations.  
 
 ### Upgrade
-Ths factory can be upgraded to a newer version. This allows it to potentially recover from future user mistakes. But also allows to add more functionalities depending on how this is used.  
-The upgrade cannot be done immediately and has to go through a waiting period of 7 days. There is then a window of 7 days to perform it.  
-It is important to note that through an upgrade the ownership of the factory and its upgradeability can both be revoked.
+The factory can be upgraded to a newer version, allowing it to potentially recover from future user mistakes and add more functionalities as needed.  
+The upgrade cannot be done immediately and must go through a waiting period of 7 days. There is then a window of 7 days to perform the upgrade.  
+It is important to note that through an upgrade, the ownership of the factory and its upgradeability can both be revoked.
 
 # Development
 
