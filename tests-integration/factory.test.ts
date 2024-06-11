@@ -87,8 +87,8 @@ describe("Factory", function () {
     const erc = await manager.deployContract("MockERC20", {
       unique: true,
       constructorCalldata: CallData.compile([
-        byteArray.byteArrayFromString("ETHER"),
-        byteArray.byteArrayFromString("ETH"),
+        byteArray.byteArrayFromString("USDC"),
+        byteArray.byteArrayFromString("USDC"),
         uint256.bnToUint256(100e18),
         deployer.address,
         deployer.address,
@@ -130,33 +130,47 @@ describe("Factory", function () {
     await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
   });
 
-  it.only(`Cancel Claim: owner reclaim dust`, async function () {
+  it(`Cancel Claim: owner reclaim dust (gift_token == fee_token)`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
     const token = await manager.loadContract(claim.gift_token);
 
-    await claimInternal(claim, receiver, claimPrivateKey);
+    const { transaction_hash: transaction_hash_claim } = await claimInternal(claim, receiver, claimPrivateKey);
+    const txFeeCancelClaim = BigInt((await manager.getTransactionReceipt(transaction_hash_claim)).actual_fee.amount);
 
     const claimAddress = calculateClaimAddress(claim);
-    console.log("amount", await token.balance_of(claimAddress));
+
+    const balanceSenderBefore = await token.balance_of(deployer.address);
     factory.connect(deployer);
-    await factory.cancel(claim);
-    console.log("amount", await token.balance_of(claimAddress));
+    const { transaction_hash } = await factory.cancel(claim);
+    const txFeeCancel = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
+    // Check balance of the sender is correct
+    await token
+      .balance_of(deployer.address)
+      .should.eventually.equal(balanceSenderBefore + claim.fee_amount - txFeeCancel - txFeeCancelClaim);
+    // Check balance claim address address == 0
+    await token.balance_of(claimAddress).should.eventually.equal(0n);
   });
 
-  it.only(`Cancel Claim: gift/already-claimed`, async function () {
+  it(`Cancel Claim: gift/already-claimed (gift_token != fee_token)`, async function () {
+    const erc = await manager.deployContract("MockERC20", {
+      unique: true,
+      constructorCalldata: CallData.compile([
+        byteArray.byteArrayFromString("USDC"),
+        byteArray.byteArrayFromString("USDC"),
+        uint256.bnToUint256(100e18),
+        deployer.address,
+        deployer.address,
+      ]),
+    });
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, erc.address);
     const receiver = randomReceiver();
 
     await claimInternal(claim, receiver, claimPrivateKey);
-    const token = await manager.loadContract(claim.gift_token);
-    const claimAddress = calculateClaimAddress(claim);
-    console.log("amount", await token.balance_of(claimAddress));
     factory.connect(deployer);
-    await factory.cancel(claim);
-    console.log("amount", await token.balance_of(claimAddress));
+    await expectRevertWithErrorMessage("gift/already-claimed", () => factory.cancel(claim));
   });
 
   it(`Test pausable`, async function () {

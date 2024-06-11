@@ -134,8 +134,8 @@ describe("claim_external", function () {
     const erc = await manager.deployContract("MockERC20", {
       unique: true,
       constructorCalldata: CallData.compile([
-        byteArray.byteArrayFromString("ETHER"),
-        byteArray.byteArrayFromString("ETH"),
+        byteArray.byteArrayFromString("USDC"),
+        byteArray.byteArrayFromString("USDC"),
         uint256.bnToUint256(100e18),
         deployer.address,
         deployer.address,
