@@ -130,6 +130,35 @@ describe("Factory", function () {
     await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
   });
 
+  it.only(`Cancel Claim: owner reclaim dust`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
+    const token = await manager.loadContract(claim.gift_token);
+
+    await claimInternal(claim, receiver, claimPrivateKey);
+
+    const claimAddress = calculateClaimAddress(claim);
+    console.log("amount", await token.balance_of(claimAddress));
+    factory.connect(deployer);
+    await factory.cancel(claim);
+    console.log("amount", await token.balance_of(claimAddress));
+  });
+
+  it.only(`Cancel Claim: gift/already-claimed`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
+
+    await claimInternal(claim, receiver, claimPrivateKey);
+    const token = await manager.loadContract(claim.gift_token);
+    const claimAddress = calculateClaimAddress(claim);
+    console.log("amount", await token.balance_of(claimAddress));
+    factory.connect(deployer);
+    await factory.cancel(claim);
+    console.log("amount", await token.balance_of(claimAddress));
+  });
+
   it(`Test pausable`, async function () {
     // Deploy factory
     const { factory } = await setupGiftProtocol();
