@@ -15,27 +15,33 @@ The protocol implemented in this repository can be used for gifting tokens to a 
 Claim can be done in two ways:
 
 ### Through the account
+
 Since the escrow contract functions as an account, it can pay for its own transactions, meaning the recipient doesn't need funds to initiate the claim. This is ideal for onboarding new users who can claim a gift to a newly created and even undeployed account. The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens to cover the fee, these will be used for the claiming operation.  
 Once this is done, the account becomes blocked and it is not possible to send any transactions through it.
 
 ### Through the factory
-It is also possible for someone else to pay for the claim.  To do this, the dapp should ask the recipient to provide a valid signature using `claim_key.priv` to acknowledge that they approve only a specific recipient. This can then be submitted to the factory using `claim_external`.
+
+It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using `claim_key.priv` to acknowledge that they approve only a specific recipient. This can then be submitted to the factory using `claim_external`.
 
 ## Canceling Gifts
+
 Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the amount gifted and the fee he agreed paid for that gift.
 
-
 ## Factory Operations
+
 This section outlines all the operations that the factory is allowed to perform.  
 As we use OpenZeppelin's Ownable component, this factory has an owner.
 
 ### Get Dust
+
 The factory has a function allowing it to claim the dust left on an account. This action can only be done after a claim has been performed. This can also be used to recover in case a user has sent some tokens to the account.
 
 ### Pausable
-The owner has the capability to pause all deposits. However, it cannot prevent any claims from happening, nor can it prevent any cancellations.  
+
+The owner has the capability to pause all deposits. However, it cannot prevent any claims from happening, nor can it prevent any cancellations.
 
 ### Upgrade
+
 The factory can be upgraded to a newer version, allowing it to potentially recover from future user mistakes and add more functionalities as needed.  
 The upgrade cannot be done immediately and must go through a waiting period of 7 days. There is then a window of 7 days to perform the upgrade.  
 It is important to note that through an upgrade, the ownership of the factory and its upgradeability can both be revoked.
