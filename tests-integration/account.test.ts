@@ -2,9 +2,6 @@ import { expect } from "chai";
 import { Account, RPC, num } from "starknet";
 import {
   GIFT_MAX_FEE,
-  buildCallDataClaim,
-  calculateClaimAddress,
-  claimInternal,
   defaultDepositTestSetup,
   deployer,
   expectRevertWithErrorMessage,
@@ -14,8 +11,8 @@ import {
 } from "../lib";
 
 describe("Gifting", function () {
-  for (const useTxV3 of [false]) {
-    it.only(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
+  for (const useTxV3 of [true, false]) {
+    it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const claim = await defaultDepositTestSetup(factory, useTxV3);
       const receiver = randomReceiver();
@@ -45,11 +42,11 @@ describe("Gifting", function () {
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
-          claimInternal(claim, receiver, { resourceBounds: newResourceBounds, tip: 1 }),
+          claim.claimInternal(receiver, { resourceBounds: newResourceBounds, tip: 1 }),
         );
       } else {
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
-          claimInternal(claim, receiver, {
+          claim.claimInternal(receiver, {
             maxFee: GIFT_MAX_FEE + 1n,
           }),
         );
@@ -61,16 +58,14 @@ describe("Gifting", function () {
     const { factory } = await setupGiftProtocol();
     const claim = await defaultDepositTestSetup(factory);
 
-    const claimAddress = calculateClaimAddress(claim);
-
     const claimAccount = new Account(
       manager,
-      num.toHex(claimAddress),
+      claim.claimAddress,
       claim.signer.privateKey,
       undefined,
       RPC.ETransactionVersion.V2,
     );
-    const claimContract = await manager.loadContract(claimAddress);
+    const claimContract = await manager.loadContract(claim.claimAddress);
     claimContract.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
   });
@@ -85,11 +80,9 @@ describe("Gifting", function () {
       constructorCalldata: [claimAccountClassHash, deployer.address],
     });
 
-    const claimAddress = calculateClaimAddress(claim);
-
     const claimAccount = new Account(
       manager,
-      num.toHex(claimAddress),
+      claim.claimAddress,
       claim.signer.privateKey,
       undefined,
       RPC.ETransactionVersion.V2,
@@ -106,11 +99,9 @@ describe("Gifting", function () {
     const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    const claimAddress = calculateClaimAddress(claim);
-
     const claimAccount = new Account(
       manager,
-      num.toHex(claimAddress),
+      claim.claimAddress,
       claim.signer.privateKey,
       undefined,
       RPC.ETransactionVersion.V2,
@@ -118,7 +109,7 @@ describe("Gifting", function () {
 
     factory.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
-      factory.get_dust(claim, receiver, { maxFee: 400000000000000n }),
+      factory.get_dust(claim.callDataClaim, receiver, { maxFee: 400000000000000n }),
     );
   });
 
@@ -127,11 +118,9 @@ describe("Gifting", function () {
     const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    const claimAddress = calculateClaimAddress(claim);
-
     const claimAccount = new Account(
       manager,
-      num.toHex(claimAddress),
+      claim.claimAddress,
       claim.signer.privateKey,
       undefined,
       RPC.ETransactionVersion.V2,
@@ -141,12 +130,12 @@ describe("Gifting", function () {
       claimAccount.execute([
         {
           contractAddress: factory.address,
-          calldata: [buildCallDataClaim(claim), receiver],
+          calldata: [claim.callDataClaim, receiver],
           entrypoint: "claim_internal",
         },
         {
           contractAddress: factory.address,
-          calldata: [buildCallDataClaim(claim), receiver],
+          calldata: [claim.callDataClaim, receiver],
           entrypoint: "claim_internal",
         },
       ]),
@@ -159,9 +148,9 @@ describe("Gifting", function () {
     const receiver = randomReceiver();
 
     // double claim
-    await claimInternal(claim, receiver);
+    await claim.claimInternal(receiver);
     await expectRevertWithErrorMessage("gift-acc/invalid-claim-nonce", () =>
-      claimInternal(claim, receiver, { skipValidate: false }),
+      claim.claimInternal(receiver, { skipValidate: false }),
     );
   });
   // TODO Tests:

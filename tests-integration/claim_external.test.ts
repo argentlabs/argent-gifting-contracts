@@ -1,4 +1,4 @@
-import { claimExternal, defaultDepositTestSetup, randomReceiver, setupGiftProtocol } from "../lib";
+import { defaultDepositTestSetup, randomReceiver, setupGiftProtocol } from "../lib";
 
 describe("claim_external", function () {
   for (const useTxV3 of [false, true]) {
@@ -7,7 +7,7 @@ describe("claim_external", function () {
       const claim = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
 
-      await claimExternal(claim, receiver);
+      await claim.claimExternal(receiver);
     });
   }
 });

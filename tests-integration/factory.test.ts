@@ -4,8 +4,6 @@ import {
   GIFT_AMOUNT,
   GIFT_MAX_FEE,
   LegacyStarknetKeyPair,
-  calculateClaimAddress,
-  claimInternal,
   defaultDepositTestSetup,
   deployer,
   expectRevertWithErrorMessage,
@@ -29,10 +27,9 @@ describe("Factory", function () {
       claim.fee_amount,
       claim.claim_pubkey,
     );
-
-    const correctAddress = calculateClaimAddress(claim);
-    expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
+    expect(claimAddress).to.be.equal(num.toBigInt(claim.claimAddress));
   });
+
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
@@ -40,13 +37,12 @@ describe("Factory", function () {
       const receiver = randomReceiver();
       const receiverDust = randomReceiver();
 
-      await claimInternal(claim, receiver);
-      const claimAddress = calculateClaimAddress(claim);
+      await claim.claimInternal(receiver);
       const token = await manager.loadContract(claim.gift_token);
 
       // Final check
 
-      const dustBalance = await token.balance_of(claimAddress);
+      const dustBalance = await token.balance_of(claim.claimAddress);
       expect(dustBalance < GIFT_MAX_FEE).to.be.true;
       await token.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
 
@@ -54,8 +50,8 @@ describe("Factory", function () {
       await token.balance_of(receiverDust).should.eventually.equal(0n);
 
       factory.connect(deployer);
-      await factory.get_dust(claim, receiverDust);
-      await token.balance_of(claimAddress).should.eventually.equal(0n);
+      await factory.get_dust(claim.callDataClaim, receiverDust);
+      await token.balance_of(claim.claimAddress).should.eventually.equal(0n);
       await token.balance_of(receiverDust).should.eventually.equal(dustBalance);
     });
   }
@@ -65,20 +61,19 @@ describe("Factory", function () {
     const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
     const token = await manager.loadContract(claim.gift_token);
-    const claimAddress = calculateClaimAddress(claim);
 
     const balanceSenderBefore = await token.balance_of(deployer.address);
     factory.connect(deployer);
-    const { transaction_hash } = await factory.cancel(claim);
+    const { transaction_hash } = await factory.cancel(claim.callDataClaim);
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await token
       .balance_of(deployer.address)
       .should.eventually.equal(balanceSenderBefore + claim.gift_amount + claim.fee_amount - txFee);
     // Check balance claim address address == 0
-    await token.balance_of(claimAddress).should.eventually.equal(0n);
+    await token.balance_of(claim.claimAddress).should.eventually.equal(0n);
 
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () => claimInternal(claim, receiver));
+    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () => claim.claimInternal(receiver));
   });
 
   it(`Test pausable`, async function () {
@@ -104,11 +99,10 @@ describe("Factory", function () {
 
     await factory.unpause();
     const claim = await defaultDepositTestSetup(factory, false);
-    await claimInternal(claim, receiver);
+    await claim.claimInternal(receiver);
 
     // Final check
-    const claimAddress = calculateClaimAddress(claim);
-    const dustBalance = await tokenContract.balance_of(claimAddress);
+    const dustBalance = await tokenContract.balance_of(claim.claimAddress);
     expect(dustBalance < GIFT_MAX_FEE).to.be.true;
     await tokenContract.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
   });

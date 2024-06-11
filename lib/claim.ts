@@ -1,5 +1,16 @@
-import { Account, RPC, TransactionReceipt, UniversalDetails, ec, encode, num, shortString, uint256 } from "starknet";
-import { LegacyStarknetKeyPair, calculateClaimAddress, deployer, ethAddress, manager, strkAddress } from ".";
+import {
+  Account,
+  CallData,
+  RPC,
+  TransactionReceipt,
+  UniversalDetails,
+  ec,
+  encode,
+  hash,
+  shortString,
+  uint256,
+} from "starknet";
+import { LegacyStarknetKeyPair, deployer, ethAddress, manager, strkAddress } from ".";
 
 const typesRev1 = {
   StarknetDomain: [
@@ -39,7 +50,7 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
 export class Claim {
   constructor(
     public factory: string,
-    public class_hash: string,
+    public class_hash: string, // TODO REMOVE ALL underscores
     public sender: string,
     public gift_token: string,
     public gift_amount: bigint,
@@ -53,26 +64,37 @@ export class Claim {
   }
 
   get claimAddress(): string {
-    return calculateClaimAddress(this);
+    return hash.calculateContractAddressFromHash(
+      0,
+      this.class_hash,
+      CallData.compile({
+        sender: this.sender,
+        gift_token: this.gift_token,
+        gift_amount: uint256.bnToUint256(this.gift_amount),
+        fee_token: this.fee_token,
+        fee_amount: this.fee_amount,
+        claim_pubkey: this.claim_pubkey,
+      }),
+      this.factory,
+    );
   }
 
   get callDataClaim() {
     return {
-      ...this,
+      factory: this.factory,
+      class_hash: this.class_hash,
+      sender: this.sender,
+      gift_token: this.gift_token,
       gift_amount: uint256.bnToUint256(this.gift_amount),
+      fee_token: this.fee_token,
+      fee_amount: this.fee_amount,
+      claim_pubkey: this.claim_pubkey,
     };
   }
 
   public async claimInternal(receiver: string, details?: UniversalDetails): Promise<TransactionReceipt> {
-    const claimAddress = this.claimAddress;
-
     const txVersion = useTxv3(this.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-    const claimAccount = new Account(manager, num.toHex(claimAddress), this.signer, undefined, txVersion);
-    console.log("this");
-    console.log(this);
-    console.log(this.claimAddress)
-    console.log("claimAccount");
-    console.log(claimAccount);
+    const claimAccount = new Account(manager, this.claimAddress, this.signer, undefined, txVersion);
     return (await claimAccount.execute(
       [
         {
@@ -85,52 +107,19 @@ export class Claim {
       { ...details },
     )) as TransactionReceipt;
   }
-}
 
-export function buildCallDataClaim(claim: Claim) {
-  return {
-    ...claim,
-    gift_amount: uint256.bnToUint256(claim.gift_amount),
-  };
-}
+  public async claimExternal(receiver: string, account = deployer): Promise<TransactionReceipt> {
+    const claimExternalData = await getClaimExternalData({ receiver });
+    const signature = await this.signer.signMessage(claimExternalData, this.claimAddress);
 
-// Move this onto the claim class
-export async function claimExternal(claim: Claim, receiver: string, account = deployer): Promise<TransactionReceipt> {
-  const claimAddress = calculateClaimAddress(claim);
-  const claimExternalData = await getClaimExternalData({ receiver });
-  const signature = await claim.signer.signMessage(claimExternalData, claimAddress);
-
-  return (await account.execute([
-    {
-      contractAddress: claim.factory,
-      calldata: [buildCallDataClaim(claim), receiver, signature],
-      entrypoint: "claim_external",
-    },
-  ])) as TransactionReceipt;
-}
-
-// Move this onto the claim class
-export async function claimInternal(
-  claim: Claim,
-  receiver: string,
-  details?: UniversalDetails,
-): Promise<TransactionReceipt> {
-  const claimAddress = calculateClaimAddress(claim);
-
-  const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), claim.signer, undefined, txVersion);
-  console.log(claim);
-  return (await claimAccount.execute(
-    [
+    return (await account.execute([
       {
-        contractAddress: claim.factory,
-        calldata: [buildCallDataClaim(claim), receiver],
-        entrypoint: "claim_internal",
+        contractAddress: this.factory,
+        calldata: [this.callDataClaim, receiver, signature],
+        entrypoint: "claim_external",
       },
-    ],
-    undefined,
-    { ...details },
-  )) as TransactionReceipt;
+    ])) as TransactionReceipt;
+  }
 }
 
 function useTxv3(tokenAddress: string): boolean {

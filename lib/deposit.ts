@@ -1,4 +1,4 @@
-import { Account, CallData, Contract, hash, uint256 } from "starknet";
+import { Account, Contract } from "starknet";
 import { Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
 export const GIFT_AMOUNT = 1000000000000000n;
@@ -63,20 +63,4 @@ export async function defaultDepositTestSetup(
   );
 
   return claim;
-}
-
-export function calculateClaimAddress(claim: Claim): string {
-  return hash.calculateContractAddressFromHash(
-    0,
-    claim.class_hash,
-    CallData.compile({
-      sender: claim.sender,
-      gift_token: claim.gift_token,
-      gift_amount: uint256.bnToUint256(claim.gift_amount),
-      fee_token: claim.fee_token,
-      fee_amount: claim.fee_amount,
-      claim_pubkey: claim.claim_pubkey,
-    }),
-    claim.factory,
-  );
 }
