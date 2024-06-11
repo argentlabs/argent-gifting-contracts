@@ -21,6 +21,7 @@ struct StarknetDomain {
     revision: felt252,
 }
 
+/// @notice The struct the person claiming the gift has to sign when using claim_external
 #[derive(Drop, Copy)]
 pub struct ClaimExternal {
     pub receiver: ContractAddress
@@ -52,7 +53,7 @@ impl StructHashClaimExternal of IStructHashRev1<ClaimExternal> {
 impl ClaimExternalHash of IOffChainMessageHashRev1<ClaimExternal> {
     fn get_message_hash_rev_1(self: @ClaimExternal, account: ContractAddress) -> felt252 {
         let chain_id = get_tx_info().unbox().chain_id;
-        let domain = StarknetDomain { name: 'GiftAccount.claim_external', version: '1', chain_id, revision: 1 };
+        let domain = StarknetDomain { name: 'GiftFactory.claim_external', version: '1', chain_id, revision: 1 };
         // We could hardcode mainnet && sepolia for better performance
         poseidon_hash_span(
             array!['StarkNet Message', domain.get_struct_hash_rev_1(), account.into(), self.get_struct_hash_rev_1()]
