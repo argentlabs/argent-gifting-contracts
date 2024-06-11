@@ -18,7 +18,7 @@ import {
 describe("Factory", function () {
   it(`Test calculate claim address`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup(factory);
+    const claim = await defaultDepositTestSetup(factory);
 
     const claimAddress = await factory.get_claim_address(
       claim.class_hash,
@@ -36,11 +36,11 @@ describe("Factory", function () {
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+      const claim = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
       const receiverDust = randomReceiver();
 
-      await claimInternal(claim, receiver, claimPrivateKey);
+      await claimInternal(claim, receiver, claim.signer.privateKey);
       const claimAddress = calculateClaimAddress(claim);
       const token = await manager.loadContract(claim.gift_token);
 
@@ -62,7 +62,7 @@ describe("Factory", function () {
 
   it(`Test Cancel Claim`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
     const token = await manager.loadContract(claim.gift_token);
     const claimAddress = calculateClaimAddress(claim);
@@ -79,7 +79,7 @@ describe("Factory", function () {
     await token.balance_of(claimAddress).should.eventually.equal(0n);
 
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal(claim, receiver, claimPrivateKey),
+      claimInternal(claim, receiver, claim.signer.privateKey),
     );
   });
 
@@ -105,7 +105,7 @@ describe("Factory", function () {
     );
 
     await factory.unpause();
-    const { claim } = await defaultDepositTestSetup(factory, false, claimSigner.privateKey);
+    const claim = await defaultDepositTestSetup(factory, false);
     await claimInternal(claim, receiver, claimSigner.privateKey);
 
     // Final check

@@ -36,18 +36,30 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
   };
 }
 
-export interface AccountConstructorArguments {
-  sender: string;
-  gift_token: string;
-  gift_amount: bigint;
-  fee_token: string;
-  fee_amount: bigint;
-  claim_pubkey: bigint;
-}
+export class Claim {
+  signer: LegacyStarknetKeyPair;
+  constructor(
+    public factory: string,
+    public class_hash: string,
+    public sender: string,
+    public gift_token: string,
+    public gift_amount: bigint,
+    public fee_token: string,
+    public fee_amount: bigint,
+    signer = new LegacyStarknetKeyPair(),
+  ) {
+    this.signer = signer;
+    // needs a signer instead of a public key
+    // get fn claim_pubkey
+  }
 
-export interface Claim extends AccountConstructorArguments {
-  factory: string;
-  class_hash: string;
+  get claim_pubkey(): bigint {
+    return this.signer.publicKey;
+  }
+
+  get claim_address(): string {
+    return calculateClaimAddress(this);
+  }
 }
 
 export function buildCallDataClaim(claim: Claim) {
@@ -57,6 +69,7 @@ export function buildCallDataClaim(claim: Claim) {
   };
 }
 
+// Move this onto the claim class
 export async function claimExternal(
   claim: Claim,
   receiver: string,
@@ -77,6 +90,8 @@ export async function claimExternal(
   ])) as TransactionReceipt;
 }
 
+
+// Move this onto the claim class
 export async function claimInternal(
   claim: Claim,
   receiver: string,

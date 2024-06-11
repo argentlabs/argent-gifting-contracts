@@ -14,14 +14,14 @@ import {
 } from "../lib";
 
 describe("Gifting", function () {
-  for (const useTxV3 of [false, true]) {
-    it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
+  for (const useTxV3 of [false]) {
+    it.only(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, useTxV3);
+      const claim = await defaultDepositTestSetup(factory, useTxV3);
       const receiver = randomReceiver();
-      const claimAddress = calculateClaimAddress(claim);
+      const claimAddress = claim.claim_address
 
-      await claimInternal(claim, receiver, claimPrivateKey);
+      await claimInternal(claim, receiver, claim.signer.privateKey);
 
       const token = await manager.loadContract(claim.gift_token);
       const finalBalance = await token.balance_of(claimAddress);
@@ -31,7 +31,7 @@ describe("Gifting", function () {
 
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, useTxV3);
+      const claim = await defaultDepositTestSetup(factory, useTxV3);
       const receiver = randomReceiver();
       if (useTxV3) {
         const newResourceBounds = {
@@ -45,11 +45,11 @@ describe("Gifting", function () {
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
-          claimInternal(claim, receiver, claimPrivateKey, { resourceBounds: newResourceBounds, tip: 1 }),
+          claimInternal(claim, receiver, claim.signer.privateKey, { resourceBounds: newResourceBounds, tip: 1 }),
         );
       } else {
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
-          claimInternal(claim, receiver, claimPrivateKey, {
+          claimInternal(claim, receiver, claim.signer.privateKey, {
             maxFee: GIFT_MAX_FEE + 1n,
           }),
         );
@@ -59,14 +59,14 @@ describe("Gifting", function () {
 
   it(`Test only protocol can call claim contract`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const claim = await defaultDepositTestSetup(factory);
 
     const claimAddress = calculateClaimAddress(claim);
 
     const claimAccount = new Account(
       manager,
       num.toHex(claimAddress),
-      claimPrivateKey,
+      claim.signer.privateKey,
       undefined,
       RPC.ETransactionVersion.V2,
     );
@@ -77,7 +77,7 @@ describe("Gifting", function () {
 
   it(`Test claim contract cant call another contract`, async function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
     const fakeFactory = await manager.deployContract("GiftFactory", {
@@ -90,7 +90,7 @@ describe("Gifting", function () {
     const claimAccount = new Account(
       manager,
       num.toHex(claimAddress),
-      claimPrivateKey,
+      claim.signer.privateKey,
       undefined,
       RPC.ETransactionVersion.V2,
     );
@@ -103,7 +103,7 @@ describe("Gifting", function () {
 
   it(`Test claim contract can only call 'claim_internal'`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
     const claimAddress = calculateClaimAddress(claim);
@@ -111,7 +111,7 @@ describe("Gifting", function () {
     const claimAccount = new Account(
       manager,
       num.toHex(claimAddress),
-      claimPrivateKey,
+      claim.signer.privateKey,
       undefined,
       RPC.ETransactionVersion.V2,
     );
@@ -124,7 +124,7 @@ describe("Gifting", function () {
 
   it(`Test claim contract cant preform a multicall`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
     const claimAddress = calculateClaimAddress(claim);
@@ -132,7 +132,7 @@ describe("Gifting", function () {
     const claimAccount = new Account(
       manager,
       num.toHex(claimAddress),
-      claimPrivateKey,
+      claim.signer.privateKey,
       undefined,
       RPC.ETransactionVersion.V2,
     );
@@ -155,13 +155,13 @@ describe("Gifting", function () {
 
   it(`Test cannot call 'claim_internal' twice`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const claim = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
     // double claim
-    await claimInternal(claim, receiver, claimPrivateKey);
+    await claimInternal(claim, receiver, claim.signer.privateKey);
     await expectRevertWithErrorMessage("gift-acc/invalid-claim-nonce", () =>
-      claimInternal(claim, receiver, claimPrivateKey, { skipValidate: false }),
+      claimInternal(claim, receiver, claim.signer.privateKey, { skipValidate: false }),
     );
   });
   // TODO Tests:

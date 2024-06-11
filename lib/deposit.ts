@@ -1,5 +1,5 @@
-import { Account, CallData, Contract, ec, encode, hash, uint256 } from "starknet";
-import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
+import { Account, CallData, Contract, hash, uint256 } from "starknet";
+import { Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
 export const GIFT_AMOUNT = 1000000000000000n;
 export const GIFT_MAX_FEE = 50000000000000n;
@@ -33,21 +33,25 @@ export async function deposit(
 export async function defaultDepositTestSetup(
   factory: Contract,
   useTxV3 = false,
-  giftPrivateKey?: string,
+  signer?: LegacyStarknetKeyPair,
   giftTokenAddress?: string,
   giftAmount = GIFT_AMOUNT,
   giftMaxFee = GIFT_MAX_FEE,
-): Promise<{
-  claim: Claim;
-  claimPrivateKey: string;
-}> {
+): Promise<Claim> {
   const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
 
-  // static signer  for gas profiling
-  const claimSigner = new LegacyStarknetKeyPair(
-    giftPrivateKey || `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`,
+  const claimClassHash = await factory.get_latest_claim_class_hash();
+  const claim = new Claim(
+    factory.address,
+    claimClassHash,
+    deployer.address,
+    giftTokenAddress || tokenContract.address,
+    giftAmount,
+    tokenContract.address,
+    giftMaxFee,
+    signer,
   );
-  const claimPubKey = claimSigner.publicKey;
+  
   await deposit(
     deployer,
     giftAmount,
@@ -55,41 +59,23 @@ export async function defaultDepositTestSetup(
     factory.address,
     tokenContract.address,
     giftTokenAddress || tokenContract.address,
-    claimPubKey,
+    claim.claim_pubkey,
   );
 
-  const claimClassHash = await factory.get_latest_claim_class_hash();
-
-  const claim: Claim = {
-    factory: factory.address,
-    class_hash: claimClassHash,
-    sender: deployer.address,
-    gift_token: giftTokenAddress || tokenContract.address,
-    gift_amount: giftAmount,
-    fee_token: tokenContract.address,
-    fee_amount: giftMaxFee,
-    claim_pubkey: claimPubKey,
-  };
-
-  return { claim, claimPrivateKey: claimSigner.privateKey };
+  return claim;
 }
 
 export function calculateClaimAddress(claim: Claim): string {
-  const constructorArgs: AccountConstructorArguments = {
-    sender: claim.sender,
-    gift_token: claim.gift_token,
-    gift_amount: claim.gift_amount,
-    fee_token: claim.fee_token,
-    fee_amount: claim.fee_amount,
-    claim_pubkey: claim.claim_pubkey,
-  };
-
   const claimAddress = hash.calculateContractAddressFromHash(
     0,
     claim.class_hash,
     CallData.compile({
-      ...constructorArgs,
+      sender: claim.sender,
+      gift_token: claim.gift_token,
       gift_amount: uint256.bnToUint256(claim.gift_amount),
+      fee_token: claim.fee_token,
+      fee_amount: claim.fee_amount,
+      claim_pubkey: claim.claim_pubkey,
     }),
     claim.factory,
   );
