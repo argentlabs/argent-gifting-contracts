@@ -1,4 +1,3 @@
-import { RPC } from "starknet";
 import { LegacyStarknetKeyPair, claimInternal, deployer, deposit, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
@@ -19,8 +18,8 @@ const ethContract = await manager.tokens.ethContract();
 const strkContract = await manager.tokens.strkContract();
 
 const tokens = [
-  { giftTokenContract: ethContract, unit: "WEI" as RPC.PriceUnit },
-  { giftTokenContract: strkContract, unit: "FRI" as RPC.PriceUnit },
+  { giftTokenContract: ethContract, unit: "WEI" },
+  { giftTokenContract: strkContract, unit: "FRI" },
 ];
 
 for (const { giftTokenContract, unit } of tokens) {
