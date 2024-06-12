@@ -59,9 +59,9 @@ describe("Claim External", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    claim.factory = "0x2";
-
     const claimAddress = calculateClaimAddress(claim);
+
+    claim.factory = "0x2";
 
     const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
     const claimExternalData = await getClaimExternalData({ receiver });
@@ -113,14 +113,11 @@ describe("Claim External", function () {
     const receiver = randomReceiver();
 
     const claimAddress = calculateClaimAddress(claim);
-    const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-    const claimExternalData = await getClaimExternalData({ receiver });
-    const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
 
     claim.claim_pubkey = 1n;
 
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      deployer.execute(factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, signature)),
+      claimExternal(claim, receiver, claimPrivateKey, claimAddress),
     );
   });
 
