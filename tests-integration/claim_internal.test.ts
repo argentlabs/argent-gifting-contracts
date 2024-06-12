@@ -55,6 +55,18 @@ describe("Claim Internal", function () {
       }
     });
   }
+
+  it(`Call claim internal twice`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const receiver = randomReceiver();
+
+    await claimInternal(claim, receiver, claimPrivateKey);
+    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
+      claimInternal(claim, receiver, claimPrivateKey),
+    );
+  });
+
   it(`Not possible to re-enter claim internal`, async function () {
     const { factory } = await setupGiftProtocol();
     const reentrant = await manager.deployContract("ReentrantERC20", {
