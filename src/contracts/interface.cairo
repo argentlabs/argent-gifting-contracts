@@ -80,6 +80,7 @@ pub struct AccountConstructorArguments {
     pub claim_pubkey: felt252
 }
 
+#[derive(Serde, Drop, Copy)]
 pub enum GiftStatus {
     ClaimedOrCancelled,
     Ready,
