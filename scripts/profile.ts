@@ -1,5 +1,5 @@
 import { Account, RPC, num } from "starknet";
-import { Claim, LegacyStarknetKeyPair, calculateClaimAddress, deployer, manager } from "../lib";
+import { Claim, LegacyStarknetKeyPair, calculateClaimAddress, deployer, deposit, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -37,25 +37,17 @@ for (const { giftTokenContract, unit } of tokens) {
 
     // Make a gift
     const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
-    const calls = [];
-    if (giftTokenContract.address === feeTokenContract.address) {
-      calls.push(giftTokenContract.populateTransaction.approve(factory.address, amount + maxFee));
-    } else {
-      calls.push(giftTokenContract.populateTransaction.approve(factory.address, amount));
-      calls.push(feeTokenContract.populateTransaction.approve(factory.address, maxFee));
-    }
-    calls.push(
-      factory.populateTransaction.deposit(
-        giftTokenContract.address,
-        amount,
-        feeTokenContract.address,
-        maxFee,
-        claimPubkey,
-      ),
-    );
     await profiler.profile(
       `Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await deployer.execute(calls),
+      await deposit(
+        deployer,
+        amount,
+        maxFee,
+        factory.address,
+        feeTokenContract.address,
+        giftTokenContract.address,
+        claimPubkey,
+      ),
     );
 
     const claim: Claim = {
@@ -68,7 +60,7 @@ for (const { giftTokenContract, unit } of tokens) {
       fee_amount: maxFee,
       claim_pubkey: claimPubkey,
     };
-    
+
     // Get account claiming address
     const claimAddress = await calculateClaimAddress(claim);
 

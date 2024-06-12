@@ -1,4 +1,4 @@
-import { Account, CallData, Contract, ec, encode, hash, uint256 } from "starknet";
+import { Account, CallData, Contract, InvokeFunctionResponse, ec, encode, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
 export const GIFT_AMOUNT = 1000000000000000n;
@@ -12,17 +12,17 @@ export async function deposit(
   feeTokenAddress: string,
   giftTokenAddress: string,
   claimSignerPubKey: bigint,
-) {
+): Promise<InvokeFunctionResponse> {
   const factory = await manager.loadContract(factoryAddress);
   const feeToken = await manager.loadContract(feeTokenAddress);
   const giftToken = await manager.loadContract(giftTokenAddress);
   if (feeTokenAddress === giftTokenAddress) {
-    await sender.execute([
+    return await sender.execute([
       feeToken.populateTransaction.approve(factory.address, giftAmount + feeAmount),
       factory.populateTransaction.deposit(giftTokenAddress, giftAmount, feeTokenAddress, feeAmount, claimSignerPubKey),
     ]);
   } else {
-    await sender.execute([
+    return await sender.execute([
       feeToken.populateTransaction.approve(factory.address, feeAmount),
       giftToken.populateTransaction.approve(factory.address, giftAmount),
       factory.populateTransaction.deposit(giftTokenAddress, giftAmount, feeTokenAddress, feeAmount, claimSignerPubKey),
