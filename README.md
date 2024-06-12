@@ -1,16 +1,22 @@
-// TODO ADDRESS ? COMPUTED
-// REDEEM DUST HACKY WAY THINGY
 # Starknet Gifting
 
-The protocol implemented in this repository can be used for gifting tokens to a recipient without giving custody of the tokens to a third party without knowing what the recipient is upfront.
+The protocol implemented in this repository can be used for gifting tokens to a recipient without giving custody of the tokens to a third party without knowing what the recipient is upfront. Since the escrow contract functions as an account, it can pay for its own transactions, meaning the recipient doesn't need funds to initiate the claim. This is ideal for onboarding new users who can claim a gift to a newly created and even undeployed account.
 
 ## High level Flow
 
 1. The sender creates a key pair `claim_key` locally.
 2. The sender deposits the tokens to be transferred, along with a small amount of fee token (ETH or STK) to cover the fee, to the factory. The sender also specifies `claim_key.pub` as an identifier.
-3. The factory creates an escrow account. This account is uniquely identified by several variables such as the sender, the public key, the amount of the gift, etc. given when depositing the gift.
+3. The factory deploys an escrow account.
 4. The sender shares the private key `claim_key.priv` with the recipient over an external channel such as email or phone.
 5. The recipient can claims the tokens by transferring them from the escrow account to an account he controls using `claim_key.priv` to sign the transaction.
+
+### Gift account address calculation
+To compute the address of the escrow account, you can either call `get_claim_address()` with the relevant arguments. Or you can do it off-chain using, for example, starknetJS.  
+The parameters are as follow:
+ - Salt: 0
+ - Class hash: the class hash of the escrow account
+ - Constructor calldata: The constructor argument used to deploy the escrow account
+ - Deployer address: The address of the factory
 
 ## Claiming
 
@@ -18,7 +24,7 @@ Claim can be done in two ways:
 
 ### Through the account
 
-Since the escrow contract functions as an account, it can pay for its own transactions, meaning the recipient doesn't need funds to initiate the claim. This is ideal for onboarding new users who can claim a gift to a newly created and even undeployed account. The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens to cover the fee, these will be used for the claiming operation.  
+The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens to cover the fee, it will be used for the claiming operation.  
 Once this is done, the account becomes blocked and it is not possible to send any transactions through it.
 
 ### Through the factory
@@ -27,7 +33,8 @@ It is also possible for someone else to pay for the claim. To do this, the dapp 
 
 ## Canceling Gifts
 
-Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the amount gifted and the fee he agreed paid for that gift.
+Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the amount gifted and the fee he agreed paid for that gift.  
+If the gift has already been claimed, this allows the sender to redeem the leftover dust remaining. 
 
 ## Factory Operations
 
