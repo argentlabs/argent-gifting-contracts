@@ -77,11 +77,10 @@ export async function claimExternal(
   receiver: string,
   claimPrivateKey: string,
   account = deployer,
-  dustReceiver?: string,
+  dustReceiver = "0x0",
 ): Promise<TransactionReceipt> {
   const claimAddress = calculateClaimAddress(claim);
   const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-  dustReceiver = dustReceiver ?? "0x0";
   const claimExternalData = await getClaimExternalData({ receiver, dustReceiver });
   const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
 
