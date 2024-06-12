@@ -1,5 +1,5 @@
-import { Account, RPC, num, uint256 } from "starknet";
-import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
+import { RPC } from "starknet";
+import { LegacyStarknetKeyPair, claimInternal, deployer, deposit, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -15,47 +15,45 @@ const factory = await manager.deployContract("GiftFactory", {
   constructorCalldata: [claimAccountClassHash, deployer.address],
 });
 
-for (const useTxV3 of [false, true]) {
-  const signer = new LegacyStarknetKeyPair(12n);
-  const claimPubkey = signer.publicKey;
-  const amount = 1000000000000000n;
-  const maxFee = 50000000000000n;
-  const receiver = "0x42";
+const ethContract = await manager.tokens.ethContract();
+const strkContract = await manager.tokens.strkContract();
 
-  // Make a gift
-  const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
-  tokenContract.connect(deployer);
-  factory.connect(deployer);
-  await tokenContract.approve(factory.address, amount + maxFee);
-  await profiler.profile(
-    `Deposit (txV3: ${useTxV3})`,
-    await factory.deposit(amount, maxFee, tokenContract.address, claimPubkey),
-  );
+const tokens = [
+  { giftTokenContract: ethContract, unit: "WEI" as RPC.PriceUnit },
+  { giftTokenContract: strkContract, unit: "FRI" as RPC.PriceUnit },
+];
 
-  // Ensure there is a contract for the claim
-  const claimAddress = await factory.get_claim_address(
-    claimAccountClassHash,
-    deployer.address,
-    amount,
-    maxFee,
-    tokenContract.address,
-    claimPubkey,
-  );
+for (const { giftTokenContract, unit } of tokens) {
+  for (const useTxV3 of [false, true]) {
+    const signer = new LegacyStarknetKeyPair(42n);
+    const claimPubkey = signer.publicKey;
+    const amount = 1000000000000000n;
+    const maxFee = 50000000000000n;
+    const receiver = "0x42";
 
-  const claim = {
-    factory: factory.address,
-    class_hash: claimAccountClassHash,
-    sender: deployer.address,
-    amount: uint256.bnToUint256(amount),
-    max_fee: maxFee,
-    token: tokenContract.address,
-    claim_pubkey: claimPubkey,
-  };
+    // Mint tokens
+    await manager.mint(deployer.address, amount, unit);
+    await manager.mint(deployer.address, maxFee, manager.tokens.unitTokenContract(useTxV3));
 
-  const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), signer, undefined, txVersion);
-  factory.connect(claimAccount);
-  await profiler.profile(`Claim (txV3: ${useTxV3})`, await factory.claim_internal(claim, receiver));
+    // Make a gift
+    const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
+    const { response, claim } = await await deposit(
+      deployer,
+      amount,
+      maxFee,
+      factory.address,
+      feeTokenContract.address,
+      giftTokenContract.address,
+      claimPubkey,
+    );
+
+    await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
+
+    await profiler.profile(
+      `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
+      await claimInternal(claim, receiver, signer.privateKey),
+    );
+  }
 }
 
 profiler.printSummary();
