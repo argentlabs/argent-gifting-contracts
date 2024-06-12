@@ -56,6 +56,7 @@ mod GiftFactory {
         token: ContractAddress,
         amount: u256,
         receiver: ContractAddress,
+        through_factory: bool,
     }
 
     #[event]
@@ -195,7 +196,7 @@ mod GiftFactory {
             assert(gift_balance > 0, 'gift/already-claimed');
             if claim.gift_token == claim.fee_token {
                 // Sender also gets the dust
-                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, claim.sender);
+                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, claim.sender, false);
             } else {
                 // Transfer both tokens in a multicall
                 let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
@@ -205,9 +206,17 @@ mod GiftFactory {
                         claim_address,
                         array![
                             TransferFromAccount {
-                                token: claim.gift_token, amount: gift_balance, receiver: claim.sender
+                                token: claim.gift_token,
+                                amount: gift_balance,
+                                receiver: claim.sender,
+                                through_factory: false
                             },
-                            TransferFromAccount { token: claim.fee_token, amount: fee_balance, receiver: claim.sender }
+                            TransferFromAccount {
+                                token: claim.fee_token,
+                                amount: fee_balance,
+                                receiver: claim.sender,
+                                through_factory: false
+                            }
                         ]
                             .span()
                     );
@@ -221,10 +230,10 @@ mod GiftFactory {
             let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
             assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
             if claim.gift_token == claim.fee_token {
-                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, receiver);
+                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, receiver, false);
             } else {
                 let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
-                self.transfer_from_account(claim, claim_address, claim.fee_token, fee_balance, claim.sender);
+                self.transfer_from_account(claim, claim_address, claim.fee_token, fee_balance, claim.sender, false);
             }
         }
 
@@ -292,24 +301,44 @@ mod GiftFactory {
             let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(gift_address);
             assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
 
-            // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
-            // but will increase the complexity of the code for a small performance GiftCanceled
+            let mut calls = array![];
+            if claim.gift_token == claim.fee_token && dust_receiver == receiver {
+                // optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
+                calls
+                    .append(
+                        TransferFromAccount {
+                            token: claim.gift_token, amount: balance, receiver: receiver, through_factory: true
+                        }
+                    );
+            } else {
+                // Transfer the gift
+                calls
+                    .append(
+                        TransferFromAccount {
+                            token: claim.gift_token,
+                            amount: claim.gift_amount,
+                            receiver: receiver,
+                            through_factory: true
+                        }
+                    );
 
-            // Transfer the gift
-            let mut calls = array![
-                TransferFromAccount { token: claim.gift_token, amount: claim.gift_amount, receiver: receiver }
-            ];
-
-            // Transfer the dust
-            if dust_receiver.is_non_zero() {
-                let dust = claim.gift_amount - balance;
-                if dust > 0 {
-                    calls
-                        .append(
-                            TransferFromAccount { token: claim.fee_token, amount: dust.into(), receiver: dust_receiver }
-                        );
+                // Transfer the dust
+                if dust_receiver.is_non_zero() {
+                    let dust = claim.gift_amount - balance;
+                    if dust > 0 {
+                        calls
+                            .append(
+                                TransferFromAccount {
+                                    token: claim.fee_token,
+                                    amount: dust.into(),
+                                    receiver: dust_receiver,
+                                    through_factory: false
+                                }
+                            );
+                    }
                 }
             }
+
             self.transfers_from_account(claim, gift_address, calls.span());
             self.emit(GiftClaimed { gift_address, dust_receiver });
         }
@@ -327,10 +356,13 @@ mod GiftFactory {
             token: ContractAddress,
             amount: u256,
             receiver: ContractAddress,
+            through_factory: bool
         ) {
             self
                 .transfers_from_account(
-                    claim, claim_address, array![TransferFromAccount { token, amount, receiver }].span()
+                    claim,
+                    claim_address,
+                    array![TransferFromAccount { token, amount, receiver, through_factory }].span()
                 );
         }
 
@@ -344,7 +376,12 @@ mod GiftFactory {
             let mut transfers_copy = transfers;
             while let Option::Some(transfer) = transfers_copy
                 .pop_front() {
-                    calls.append(build_transfer_call(*transfer.token, *transfer.amount, get_contract_address()));
+                    let destination = if *transfer.through_factory {
+                        get_contract_address()
+                    } else {
+                        *transfer.receiver
+                    };
+                    calls.append(build_transfer_call(*transfer.token, *transfer.amount, destination));
                 };
             let calls_len = calls.len();
 
@@ -359,9 +396,11 @@ mod GiftFactory {
 
             while let Option::Some(transfer) = transfers
                 .pop_front() {
-                    let transfer_status = IERC20Dispatcher { contract_address: *transfer.token }
-                        .transfer(*transfer.receiver, *transfer.amount);
-                    assert(transfer_status, 'gift-fac/transfer-failed');
+                    if *transfer.through_factory {
+                        let transfer_status = IERC20Dispatcher { contract_address: *transfer.token }
+                            .transfer(*transfer.receiver, *transfer.amount);
+                        assert(transfer_status, 'gift-fac/transfer2-failed');
+                    }
                 };
         }
     }
