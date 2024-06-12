@@ -14,6 +14,10 @@ export class TokenManager {
     return useTxV3 ? this.strkContract() : this.ethContract();
   }
 
+  unitTokenContract(useTxV3: boolean): "FRI" | "WEI" {
+    return useTxV3 ? "FRI" : "WEI";
+  }
+
   async ethContract(): Promise<Contract> {
     if (this.ethCache) {
       return this.ethCache;

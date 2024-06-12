@@ -178,7 +178,7 @@ describe("Factory", function () {
     );
 
     await factory.unpause();
-    const { claim } = await defaultDepositTestSetup(factory, false, claimSigner.privateKey);
+    const { claim } = await defaultDepositTestSetup(factory, false, BigInt(claimSigner.privateKey));
     await claimInternal(claim, receiver, claimSigner.privateKey);
 
     // Final check
