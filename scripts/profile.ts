@@ -31,10 +31,6 @@ for (const { giftTokenContract, unit } of tokens) {
     const maxFee = 50000000000000n;
     const receiver = "0x42";
 
-    // Mint tokens
-    await manager.mint(deployer.address, amount, unit);
-    await manager.mint(deployer.address, maxFee, manager.tokens.unitTokenContract(useTxV3));
-
     // Make a gift
     const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
     const { response, claim } = await await deposit(
