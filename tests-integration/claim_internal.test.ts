@@ -67,7 +67,7 @@ describe("Claim Internal", function () {
         factory.address,
       ],
     });
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, "0x123456", reentrant.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
     const receiver = "0x9999";
 
     await expectRevertWithErrorMessage("gift/only-claim-account", () =>

@@ -1,5 +1,4 @@
-import { Account, RPC, num, uint256 } from "starknet";
-import { LegacyStarknetKeyPair, deployer, manager } from "../lib";
+import { claimInternal, defaultDepositTestSetup, manager, setupGiftProtocol } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -9,53 +8,34 @@ const profiler = newProfiler(manager);
 await manager.restart();
 manager.clearClassCache();
 
-const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
-const factory = await manager.deployContract("GiftFactory", {
-  unique: true,
-  constructorCalldata: [claimAccountClassHash, deployer.address],
-});
+const ethContract = await manager.tokens.ethContract();
+const strkContract = await manager.tokens.strkContract();
 
-for (const useTxV3 of [false, true]) {
-  const signer = new LegacyStarknetKeyPair(12n);
-  const claimPubkey = signer.publicKey;
-  const amount = 1000000000000000n;
-  const maxFee = 50000000000000n;
-  const receiver = "0x42";
+const tokens = [
+  { giftTokenContract: ethContract, unit: "WEI" },
+  { giftTokenContract: strkContract, unit: "FRI" },
+];
 
-  // Make a gift
-  const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
-  tokenContract.connect(deployer);
-  factory.connect(deployer);
-  await tokenContract.approve(factory.address, amount + maxFee);
-  await profiler.profile(
-    `Deposit (txV3: ${useTxV3})`,
-    await factory.deposit(amount, maxFee, tokenContract.address, claimPubkey),
-  );
+for (const { giftTokenContract, unit } of tokens) {
+  for (const useTxV3 of [false, true]) {
+    const receiver = "0x42";
+    const { factory } = await setupGiftProtocol();
 
-  // Ensure there is a contract for the claim
-  const claimAddress = await factory.get_claim_address(
-    claimAccountClassHash,
-    deployer.address,
-    amount,
-    maxFee,
-    tokenContract.address,
-    claimPubkey,
-  );
+    // Make a gift
+    const { response, claim, claimPrivateKey } = await defaultDepositTestSetup(
+      factory,
+      useTxV3,
+      42n,
+      giftTokenContract.address,
+    );
 
-  const claim = {
-    factory: factory.address,
-    class_hash: claimAccountClassHash,
-    sender: deployer.address,
-    amount: uint256.bnToUint256(amount),
-    max_fee: maxFee,
-    token: tokenContract.address,
-    claim_pubkey: claimPubkey,
-  };
+    await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
 
-  const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), signer, undefined, txVersion);
-  factory.connect(claimAccount);
-  await profiler.profile(`Claim (txV3: ${useTxV3})`, await factory.claim_internal(claim, receiver));
+    await profiler.profile(
+      `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
+      await claimInternal(claim, receiver, claimPrivateKey),
+    );
+  }
 }
 
 profiler.printSummary();
