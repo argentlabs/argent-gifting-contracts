@@ -1,4 +1,4 @@
-import { RPC, RawArgs, RpcProvider } from "starknet";
+import { RawArgs, RpcProvider } from "starknet";
 import { Constructor } from ".";
 
 export const dumpFolderPath = "./dump";
@@ -16,8 +16,8 @@ export const WithDevnet = <T extends Constructor<RpcProvider>>(Base: T) =>
       return super.waitForTransaction(transactionHash, { retryInterval, ...options });
     }
 
-    async mint(address: string, amount: number | bigint, unit: RPC.PriceUnit) {
-      await this.handlePost("mint", { address, amount: Number(amount), unit });
+    async mintEth(address: string, amount: number | bigint) {
+      await this.handlePost("mint", { address, amount: Number(amount) });
     }
 
     async increaseTime(timeInSeconds: number | bigint) {
