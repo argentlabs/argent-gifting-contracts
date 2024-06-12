@@ -1,3 +1,5 @@
+// TODO ADDRESS ? COMPUTED
+// REDEEM DUST HACKY WAY THINGY
 # Starknet Gifting
 
 The protocol implemented in this repository can be used for gifting tokens to a recipient without giving custody of the tokens to a third party without knowing what the recipient is upfront.
