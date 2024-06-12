@@ -11,12 +11,14 @@ The protocol implemented in this repository can be used for gifting tokens to a 
 5. The recipient can claims the tokens by transferring them from the escrow account to an account he controls using `claim_key.priv` to sign the transaction.
 
 ### Gift account address calculation
+
 To compute the address of the escrow account, you can either call `get_claim_address()` with the relevant arguments. Or you can do it off-chain using, for example, starknetJS.  
 The parameters are as follow:
- - Salt: 0
- - Class hash: the class hash of the escrow account
- - Constructor calldata: The constructor argument used to deploy the escrow account
- - Deployer address: The address of the factory
+
+- Salt: 0
+- Class hash: the class hash of the escrow account
+- Constructor calldata: The constructor argument used to deploy the escrow account
+- Deployer address: The address of the factory
 
 ## Claiming
 
@@ -34,7 +36,7 @@ It is also possible for someone else to pay for the claim. To do this, the dapp 
 ## Canceling Gifts
 
 Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the amount gifted and the fee he agreed paid for that gift.  
-If the gift has already been claimed, this allows the sender to redeem the leftover dust remaining. 
+If the gift has already been claimed, this allows the sender to redeem the leftover dust remaining.
 
 ## Factory Operations
 
