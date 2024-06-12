@@ -5,6 +5,7 @@ use starknet_gifting::contracts::utils::{serialize};
 mod GiftFactory {
     use core::array::ArrayTrait;
     use core::ecdsa::check_ecdsa_signature;
+    use core::num::traits::zero::Zero;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::PausableComponent;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
@@ -173,6 +174,7 @@ mod GiftFactory {
         fn claim_internal(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
             let claim_address = self.check_claim_and_get_account_address(claim);
             assert(get_caller_address() == claim_address, 'gift/only-claim-account');
+            assert(receiver.is_non_zero(), 'gift/zero-receiver');
             let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
             assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
             self.transfer_from_account(claim, claim_address, claim.gift_token, claim.gift_amount, receiver);
@@ -188,6 +190,7 @@ mod GiftFactory {
                 check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
                 'gift/invalid-ext-signature'
             );
+            assert(receiver.is_non_zero(), 'gift/zero-receiver');
             let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
             assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
             self.transfer_from_account(claim, claim_address, claim.gift_token, balance, receiver);
