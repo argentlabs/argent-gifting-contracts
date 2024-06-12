@@ -18,7 +18,13 @@ pub trait IGiftFactory<TContractState> {
         claim_pubkey: felt252
     );
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
-    fn claim_external(ref self: TContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>);
+    fn claim_external(
+        ref self: TContractState,
+        claim: ClaimData,
+        receiver: ContractAddress,
+        dust_receiver: ContractAddress,
+        signature: Array<felt252>
+    );
     fn cancel(ref self: TContractState, claim: ClaimData);
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
 

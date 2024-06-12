@@ -19,7 +19,10 @@ const typesRev1 = {
     { name: "chainId", type: "shortstring" },
     { name: "revision", type: "shortstring" },
   ],
-  ClaimExternal: [{ name: "receiver", type: "ContractAddress" }],
+  ClaimExternal: [
+    { name: "receiver", type: "ContractAddress" },
+    { name: "dust receiver", type: "ContractAddress" },
+  ],
 };
 
 function getDomain(chainId: string) {
@@ -35,6 +38,7 @@ function getDomain(chainId: string) {
 
 export interface ClaimExternal {
   receiver: string;
+  "dust receiver": string;
 }
 
 export async function getClaimExternalData(claimExternal: ClaimExternal) {
@@ -73,16 +77,18 @@ export async function claimExternal(
   receiver: string,
   giftPrivateKey: string,
   account = deployer,
+  dustReceiver?: string,
 ): Promise<TransactionReceipt> {
   const claimAddress = calculateClaimAddress(claim);
   const giftSigner = new LegacyStarknetKeyPair(giftPrivateKey);
-  const claimExternalData = await getClaimExternalData({ receiver });
+  dustReceiver = dustReceiver ?? "0x0";
+  const claimExternalData = await getClaimExternalData({ receiver, "dust receiver": dustReceiver });
   const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
 
   return (await account.execute([
     {
       contractAddress: claim.factory,
-      calldata: [buildCallDataClaim(claim), receiver, signature],
+      calldata: [buildCallDataClaim(claim), receiver, dustReceiver, signature],
       entrypoint: "claim_external",
     },
   ])) as TransactionReceipt;
