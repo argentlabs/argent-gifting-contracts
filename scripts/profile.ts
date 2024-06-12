@@ -1,4 +1,4 @@
-import { LegacyStarknetKeyPair, claimInternal, deployer, deposit, manager } from "../lib";
+import { GIFT_AMOUNT, GIFT_MAX_FEE, LegacyStarknetKeyPair, claimInternal, deployer, deposit, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -26,16 +26,14 @@ for (const { giftTokenContract, unit } of tokens) {
   for (const useTxV3 of [false, true]) {
     const signer = new LegacyStarknetKeyPair(42n);
     const claimPubkey = signer.publicKey;
-    const amount = 1000000000000000n;
-    const maxFee = 50000000000000n;
     const receiver = "0x42";
 
     // Make a gift
     const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
     const { response, claim } = await deposit(
       deployer,
-      amount,
-      maxFee,
+      GIFT_AMOUNT,
+      GIFT_MAX_FEE,
       factory.address,
       feeTokenContract.address,
       giftTokenContract.address,
