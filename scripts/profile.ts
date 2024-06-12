@@ -1,5 +1,5 @@
 import { RPC } from "starknet";
-import { Claim, LegacyStarknetKeyPair, claimInternal, deployer, deposit, manager } from "../lib";
+import { LegacyStarknetKeyPair, claimInternal, deployer, deposit, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -37,29 +37,17 @@ for (const { giftTokenContract, unit } of tokens) {
 
     // Make a gift
     const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
-    await profiler.profile(
-      `Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await deposit(
-        deployer,
-        amount,
-        maxFee,
-        factory.address,
-        feeTokenContract.address,
-        giftTokenContract.address,
-        claimPubkey,
-      ),
+    const { response, claim } = await await deposit(
+      deployer,
+      amount,
+      maxFee,
+      factory.address,
+      feeTokenContract.address,
+      giftTokenContract.address,
+      claimPubkey,
     );
-
-    const claim: Claim = {
-      factory: factory.address,
-      class_hash: claimAccountClassHash,
-      sender: deployer.address,
-      gift_token: giftTokenContract.address,
-      gift_amount: amount,
-      fee_token: feeTokenContract.address,
-      fee_amount: maxFee,
-      claim_pubkey: claimPubkey,
-    };
+    
+    await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
 
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
