@@ -1,4 +1,4 @@
-import { Account, CallData, Contract, InvokeFunctionResponse, ec, encode, hash, uint256 } from "starknet";
+import { Account, CallData, Contract, InvokeFunctionResponse, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
 export const GIFT_AMOUNT = 1000000000000000n;
@@ -43,10 +43,7 @@ export async function defaultDepositTestSetup(
 }> {
   const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
 
-  // static signer  for gas profiling
-  const claimSigner = new LegacyStarknetKeyPair(
-    giftPrivateKey || `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`,
-  );
+  const claimSigner = new LegacyStarknetKeyPair(giftPrivateKey);
   const claimPubKey = claimSigner.publicKey;
   await deposit(
     deployer,
