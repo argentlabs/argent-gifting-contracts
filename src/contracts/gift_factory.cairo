@@ -342,9 +342,10 @@ mod GiftFactory {
             mut transfers: Span<TransferFromAccount>,
         ) {
             let mut calls: Array<Call> = array![];
-            while let Option::Some(transfer) = transfers
+            let mut transfers_copy = transfers;
+            while let Option::Some(transfer) = transfers_copy
                 .pop_front() {
-                    calls.append(build_transfer_call(*transfer.token, *transfer.amount, *transfer.receiver));
+                    calls.append(build_transfer_call(*transfer.token, *transfer.amount, get_contract_address()));
                 };
             let calls_len = calls.len();
 
@@ -355,7 +356,14 @@ mod GiftFactory {
                 .pop_front() {
                     let transfer_status = full_deserialize::<bool>(result).expect('gift/invalid-result-calldata');
                     assert(transfer_status, 'gift/transfer-failed');
-                }
+                };
+
+            while let Option::Some(transfer) = transfers
+                .pop_front() {
+                    let transfer_status = IERC20Dispatcher { contract_address: *transfer.token }
+                        .transfer(*transfer.receiver, *transfer.amount);
+                    assert(transfer_status, 'gift-fac/transfer-failed');
+                };
         }
     }
 }
