@@ -1,5 +1,5 @@
 import { Account, RPC, num } from "starknet";
-import { Claim, LegacyStarknetKeyPair, calculateClaimAddress, deployer, deposit, manager } from "../lib";
+import { Claim, LegacyStarknetKeyPair, calculateClaimAddress, claimInternal, deployer, deposit, manager } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -69,7 +69,7 @@ for (const { giftTokenContract, unit } of tokens) {
     factory.connect(claimAccount);
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await factory.claim_internal(claim, receiver),
+      await claimInternal(claim, receiver, signer),
     );
   }
 }
