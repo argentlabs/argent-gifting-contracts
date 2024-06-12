@@ -32,7 +32,7 @@ for (const { giftTokenContract, unit } of tokens) {
 
     // Make a gift
     const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
-    const { response, claim } = await await deposit(
+    const { response, claim } = await deposit(
       deployer,
       amount,
       maxFee,
