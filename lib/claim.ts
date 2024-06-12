@@ -61,9 +61,10 @@ export async function claimExternal(
   claim: Claim,
   receiver: string,
   claimPrivateKey: string,
+  claimAccountAddress?: string,
   account = deployer,
 ): Promise<TransactionReceipt> {
-  const claimAddress = calculateClaimAddress(claim);
+  const claimAddress = claimAccountAddress || calculateClaimAddress(claim);
   const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
   const claimExternalData = await getClaimExternalData({ receiver });
   const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
@@ -82,8 +83,9 @@ export async function claimInternal(
   receiver: string,
   claimPrivateKey: string,
   details?: UniversalDetails,
+  claimAccountAddress?: string,
 ): Promise<TransactionReceipt> {
-  const claimAddress = calculateClaimAddress(claim);
+  const claimAddress = claimAccountAddress || calculateClaimAddress(claim);
 
   const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), claimPrivateKey, undefined, txVersion);
