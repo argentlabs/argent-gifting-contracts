@@ -296,7 +296,7 @@ mod GiftFactory {
             // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
             // but will increase the complexity of the code for a small performance GiftCanceled
 
-            // Trasfer the gift
+            // Transfer the gift
             let mut calls = array![
                 TransferFromAccount { token: claim.gift_token, amount: claim.gift_amount, receiver: receiver }
             ];
