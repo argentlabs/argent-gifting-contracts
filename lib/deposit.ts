@@ -63,19 +63,20 @@ export async function deposit(
 export async function defaultDepositTestSetup(
   factory: Contract,
   useTxV3 = false,
-  giftPrivateKey?: string,
+  giftPrivateKey?: bigint,
   giftTokenAddress?: string,
   giftAmount = GIFT_AMOUNT,
   giftMaxFee = GIFT_MAX_FEE,
 ): Promise<{
   claim: Claim;
   claimPrivateKey: string;
+  response: InvokeFunctionResponse;
 }> {
   const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
-
   const claimSigner = new LegacyStarknetKeyPair(giftPrivateKey);
   const claimPubKey = claimSigner.publicKey;
-  const { claim } = await deposit(
+
+  const { response, claim } = await deposit(
     deployer,
     giftAmount,
     giftMaxFee,
@@ -85,7 +86,7 @@ export async function defaultDepositTestSetup(
     claimPubKey,
   );
 
-  return { claim, claimPrivateKey: claimSigner.privateKey };
+  return { claim, claimPrivateKey: claimSigner.privateKey, response };
 }
 
 export function calculateClaimAddress(claim: Claim): string {

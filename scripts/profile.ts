@@ -1,4 +1,4 @@
-import { GIFT_AMOUNT, GIFT_MAX_FEE, LegacyStarknetKeyPair, claimInternal, deployer, deposit, manager } from "../lib";
+import { claimInternal, defaultDepositTestSetup, deployer, manager, setupGiftProtocol } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -24,27 +24,22 @@ const tokens = [
 
 for (const { giftTokenContract, unit } of tokens) {
   for (const useTxV3 of [false, true]) {
-    const signer = new LegacyStarknetKeyPair(42n);
-    const claimPubkey = signer.publicKey;
     const receiver = "0x42";
+    const { factory } = await setupGiftProtocol();
 
     // Make a gift
-    const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
-    const { response, claim } = await deposit(
-      deployer,
-      GIFT_AMOUNT,
-      GIFT_MAX_FEE,
-      factory.address,
-      feeTokenContract.address,
+    const { response, claim, claimPrivateKey } = await defaultDepositTestSetup(
+      factory,
+      useTxV3,
+      42n,
       giftTokenContract.address,
-      claimPubkey,
     );
 
     await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
 
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimInternal(claim, receiver, signer.privateKey),
+      await claimInternal(claim, receiver, claimPrivateKey),
     );
   }
 }
