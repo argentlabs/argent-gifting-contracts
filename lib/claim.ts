@@ -2,7 +2,6 @@ import {
   Account,
   InvokeFunctionResponse,
   RPC,
-  Signer,
   SignerInterface,
   TransactionReceipt,
   UniversalDetails,
@@ -93,14 +92,14 @@ export async function claimExternal(
 export async function claimInternal(
   claim: Claim,
   receiver: string,
-  claimSignerPrivateKey: string |SignerInterface,
+  claimSignerPrivateKey: string | SignerInterface,
   details?: UniversalDetails,
 ): Promise<InvokeFunctionResponse> {
   const claimAddress = calculateClaimAddress(claim);
 
   const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), claimSignerPrivateKey, undefined, txVersion);
-  return (await claimAccount.execute(
+  return await claimAccount.execute(
     [
       {
         contractAddress: claim.factory,
@@ -110,7 +109,7 @@ export async function claimInternal(
     ],
     undefined,
     { ...details },
-  )) ;
+  );
 }
 
 function useTxv3(tokenAddress: string): boolean {
