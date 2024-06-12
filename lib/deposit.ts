@@ -75,7 +75,7 @@ export async function defaultDepositTestSetup(
 
   const claimSigner = new LegacyStarknetKeyPair(giftPrivateKey);
   const claimPubKey = claimSigner.publicKey;
-  const {claim} = await deposit(
+  const { claim } = await deposit(
     deployer,
     giftAmount,
     giftMaxFee,

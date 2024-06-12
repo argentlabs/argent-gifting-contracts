@@ -46,7 +46,7 @@ for (const { giftTokenContract, unit } of tokens) {
       giftTokenContract.address,
       claimPubkey,
     );
-    
+
     await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
 
     await profiler.profile(
