@@ -2,7 +2,6 @@ import {
   Account,
   InvokeFunctionResponse,
   RPC,
-  SignerInterface,
   TransactionReceipt,
   UniversalDetails,
   ec,
