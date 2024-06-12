@@ -92,7 +92,7 @@ export async function claimExternal(
 export async function claimInternal(
   claim: Claim,
   receiver: string,
-  claimSignerPrivateKey: string | SignerInterface,
+  claimSignerPrivateKey: string,
   details?: UniversalDetails,
 ): Promise<InvokeFunctionResponse> {
   const claimAddress = calculateClaimAddress(claim);

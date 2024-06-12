@@ -25,7 +25,7 @@ const tokens = [
 
 for (const { giftTokenContract, unit } of tokens) {
   for (const useTxV3 of [false, true]) {
-    const signer = new LegacyStarknetKeyPair(12n);
+    const signer = new LegacyStarknetKeyPair(42n);
     const claimPubkey = signer.publicKey;
     const amount = 1000000000000000n;
     const maxFee = 50000000000000n;
@@ -61,15 +61,10 @@ for (const { giftTokenContract, unit } of tokens) {
       claim_pubkey: claimPubkey,
     };
 
-    // Get account claiming address
-    const claimAddress = await calculateClaimAddress(claim);
 
-    const txVersion = useTxV3 ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-    const claimAccount = new Account(manager, num.toHex(claimAddress), signer, undefined, txVersion);
-    factory.connect(claimAccount);
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimInternal(claim, receiver, signer),
+      await claimInternal(claim, receiver, signer.privateKey),
     );
   }
 }
