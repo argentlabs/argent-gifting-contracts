@@ -9,14 +9,15 @@ mod GiftFactory {
     use openzeppelin::security::PausableComponent;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{
-        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call
+        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
+        get_block_timestamp
     };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::claim_utils::{calculate_claim_account_address};
 
     use starknet_gifting::contracts::interface::{
         IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        ITimelockUpgradeCallback
+        ITimelockUpgradeCallback, OutsideExecution
     };
     use starknet_gifting::contracts::timelock_upgrade::TimelockUpgradeComponent;
     use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize};
@@ -116,7 +117,6 @@ mod GiftFactory {
             claim_pubkey: felt252
         ) {
             self.pausable.assert_not_paused();
-            assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
             if gift_token == fee_token {
                 // This is needed so we can tell if an gift has been claimed or not just by looking at the balances
                 assert(fee_amount.into() < gift_amount, 'gift-fac/fee-too-high');
@@ -185,6 +185,57 @@ mod GiftFactory {
                 'gift/invalid-ext-signature'
             );
             self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);
+        }
+
+        fn perform_execute_from_outside(
+            ref self: ContractState,
+            claim: ClaimData,
+            original_caller: ContractAddress,
+            outside_execution: OutsideExecution,
+            signature: Span<felt252>
+        ) -> Array<Span<felt252>> {
+            let claim_address = self.check_claim_and_get_account_address(claim);
+            assert(get_caller_address() == claim_address, 'gift/only-claim-account');
+
+            // TODO hashing
+            // let hash = outside_execution.get_message_hash_rev_1(claim_address);
+
+            // TODO signature verification,and signature verification, and checking signature length
+
+            if outside_execution.caller.into() != 'ANY_CALLER' {
+                assert(original_caller == outside_execution.caller, 'argent/invalid-caller');
+            }
+
+            let block_timestamp = get_block_timestamp();
+            assert(
+                outside_execution.execute_after < block_timestamp && block_timestamp < outside_execution.execute_before,
+                'argent/invalid-timestamp'
+            );
+            // TODO nonce management with a map (account,nonce)->bool
+            // let nonce = outside_execution.nonce;
+            // assert(!self.outside_nonces.read(nonce), 'argent/duplicated-outside-nonce');
+            // self.outside_nonces.write(nonce, true);
+
+            assert(outside_execution.calls.len() == 2, 'gift-fact/call-len');
+            let refund_call = outside_execution.calls.at(0);
+            assert(*refund_call.selector == selector!("transfer"), 'gift-fact/refcall-selector');
+            assert(*refund_call.to == claim.fee_token, 'gift-fact/refcall-to');
+            let (refund_receiver, refund_amount): (ContractAddress, u256) = full_deserialize(*refund_call.calldata)
+                .expect('gift-fact/invalid-ref-calldata');
+            assert(refund_receiver.is_non_zero(), 'gift-fact/refcall-receiver');
+            assert(refund_amount == claim.fee_amount.into(), 'gift-fact/refcall-amount'); // TODO could be <=
+            let claim_call = outside_execution.calls.at(1);
+            assert(*claim_call.to == claim.factory, 'gift-fact/claimcall-to');
+            // TODO ideally the function claim_from_outside actually exists in the factory to help with the gas estimation
+            assert(*claim_call.selector == selector!("claim_from_outside"), 'gift-fact/claimcall-to');
+            let claim_receiver: ContractAddress = full_deserialize(*refund_call.calldata)
+                .expect('gift-fact/claimcall-calldata');
+
+            self.proceed_with_claim(claim_address, claim, claim_receiver, refund_receiver);
+            array![
+                serialize(@(true)).span(), // simulated the result from the transfer
+                array![].span() // return from the claim
+            ]
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {

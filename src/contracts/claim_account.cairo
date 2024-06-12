@@ -7,7 +7,10 @@ mod ClaimAccount {
         get_caller_address, get_execution_info
     };
     use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
-    use starknet_gifting::contracts::interface::{IAccount, IGiftAccount, ClaimData, AccountConstructorArguments};
+    use starknet_gifting::contracts::interface::{
+        IAccount, IGiftAccount, IOutsideExecution, OutsideExecution, ClaimData, AccountConstructorArguments,
+        IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait
+    };
     use starknet_gifting::contracts::utils::{
         full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
     };
@@ -82,6 +85,24 @@ mod ClaimAccount {
             assert_valid_claim(claim);
             assert(get_caller_address() == claim.factory, 'gift/only-factory');
             execute_multicall(calls.span())
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl OutsideExecutionImpl of IOutsideExecution<ContractState> {
+        // TODO implement supports_interface
+        fn execute_from_outside_v2(
+            ref self: ContractState, outside_execution: OutsideExecution, signature: Span<felt252>
+        ) -> Array<Span<felt252>> {
+            let mut signature_copy = signature;
+            let claim: ClaimData = Serde::deserialize(ref signature_copy).expect('gift-acc/invalid-claim');
+            assert_valid_claim(claim);
+            IGiftFactoryDispatcher { contract_address: claim.factory }
+                .perform_execute_from_outside(claim, get_caller_address(), outside_execution, signature)
+        }
+
+        fn is_valid_outside_execution_nonce(self: @ContractState, nonce: felt252) -> bool {
+            true // TODO delegate to factory
         }
     }
 
