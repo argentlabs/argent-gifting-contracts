@@ -38,7 +38,7 @@ function getDomain(chainId: string) {
 
 export interface ClaimExternal {
   receiver: string;
-  "dust receiver": string;
+  dustReceiver?: string;
 }
 
 export async function getClaimExternalData(claimExternal: ClaimExternal) {
@@ -47,7 +47,7 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
     types: typesRev1,
     primaryType: "ClaimExternal",
     domain: getDomain(chainId),
-    message: { ...claimExternal },
+    message: { receiver: claimExternal.receiver, "dust receiver": claimExternal.dustReceiver || "0x0" },
   };
 }
 
@@ -82,7 +82,7 @@ export async function claimExternal(
   const claimAddress = calculateClaimAddress(claim);
   const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
   dustReceiver = dustReceiver ?? "0x0";
-  const claimExternalData = await getClaimExternalData({ receiver, "dust receiver": dustReceiver });
+  const claimExternalData = await getClaimExternalData({ receiver, dustReceiver });
   const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
 
   return (await account.execute([
