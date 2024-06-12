@@ -1,4 +1,4 @@
-import { claimInternal, defaultDepositTestSetup, deployer, manager, setupGiftProtocol } from "../lib";
+import { claimInternal, defaultDepositTestSetup, manager, setupGiftProtocol } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -7,12 +7,6 @@ const profiler = newProfiler(manager);
 
 await manager.restart();
 manager.clearClassCache();
-
-const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
-const factory = await manager.deployContract("GiftFactory", {
-  unique: true,
-  constructorCalldata: [claimAccountClassHash, deployer.address],
-});
 
 const ethContract = await manager.tokens.ethContract();
 const strkContract = await manager.tokens.strkContract();
