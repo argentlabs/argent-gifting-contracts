@@ -20,7 +20,7 @@ describe("claim_external", function () {
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
 
-      await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal(claim, receiver, claimPrivateKey));
+      await claimExternal(claim, receiver, claimPrivateKey);
     });
   }
 
@@ -29,7 +29,7 @@ describe("claim_external", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = "0x0";
 
-    await claimExternal(claim, receiver, claimPrivateKey);
+    await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal(claim, receiver, claimPrivateKey));
   });
 
   it(`Cannot call claim external twice`, async function () {
