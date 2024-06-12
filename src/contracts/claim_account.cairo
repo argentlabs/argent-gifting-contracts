@@ -36,16 +36,15 @@ mod ClaimAccount {
             assert_valid_claim(claim);
 
             let tx_info = execution_info.tx_info.unbox();
-            // Isn't it an issue if for some reason it fails during execution?
-            // Like if the gas is not enough?
-            // Nonce will be incremented and the account will be unusable
             assert(tx_info.nonce == 0, 'gift-acc/invalid-claim-nonce');
             let execution_hash = tx_info.transaction_hash;
             let signature = tx_info.signature;
             assert(signature.len() == 2, 'gift-acc/invalid-signature-len');
             // Should we allow while in estimation?
             assert(
-                check_ecdsa_signature(execution_hash, claim.claim_pubkey, *signature[0], *signature[1]),
+                check_ecdsa_signature(execution_hash, claim.claim_pubkey, *signature[0], *signature[1])
+                    || tx_version == TX_V3_ESTIMATE
+                    || tx_version == TX_V1_ESTIMATE,
                 'invalid-signature'
             );
             let tx_version = tx_info.version;
