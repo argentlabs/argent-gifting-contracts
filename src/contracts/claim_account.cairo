@@ -47,7 +47,6 @@ mod ClaimAccount {
                     || tx_version == TX_V1_ESTIMATE,
                 'invalid-signature'
             );
-            let tx_version = tx_info.version;
             if claim.fee_token == STRK_ADDRESS() {
                 assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'gift-acc/invalid-tx3-version');
                 let tx_fee = compute_max_fee_v3(tx_info, tx_info.tip);
