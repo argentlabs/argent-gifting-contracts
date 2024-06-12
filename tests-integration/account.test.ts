@@ -4,7 +4,6 @@ import {
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
-  deployer,
   expectRevertWithErrorMessage,
   manager,
   randomReceiver,
@@ -31,14 +30,9 @@ describe("Claim Account", function () {
   });
 
   it(`Test claim contract cant call another contract`, async function () {
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-
-    const fakeFactory = await manager.deployContract("GiftFactory", {
-      unique: true,
-      constructorCalldata: [claimAccountClassHash, deployer.address],
-    });
 
     const claimAddress = calculateClaimAddress(claim);
 
@@ -49,10 +43,19 @@ describe("Claim Account", function () {
       undefined,
       RPC.ETransactionVersion.V2,
     );
-    fakeFactory.connect(claimAccount);
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
-      fakeFactory.claim_internal(buildCallDataClaim(claim), receiver, { maxFee: 400000000000000n }),
+      claimAccount.execute(
+        [
+          {
+            contractAddress: "0x1",
+            calldata: [buildCallDataClaim(claim), receiver],
+            entrypoint: "claim_internal",
+          },
+        ],
+        undefined,
+        { skipValidate: false },
+      ),
     );
   });
 
@@ -73,7 +76,7 @@ describe("Claim Account", function () {
 
     factory.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
-      factory.get_dust(claim, receiver, { maxFee: 400000000000000n }),
+      claimAccount.execute(factory.populateTransaction.get_dust(claim, receiver), undefined, { skipValidate: false }),
     );
   });
 
@@ -94,16 +97,8 @@ describe("Claim Account", function () {
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       claimAccount.execute([
-        {
-          contractAddress: factory.address,
-          calldata: [buildCallDataClaim(claim), receiver],
-          entrypoint: "claim_internal",
-        },
-        {
-          contractAddress: factory.address,
-          calldata: [buildCallDataClaim(claim), receiver],
-          entrypoint: "claim_internal",
-        },
+        factory.populateTransaction.claim_internal(buildCallDataClaim(claim), receiver),
+        factory.populateTransaction.claim_internal(buildCallDataClaim(claim), receiver),
       ]),
     );
   });
