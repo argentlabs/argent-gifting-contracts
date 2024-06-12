@@ -1,4 +1,4 @@
-import { Account, CallData, Contract, ec, encode, hash, uint256 } from "starknet";
+import { Account, CallData, Contract, InvokeFunctionResponse, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
 export const GIFT_AMOUNT = 1000000000000000n;
@@ -12,43 +12,71 @@ export async function deposit(
   feeTokenAddress: string,
   giftTokenAddress: string,
   claimSignerPubKey: bigint,
-) {
+): Promise<{ response: InvokeFunctionResponse; claim: Claim }> {
   const factory = await manager.loadContract(factoryAddress);
   const feeToken = await manager.loadContract(feeTokenAddress);
   const giftToken = await manager.loadContract(giftTokenAddress);
+
+  const classHash = await factory.get_latest_claim_class_hash();
+  const claim: Claim = {
+    factory: factoryAddress,
+    class_hash: classHash,
+    sender: deployer.address,
+    gift_token: giftTokenAddress,
+    gift_amount: giftAmount,
+    fee_token: feeTokenAddress,
+    fee_amount: feeAmount,
+    claim_pubkey: claimSignerPubKey,
+  };
   if (feeTokenAddress === giftTokenAddress) {
-    await sender.execute([
-      feeToken.populateTransaction.approve(factory.address, giftAmount + feeAmount),
-      factory.populateTransaction.deposit(giftTokenAddress, giftAmount, feeTokenAddress, feeAmount, claimSignerPubKey),
-    ]);
+    return {
+      response: await sender.execute([
+        feeToken.populateTransaction.approve(factory.address, giftAmount + feeAmount),
+        factory.populateTransaction.deposit(
+          giftTokenAddress,
+          giftAmount,
+          feeTokenAddress,
+          feeAmount,
+          claimSignerPubKey,
+        ),
+      ]),
+      claim,
+    };
   } else {
-    await sender.execute([
-      feeToken.populateTransaction.approve(factory.address, feeAmount),
-      giftToken.populateTransaction.approve(factory.address, giftAmount),
-      factory.populateTransaction.deposit(giftTokenAddress, giftAmount, feeTokenAddress, feeAmount, claimSignerPubKey),
-    ]);
+    return {
+      response: await sender.execute([
+        feeToken.populateTransaction.approve(factory.address, feeAmount),
+        giftToken.populateTransaction.approve(factory.address, giftAmount),
+        factory.populateTransaction.deposit(
+          giftTokenAddress,
+          giftAmount,
+          feeTokenAddress,
+          feeAmount,
+          claimSignerPubKey,
+        ),
+      ]),
+      claim,
+    };
   }
 }
 
 export async function defaultDepositTestSetup(
   factory: Contract,
   useTxV3 = false,
-  giftPrivateKey?: string,
+  giftPrivateKey?: bigint,
   giftTokenAddress?: string,
   giftAmount = GIFT_AMOUNT,
   giftMaxFee = GIFT_MAX_FEE,
 ): Promise<{
   claim: Claim;
   claimPrivateKey: string;
+  response: InvokeFunctionResponse;
 }> {
   const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
-
-  // static signer  for gas profiling
-  const claimSigner = new LegacyStarknetKeyPair(
-    giftPrivateKey || `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`,
-  );
+  const claimSigner = new LegacyStarknetKeyPair(giftPrivateKey);
   const claimPubKey = claimSigner.publicKey;
-  await deposit(
+
+  const { response, claim } = await deposit(
     deployer,
     giftAmount,
     giftMaxFee,
@@ -58,20 +86,7 @@ export async function defaultDepositTestSetup(
     claimPubKey,
   );
 
-  const claimClassHash = await factory.get_latest_claim_class_hash();
-
-  const claim: Claim = {
-    factory: factory.address,
-    class_hash: claimClassHash,
-    sender: deployer.address,
-    gift_token: giftTokenAddress || tokenContract.address,
-    gift_amount: giftAmount,
-    fee_token: tokenContract.address,
-    fee_amount: giftMaxFee,
-    claim_pubkey: claimPubKey,
-  };
-
-  return { claim, claimPrivateKey: claimSigner.privateKey };
+  return { claim, claimPrivateKey: claimSigner.privateKey, response };
 }
 
 export function calculateClaimAddress(claim: Claim): string {
