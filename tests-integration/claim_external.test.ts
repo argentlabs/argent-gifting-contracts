@@ -13,7 +13,7 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-describe("claim_external", function () {
+describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
     it(`Testing claim_external flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
