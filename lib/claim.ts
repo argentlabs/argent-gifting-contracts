@@ -1,4 +1,15 @@
-import { Account, RPC, TransactionReceipt, UniversalDetails, ec, encode, num, shortString, uint256 } from "starknet";
+import {
+  Account,
+  InvokeFunctionResponse,
+  RPC,
+  TransactionReceipt,
+  UniversalDetails,
+  ec,
+  encode,
+  num,
+  shortString,
+  uint256,
+} from "starknet";
 import { LegacyStarknetKeyPair, calculateClaimAddress, deployer, ethAddress, manager, strkAddress } from ".";
 
 const typesRev1 = {
@@ -82,12 +93,12 @@ export async function claimInternal(
   receiver: string,
   claimSignerPrivateKey: string,
   details?: UniversalDetails,
-): Promise<TransactionReceipt> {
+): Promise<InvokeFunctionResponse> {
   const claimAddress = calculateClaimAddress(claim);
 
   const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), claimSignerPrivateKey, undefined, txVersion);
-  return (await claimAccount.execute(
+  return await claimAccount.execute(
     [
       {
         contractAddress: claim.factory,
@@ -97,7 +108,7 @@ export async function claimInternal(
     ],
     undefined,
     { ...details },
-  )) as TransactionReceipt;
+  );
 }
 
 function useTxv3(tokenAddress: string): boolean {
