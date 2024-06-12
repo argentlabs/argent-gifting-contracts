@@ -3,7 +3,6 @@ use starknet_gifting::contracts::utils::{serialize};
 
 #[starknet::contract]
 mod GiftFactory {
-    use core::array::ArrayTrait;
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use openzeppelin::access::ownable::OwnableComponent;
