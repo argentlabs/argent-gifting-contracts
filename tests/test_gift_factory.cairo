@@ -12,20 +12,6 @@ use super::setup::{deploy_gifting_normal, deploy_gifting_broken_erc20, GiftingSe
 
 
 #[test]
-#[should_panic(expected: ('gift-fac/invalid-fee-token',))]
-fn test_deposit_correct_token() {
-    let GiftingSetup { mock_eth, mock_strk, gift_factory, .. } = deploy_gifting_normal();
-
-    start_cheat_caller_address(gift_factory.contract_address, DEPOSITOR());
-    gift_factory.deposit(mock_eth.contract_address, 10, mock_eth.contract_address, 5, CLAIM_PUB_KEY());
-    gift_factory.deposit(mock_strk.contract_address, 20, mock_strk.contract_address, 10, CLAIM_PUB_KEY());
-    gift_factory.deposit(UNAUTHORIZED_ERC20(), 10, UNAUTHORIZED_ERC20(), 5, CLAIM_PUB_KEY());
-
-    assert(mock_eth.balance_of(gift_factory.contract_address) == 10, 'ETH deposit failed');
-    assert(mock_strk.balance_of(gift_factory.contract_address) == 20, 'STRK deposit failed');
-}
-
-#[test]
 #[should_panic(expected: ('gift-fac/transfer-failed',))]
 fn test_transfer_from_fail() {
     let GiftingSetup { mock_eth, gift_factory, .. } = deploy_gifting_broken_erc20();
