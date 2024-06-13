@@ -74,18 +74,16 @@ mod GiftFactory {
 
     #[derive(Drop, starknet::Event)]
     struct GiftCreated {
-        #[key]
-        claim_pubkey: felt252,
-        #[key] // Find back all gifts from a specific sender
-        sender: ContractAddress,
         #[key] // If you have the ContractAddress you can find back the claim 
         gift_address: ContractAddress,
+        #[key] // Find all gifts from a specific sender
+        sender: ContractAddress,
         class_hash: ClassHash,
-        factory: ContractAddress,
         gift_token: ContractAddress,
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
+        claim_pubkey: felt252
     }
 
     #[derive(Drop, starknet::Event)]
@@ -95,9 +93,11 @@ mod GiftFactory {
         dust_receiver: ContractAddress
     }
 
-
     #[derive(Drop, starknet::Event)]
-    struct GiftCanceled {}
+    struct GiftCanceled {
+        #[key]
+        gift_address: ContractAddress,
+    }
 
     #[constructor]
     fn constructor(ref self: ContractState, claim_class_hash: ClassHash, owner: ContractAddress) {
@@ -123,7 +123,6 @@ mod GiftFactory {
             }
 
             let sender = get_caller_address();
-            let factory = get_contract_address();
             // TODO We could manually serialize for better performance but then we loose the type safety
             let class_hash = self.claim_class_hash.read();
             let constructor_arguments = AccountConstructorArguments {
@@ -139,15 +138,14 @@ mod GiftFactory {
             self
                 .emit(
                     GiftCreated {
-                        claim_pubkey,
-                        factory,
                         gift_address: claim_contract,
-                        class_hash,
                         sender,
+                        class_hash,
                         gift_token,
                         gift_amount,
                         fee_token,
-                        fee_amount
+                        fee_amount,
+                        claim_pubkey
                     }
                 );
 
@@ -212,7 +210,7 @@ mod GiftFactory {
                             .span()
                     );
             }
-            self.emit(GiftCanceled {});
+            self.emit(GiftCanceled { gift_address: claim_address });
         }
 
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
@@ -289,8 +287,8 @@ mod GiftFactory {
             dust_receiver: ContractAddress
         ) {
             assert(receiver.is_non_zero(), 'gift/zero-receiver');
-            let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(gift_address);
-            assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
+            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(gift_address);
+            assert(gift_balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
 
             // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
             // but will increase the complexity of the code for a small performance GiftCanceled
@@ -302,7 +300,11 @@ mod GiftFactory {
 
             // Transfer the dust
             if dust_receiver.is_non_zero() {
-                let dust = claim.gift_amount - balance;
+                let dust = if claim.gift_token == claim.fee_token {
+                    gift_balance - claim.gift_amount
+                } else {
+                    IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(gift_address)
+                };
                 if dust > 0 {
                     calls
                         .append(
