@@ -16,7 +16,7 @@ describe("Claim External", function () {
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
 
-      await claimExternal(claim, receiver, claimPrivateKey);
+      await claimExternal({ claim, receiver, claimPrivateKey });
     });
   }
 
@@ -25,7 +25,7 @@ describe("Claim External", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = "0x0";
 
-    await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal(claim, receiver, claimPrivateKey));
+    await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal({ claim, receiver, claimPrivateKey }));
   });
 
   it(`Cannot call claim external twice`, async function () {
@@ -33,9 +33,9 @@ describe("Claim External", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    await claimExternal(claim, receiver, claimPrivateKey);
+    await claimExternal({ claim, receiver, claimPrivateKey });
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimExternal(claim, receiver, claimPrivateKey),
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 
@@ -44,7 +44,9 @@ describe("Claim External", function () {
     const { claim } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () => claimExternal(claim, receiver, "0x1234"));
+    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
+      claimExternal({ claim, receiver, claimPrivateKey: "0x1234" }),
+    );
   });
 
   it(`Invalid factory address`, async function () {
@@ -55,7 +57,7 @@ describe("Claim External", function () {
     claim.factory = "0x2";
 
     await expectRevertWithErrorMessage("gift/invalid-factory-address", () =>
-      claimExternal(claim, receiver, claimPrivateKey, { factoryAddress: factory.address }),
+      claimExternal({ claim, receiver, claimPrivateKey }, { factoryAddress: factory.address }),
     );
   });
 
@@ -67,7 +69,7 @@ describe("Claim External", function () {
     claim.class_hash = "0x1";
 
     await expectRevertWithErrorMessage("gift/invalid-class-hash", () =>
-      claimExternal(claim, receiver, claimPrivateKey),
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 
@@ -90,7 +92,7 @@ describe("Claim External", function () {
     await token.balance_of(claimAddress).should.eventually.equal(0n);
 
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimExternal(claim, receiver, claimPrivateKey),
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 
@@ -104,7 +106,7 @@ describe("Claim External", function () {
     claim.claim_pubkey = 1n;
 
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      claimExternal(claim, receiver, claimPrivateKey, { claimAccountAddress: claimAddress }),
+      claimExternal({ claim, receiver, claimPrivateKey }, { claimAccountAddress: claimAddress }),
     );
   });
 });

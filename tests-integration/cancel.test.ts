@@ -31,7 +31,7 @@ describe("Cancel Claim", function () {
     await token.balance_of(claimAddress).should.eventually.equal(0n);
 
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal(claim, receiver, claimPrivateKey),
+      claimInternal({ claim, receiver, claimPrivateKey }),
     );
   });
 
@@ -61,7 +61,7 @@ describe("Cancel Claim", function () {
     await feeToken.balance_of(claimAddress).should.eventually.equal(0n);
 
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal(claim, receiver, claimPrivateKey),
+      claimInternal({ claim, receiver, claimPrivateKey }),
     );
   });
 
@@ -79,7 +79,7 @@ describe("Cancel Claim", function () {
     const receiver = randomReceiver();
     const token = await manager.loadContract(claim.gift_token);
 
-    const { transaction_hash: transaction_hash_claim } = await claimInternal(claim, receiver, claimPrivateKey);
+    const { transaction_hash: transaction_hash_claim } = await claimInternal({ claim, receiver, claimPrivateKey });
     const txFeeCancelClaim = BigInt((await manager.getTransactionReceipt(transaction_hash_claim)).actual_fee.amount);
 
     const claimAddress = calculateClaimAddress(claim);
@@ -102,7 +102,7 @@ describe("Cancel Claim", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
     const receiver = randomReceiver();
 
-    await claimInternal(claim, receiver, claimPrivateKey);
+    await claimInternal({ claim, receiver, claimPrivateKey });
     factory.connect(deployer);
     await expectRevertWithErrorMessage("gift/already-claimed", () => factory.cancel(claim));
   });

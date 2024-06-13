@@ -27,7 +27,7 @@ describe("Claim Account", function () {
     const receiver = randomReceiver();
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
-      claimInternal(claim, receiver, claimPrivateKey, { skipValidate: false }, { factoryAddress: "0x2" }),
+      claimInternal({ claim, receiver, claimPrivateKey }, { skipValidate: false }, { factoryAddress: "0x2" }),
     );
   });
 
@@ -64,9 +64,9 @@ describe("Claim Account", function () {
     const receiver = randomReceiver();
 
     // double claim
-    await claimInternal(claim, receiver, claimPrivateKey);
+    await claimInternal({ claim, receiver, claimPrivateKey });
     await expectRevertWithErrorMessage("gift-acc/invalid-claim-nonce", () =>
-      claimInternal(claim, receiver, claimPrivateKey, { skipValidate: false }),
+      claimInternal({ claim, receiver, claimPrivateKey }, { skipValidate: false }),
     );
   });
 });

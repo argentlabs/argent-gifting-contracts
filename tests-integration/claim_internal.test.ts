@@ -19,7 +19,7 @@ describe("Claim Internal", function () {
       const receiver = randomReceiver();
       const claimAddress = calculateClaimAddress(claim);
 
-      await claimInternal(claim, receiver, claimPrivateKey);
+      await claimInternal({ claim, receiver, claimPrivateKey });
 
       const token = await manager.loadContract(claim.gift_token);
       const finalBalance = await token.balance_of(claimAddress);
@@ -43,13 +43,16 @@ describe("Claim Internal", function () {
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
-          claimInternal(claim, receiver, claimPrivateKey, { resourceBounds: newResourceBounds, tip: 1 }),
+          claimInternal({ claim, receiver, claimPrivateKey }, { resourceBounds: newResourceBounds, tip: 1 }),
         );
       } else {
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
-          claimInternal(claim, receiver, claimPrivateKey, {
-            maxFee: GIFT_MAX_FEE + 1n,
-          }),
+          claimInternal(
+            { claim, receiver, claimPrivateKey },
+            {
+              maxFee: GIFT_MAX_FEE + 1n,
+            },
+          ),
         );
       }
     });
@@ -60,9 +63,9 @@ describe("Claim Internal", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    await claimInternal(claim, receiver, claimPrivateKey);
+    await claimInternal({ claim, receiver, claimPrivateKey });
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal(claim, receiver, claimPrivateKey),
+      claimInternal({ claim, receiver, claimPrivateKey }),
     );
   });
 

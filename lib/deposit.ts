@@ -4,15 +4,17 @@ import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, ma
 export const GIFT_AMOUNT = 1000000000000000n;
 export const GIFT_MAX_FEE = 50000000000000n;
 
-export async function deposit(
-  sender: Account,
-  giftAmount: bigint,
-  feeAmount: bigint,
-  factoryAddress: string,
-  feeTokenAddress: string,
-  giftTokenAddress: string,
-  claimSignerPubKey: bigint,
-): Promise<{ response: InvokeFunctionResponse; claim: Claim }> {
+export async function deposit(depositParams: {
+  sender: Account;
+  giftAmount: bigint;
+  feeAmount: bigint;
+  factoryAddress: string;
+  feeTokenAddress: string;
+  giftTokenAddress: string;
+  claimSignerPubKey: bigint;
+}): Promise<{ response: InvokeFunctionResponse; claim: Claim }> {
+  const { sender, giftAmount, feeAmount, factoryAddress, feeTokenAddress, giftTokenAddress, claimSignerPubKey } =
+    depositParams;
   const factory = await manager.loadContract(factoryAddress);
   const feeToken = await manager.loadContract(feeTokenAddress);
   const giftToken = await manager.loadContract(giftTokenAddress);
@@ -76,15 +78,15 @@ export async function defaultDepositTestSetup(
   const claimSigner = new LegacyStarknetKeyPair(giftPrivateKey);
   const claimPubKey = claimSigner.publicKey;
 
-  const { response, claim } = await deposit(
-    deployer,
+  const { response, claim } = await deposit({
+    sender: deployer,
     giftAmount,
-    giftMaxFee,
-    factory.address,
-    tokenContract.address,
-    giftTokenAddress || tokenContract.address,
-    claimPubKey,
-  );
+    feeAmount: giftMaxFee,
+    factoryAddress: factory.address,
+    feeTokenAddress: tokenContract.address,
+    giftTokenAddress: giftTokenAddress || tokenContract.address,
+    claimSignerPubKey: claimPubKey,
+  });
 
   return { claim, claimPrivateKey: claimSigner.privateKey, response };
 }

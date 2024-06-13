@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { num } from "starknet";
 import {
   GIFT_AMOUNT,
-  GIFT_MAX_FEE,
   LegacyStarknetKeyPair,
   calculateClaimAddress,
   claimInternal,
@@ -15,6 +14,7 @@ import {
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
+import { GIFT_MAX_FEE } from "./../lib/deposit";
 
 describe("Factory", function () {
   it(`Test calculate claim address`, async function () {
@@ -41,7 +41,7 @@ describe("Factory", function () {
       const receiver = randomReceiver();
       const receiverDust = randomReceiver();
 
-      await claimInternal(claim, receiver, claimPrivateKey);
+      await claimInternal({ claim, receiver, claimPrivateKey });
       const claimAddress = calculateClaimAddress(claim);
       const token = await manager.loadContract(claim.gift_token);
 
@@ -72,20 +72,20 @@ describe("Factory", function () {
     factory.connect(deployer);
     await factory.pause();
     await expectRevertWithErrorMessage("Pausable: paused", async () => {
-      const { response } = await deposit(
-        deployer,
-        GIFT_AMOUNT,
-        GIFT_MAX_FEE,
-        factory.address,
-        token.address,
-        token.address,
-        claimSigner.publicKey,
-      );
+      const { response } = await deposit({
+        sender: deployer,
+        giftAmount: GIFT_AMOUNT,
+        feeAmount: GIFT_MAX_FEE,
+        factoryAddress: factory.address,
+        feeTokenAddress: token.address,
+        giftTokenAddress: token.address,
+        claimSignerPubKey: claimSigner.publicKey,
+      });
       return response;
     });
 
     await factory.unpause();
     const { claim } = await defaultDepositTestSetup(factory, false, BigInt(claimSigner.privateKey));
-    await claimInternal(claim, receiver, claimSigner.privateKey);
+    await claimInternal({ claim, receiver, claimPrivateKey: claimSigner.privateKey });
   });
 });

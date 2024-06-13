@@ -69,31 +69,31 @@ export function buildCallDataClaim(claim: Claim) {
 }
 
 export async function signExternalClaim(
-  claim: Claim,
-  receiver: string,
-  claimPrivateKey: string,
+  signParams: { claim: Claim; receiver: string; claimPrivateKey: string },
   claimAddress?: string,
 ): Promise<Signature> {
-  const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-  const claimExternalData = await getClaimExternalData({ receiver });
-  return await giftSigner.signMessage(claimExternalData, claimAddress || calculateClaimAddress(claim));
+  const giftSigner = new LegacyStarknetKeyPair(signParams.claimPrivateKey);
+  const claimExternalData = await getClaimExternalData({ receiver: signParams.receiver });
+  return await giftSigner.signMessage(claimExternalData, claimAddress || calculateClaimAddress(signParams.claim));
 }
 
 export async function claimExternal(
-  claim: Claim,
-  receiver: string,
-  claimPrivateKey: string,
+  claimParams: { claim: Claim; receiver: string; claimPrivateKey: string },
   overrides?: { claimAccountAddress?: string; factoryAddress?: string; signature?: Signature },
   details?: UniversalDetails,
   account = deployer,
 ): Promise<TransactionReceipt> {
   const signature =
-    overrides?.signature || (await signExternalClaim(claim, receiver, claimPrivateKey, overrides?.claimAccountAddress));
+    overrides?.signature ||
+    (await signExternalClaim(
+      { claim: claimParams.claim, receiver: claimParams.receiver, claimPrivateKey: claimParams.claimPrivateKey },
+      overrides?.claimAccountAddress,
+    ));
   return (await account.execute(
     [
       {
-        contractAddress: overrides?.factoryAddress || claim.factory,
-        calldata: [buildCallDataClaim(claim), receiver, signature],
+        contractAddress: overrides?.factoryAddress || claimParams.claim.factory,
+        calldata: [buildCallDataClaim(claimParams.claim), claimParams.receiver, signature],
         entrypoint: "claim_external",
       },
     ],
@@ -103,21 +103,19 @@ export async function claimExternal(
 }
 
 export async function claimInternal(
-  claim: Claim,
-  receiver: string,
-  claimPrivateKey: string,
+  claimParams: { claim: Claim; receiver: string; claimPrivateKey: string },
   details?: UniversalDetails,
   overrides?: { claimAccountAddress?: string; factoryAddress?: string },
 ): Promise<TransactionReceipt> {
-  const claimAddress = overrides?.claimAccountAddress || calculateClaimAddress(claim);
+  const claimAddress = overrides?.claimAccountAddress || calculateClaimAddress(claimParams.claim);
 
-  const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), claimPrivateKey, undefined, txVersion);
+  const txVersion = useTxv3(claimParams.claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
+  const claimAccount = new Account(manager, num.toHex(claimAddress), claimParams.claimPrivateKey, undefined, txVersion);
   return (await claimAccount.execute(
     [
       {
-        contractAddress: overrides?.factoryAddress || claim.factory,
-        calldata: [buildCallDataClaim(claim), receiver],
+        contractAddress: overrides?.factoryAddress || claimParams.claim.factory,
+        calldata: [buildCallDataClaim(claimParams.claim), claimParams.receiver],
         entrypoint: "claim_internal",
       },
     ],
