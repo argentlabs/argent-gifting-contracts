@@ -112,7 +112,7 @@ describe("Claim External", function () {
     );
   });
 
-  it.only(`Not possible to re-enter claim external`, async function () {
+  it(`Not possible to re-enter claim external`, async function () {
     const { factory } = await setupGiftProtocol();
     const reentrant = await manager.deployContract("ReentrantERC20", {
       unique: true,
