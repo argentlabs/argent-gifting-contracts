@@ -1,3 +1,4 @@
+import { byteArray, uint256 } from "starknet";
 import {
   calculateClaimAddress,
   claimExternal,
@@ -7,6 +8,7 @@ import {
   manager,
   randomReceiver,
   setupGiftProtocol,
+  signExternalClaim,
 } from "../lib";
 
 describe("Claim External", function () {
@@ -107,6 +109,31 @@ describe("Claim External", function () {
 
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
       claimExternal({ claim, receiver, claimPrivateKey, overrides: { claimAccountAddress: claimAddress } }),
+    );
+  });
+
+  it.only(`Not possible to re-enter claim external`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const reentrant = await manager.deployContract("ReentrantERC20", {
+      unique: true,
+      constructorCalldata: [
+        byteArray.byteArrayFromString("ReentrantUSDC"),
+        byteArray.byteArrayFromString("RUSDC"),
+        uint256.bnToUint256(100e18),
+        deployer.address,
+        factory.address,
+      ],
+    });
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
+    const receiver = "0x9999";
+
+    const claimSig = await signExternalClaim({ claim, receiver, claimPrivateKey });
+
+    reentrant.connect(deployer);
+    await reentrant.set_signature(claimSig);
+
+    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 });

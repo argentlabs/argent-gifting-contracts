@@ -70,25 +70,4 @@ describe("Claim Internal", function () {
       claimInternal({ claim, receiver, claimPrivateKey }),
     );
   });
-
-  // it(`Not possible to re-enter claim internal`, async function () {
-  //   // TODO: change to claim external
-  //   const { factory } = await setupGiftProtocol();
-  //   const reentrant = await manager.deployContract("ReentrantERC20", {
-  //     unique: true,
-  //     constructorCalldata: [
-  //       byteArray.byteArrayFromString("USDC"),
-  //       byteArray.byteArrayFromString("USDC"),
-  //       uint256.bnToUint256(100e18),
-  //       deployer.address,
-  //       factory.address,
-  //     ],
-  //   });
-  //   const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
-  //   const receiver = "0x9999";
-
-  //   await expectRevertWithErrorMessage("gift/only-claim-account", () =>
-  //     claimInternal(claim, receiver, claimPrivateKey),
-  //   );
-  // });
 });

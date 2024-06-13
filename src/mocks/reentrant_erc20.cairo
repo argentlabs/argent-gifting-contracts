@@ -1,3 +1,9 @@
+#[starknet::interface]
+pub trait IMalicious<TContractState> {
+    fn set_signature(ref self: TContractState, claim_signature: Array<felt252>);
+}
+
+
 #[starknet::contract]
 mod ReentrantERC20 {
     use openzeppelin::token::erc20::interface::IERC20;
@@ -9,6 +15,7 @@ mod ReentrantERC20 {
     };
     use starknet_gifting::contracts::interface::ClaimData;
     use starknet_gifting::contracts::utils::ETH_ADDRESS;
+    use super::IMalicious;
 
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -18,6 +25,7 @@ mod ReentrantERC20 {
     #[storage]
     struct Storage {
         factory: ContractAddress,
+        signature: (felt252, felt252),
         #[substorage(v0)]
         erc20: ERC20Component::Storage,
     }
@@ -78,21 +86,31 @@ mod ReentrantERC20 {
                 gift_amount: amount,
                 fee_token: ETH_ADDRESS(),
                 fee_amount: 50000000000000,
-                claim_pubkey: 1834667920135899136652385032488963423519980789164354435124006945514052083514 // pk of 0x123456
+                claim_pubkey: 3512654880572580671014088124487384125967296770469815068887364768195237224797 // pk of 0x123456
             };
+
+            let (sig_r, sig_s) = self.signature.read();
 
             let mut calldata: Array<felt252> = array![];
             calldata.append_serde(claim);
             calldata.append_serde(contract_address_const::<9999>());
+            calldata.append_serde(array![sig_r, sig_s]);
 
             starknet::SyscallResultTrait::unwrap_syscall(
-                call_contract_syscall(self.factory.read(), selector!("claim_internal"), calldata.span(),)
+                call_contract_syscall(self.factory.read(), selector!("claim_external"), calldata.span(),)
             );
             true
         }
 
         fn total_supply(self: @ContractState) -> u256 {
             self.erc20.ERC20_total_supply.read()
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl MaliciousImpl of IMalicious<ContractState> {
+        fn set_signature(ref self: ContractState, claim_signature: Array<felt252>) {
+            self.signature.write((*claim_signature[0], *claim_signature[1]));
         }
     }
 }
