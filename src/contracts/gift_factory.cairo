@@ -75,34 +75,37 @@ mod GiftFactory {
 
     #[derive(Drop, starknet::Event)]
     struct GiftCreated {
-        #[key]
-        claim_pubkey: felt252,
-        #[key] // Find back all gifts from a specific sender
-        sender: ContractAddress,
         #[key] // If you have the ContractAddress you can find back the claim 
         gift_address: ContractAddress,
+        #[key] // Find all gifts from a specific sender
+        sender: ContractAddress,
         class_hash: ClassHash,
-        factory: ContractAddress,
         gift_token: ContractAddress,
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
+        claim_pubkey: felt252
     }
 
     #[derive(Drop, starknet::Event)]
     struct GiftClaimed {
         #[key]
+        gift_address: ContractAddress,
         receiver: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
     struct GiftClaimedExternal {
         #[key]
+        gift_address: ContractAddress,
         receiver: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GiftCanceled {}
+    struct GiftCanceled {
+        #[key]
+        gift_address: ContractAddress,
+    }
 
     #[constructor]
     fn constructor(ref self: ContractState, claim_class_hash: ClassHash, owner: ContractAddress) {
@@ -128,7 +131,6 @@ mod GiftFactory {
             }
 
             let sender = get_caller_address();
-            let factory = get_contract_address();
             // TODO We could manually serialize for better performance but then we loose the type safety
             let class_hash = self.claim_class_hash.read();
             let constructor_arguments = AccountConstructorArguments {
@@ -144,15 +146,14 @@ mod GiftFactory {
             self
                 .emit(
                     GiftCreated {
-                        claim_pubkey,
-                        factory,
                         gift_address: claim_contract,
-                        class_hash,
                         sender,
+                        class_hash,
                         gift_token,
                         gift_amount,
                         fee_token,
-                        fee_amount
+                        fee_amount,
+                        claim_pubkey
                     }
                 );
 
@@ -177,7 +178,7 @@ mod GiftFactory {
             let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
             assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
             self.transfer_from_account(claim, claim_address, claim.gift_token, claim.gift_amount, receiver);
-            self.emit(GiftClaimed { receiver });
+            self.emit(GiftClaimed { gift_address: claim_address, receiver });
         }
 
         fn claim_external(
@@ -193,7 +194,7 @@ mod GiftFactory {
             let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
             assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
             self.transfer_from_account(claim, claim_address, claim.gift_token, balance, receiver);
-            self.emit(GiftClaimedExternal { receiver });
+            self.emit(GiftClaimedExternal { gift_address: claim_address, receiver });
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
@@ -221,7 +222,7 @@ mod GiftFactory {
                             .span()
                     );
             }
-            self.emit(GiftCanceled {});
+            self.emit(GiftCanceled { gift_address: claim_address });
         }
 
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
