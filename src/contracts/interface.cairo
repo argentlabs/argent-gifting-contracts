@@ -45,7 +45,7 @@ pub trait IGiftFactory<TContractState> {
 
     /// @notice Allows the owner of the factory to claim the dust (leftovers) of a claim
     /// @dev Only allowed if the gift has been claimed
-    /// @param claim The claim data of the claimed gift 
+    /// @param claim The claim data 
     /// @param receiver The address of the receiver
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
 
@@ -70,6 +70,9 @@ pub trait IGiftFactory<TContractState> {
         fee_amount: u128,
         claim_pubkey: felt252
     ) -> ContractAddress;
+
+    /// @notice Get the status of a claim
+    /// @param claim The claim data 
     fn get_gift_status(self: @TContractState, claim: ClaimData) -> GiftStatus;
 }
 
@@ -125,6 +128,8 @@ pub struct AccountConstructorArguments {
     pub claim_pubkey: felt252
 }
 
+/// @notice Enum representing the status of a gift
+/// @dev ReadyExternalOnly should only happen if there is no fee_amount or if the account reverted during claim_internal
 #[derive(Serde, Drop, Copy)]
 pub enum GiftStatus {
     ClaimedOrCancelled,

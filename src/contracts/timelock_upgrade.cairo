@@ -21,7 +21,7 @@ pub trait ITimelockUpgrade<TContractState> {
     /// @notice Gets the proposed implementation
     fn get_proposed_implementation(self: @TContractState) -> ClassHash;
 
-    /// @notice Gets the timestamp when the upgrade is ready to be performed
+    /// @notice Gets the timestamp when the upgrade is ready to be performed, 0 if no upgrade ongoing
     fn get_upgrade_ready_at(self: @TContractState) -> u64;
 }
 
