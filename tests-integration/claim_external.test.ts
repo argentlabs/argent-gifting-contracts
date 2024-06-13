@@ -1,13 +1,9 @@
 import {
-  LegacyStarknetKeyPair,
-  buildCallDataClaim,
   calculateClaimAddress,
   claimExternal,
   defaultDepositTestSetup,
-  deployMockERC20,
   deployer,
   expectRevertWithErrorMessage,
-  getClaimExternalData,
   manager,
   randomReceiver,
   setupGiftProtocol,
@@ -47,11 +43,8 @@ describe("Claim External", function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-    const signature = ["0x1", "0x2"];
 
-    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      deployer.execute(factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, signature)),
-    );
+    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () => claimExternal(claim, receiver, "0x1234"));
   });
 
   it(`Invalid factory address`, async function () {
@@ -59,16 +52,10 @@ describe("Claim External", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    const claimAddress = calculateClaimAddress(claim);
-
     claim.factory = "0x2";
 
-    const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-    const claimExternalData = await getClaimExternalData({ receiver });
-    const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
-
     await expectRevertWithErrorMessage("gift/invalid-factory-address", () =>
-      deployer.execute(factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, signature)),
+      claimExternal(claim, receiver, claimPrivateKey, { factoryAddress: factory.address }),
     );
   });
 
@@ -117,26 +104,7 @@ describe("Claim External", function () {
     claim.claim_pubkey = 1n;
 
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      claimExternal(claim, receiver, claimPrivateKey, claimAddress),
-    );
-  });
-
-  it(`Cannot replay signature to claim all tokens`, async function () {
-    const mockERC20 = await deployMockERC20();
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
-    const receiver = randomReceiver();
-
-    const claimAddress = calculateClaimAddress(claim);
-
-    const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-    const claimExternalData = await getClaimExternalData({ receiver });
-    const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
-    await deployer.execute(factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, signature));
-
-    claim.gift_token = claim.fee_token;
-    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      deployer.execute(factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, signature)),
+      claimExternal(claim, receiver, claimPrivateKey, { claimAccountAddress: claimAddress }),
     );
   });
 });

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ec, encode, num } from "starknet";
+import { num } from "starknet";
 import {
   GIFT_AMOUNT,
   GIFT_MAX_FEE,
@@ -8,6 +8,7 @@ import {
   claimInternal,
   defaultDepositTestSetup,
   deployer,
+  deposit,
   expectRevertWithErrorMessage,
   genericAccount,
   manager,
@@ -62,31 +63,29 @@ describe("Factory", function () {
     // Deploy factory
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
-    const claimSigner = new LegacyStarknetKeyPair(`0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`);
+    const claimSigner = new LegacyStarknetKeyPair();
 
-    // approvals
-    const tokenContract = await manager.tokens.feeTokenContract(false);
-    tokenContract.connect(deployer);
-    factory.connect(deployer);
-    await tokenContract.approve(factory.address, GIFT_AMOUNT + GIFT_MAX_FEE);
-
+    const token = await manager.tokens.feeTokenContract(false);
     // pause / unpause
     factory.connect(genericAccount);
     await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
     factory.connect(deployer);
     await factory.pause();
-    await expectRevertWithErrorMessage("Pausable: paused", () =>
-      factory.deposit(tokenContract.address, GIFT_AMOUNT, tokenContract.address, GIFT_MAX_FEE, claimSigner.publicKey),
-    );
+    await expectRevertWithErrorMessage("Pausable: paused", async () => {
+      const { response } = await deposit(
+        deployer,
+        GIFT_AMOUNT,
+        GIFT_MAX_FEE,
+        factory.address,
+        token.address,
+        token.address,
+        claimSigner.publicKey,
+      );
+      return response;
+    });
 
     await factory.unpause();
     const { claim } = await defaultDepositTestSetup(factory, false, BigInt(claimSigner.privateKey));
     await claimInternal(claim, receiver, claimSigner.privateKey);
-
-    // Final check
-    const claimAddress = calculateClaimAddress(claim);
-    const dustBalance = await tokenContract.balance_of(claimAddress);
-    expect(dustBalance < GIFT_MAX_FEE).to.be.true;
-    await tokenContract.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
   });
 });

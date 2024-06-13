@@ -107,5 +107,3 @@ describe("Cancel Claim", function () {
     await expectRevertWithErrorMessage("gift/already-claimed", () => factory.cancel(claim));
   });
 });
-
-//upgrade test

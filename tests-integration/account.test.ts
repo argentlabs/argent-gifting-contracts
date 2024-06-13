@@ -1,30 +1,22 @@
-import { Account, RPC, num } from "starknet";
 import {
   buildCallDataClaim,
-  calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
   expectRevertWithErrorMessage,
+  getClaimAccount,
   manager,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
 
 describe("Claim Account", function () {
-  it(`Test only protocol can call claim contract`, async function () {
+  it(`Test only protocol can call validate`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
 
-    const claimAddress = calculateClaimAddress(claim);
+    const claimAccount = getClaimAccount(claim, claimPrivateKey);
+    const claimContract = await manager.loadContract(claimAccount.address);
 
-    const claimAccount = new Account(
-      manager,
-      num.toHex(claimAddress),
-      claimPrivateKey,
-      undefined,
-      RPC.ETransactionVersion.V2,
-    );
-    const claimContract = await manager.loadContract(claimAddress);
     claimContract.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
   });
@@ -34,28 +26,8 @@ describe("Claim Account", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    const claimAddress = calculateClaimAddress(claim);
-
-    const claimAccount = new Account(
-      manager,
-      num.toHex(claimAddress),
-      claimPrivateKey,
-      undefined,
-      RPC.ETransactionVersion.V2,
-    );
-
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
-      claimAccount.execute(
-        [
-          {
-            contractAddress: "0x1",
-            calldata: [buildCallDataClaim(claim), receiver],
-            entrypoint: "claim_internal",
-          },
-        ],
-        undefined,
-        { skipValidate: false },
-      ),
+      claimInternal(claim, receiver, claimPrivateKey, { skipValidate: false }, { factoryAddress: "0x2" }),
     );
   });
 
@@ -64,15 +36,7 @@ describe("Claim Account", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    const claimAddress = calculateClaimAddress(claim);
-
-    const claimAccount = new Account(
-      manager,
-      num.toHex(claimAddress),
-      claimPrivateKey,
-      undefined,
-      RPC.ETransactionVersion.V2,
-    );
+    const claimAccount = getClaimAccount(claim, claimPrivateKey);
 
     factory.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
@@ -85,16 +49,7 @@ describe("Claim Account", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    const claimAddress = calculateClaimAddress(claim);
-
-    const claimAccount = new Account(
-      manager,
-      num.toHex(claimAddress),
-      claimPrivateKey,
-      undefined,
-      RPC.ETransactionVersion.V2,
-    );
-
+    const claimAccount = getClaimAccount(claim, claimPrivateKey);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       claimAccount.execute([
         factory.populateTransaction.claim_internal(buildCallDataClaim(claim), receiver),
@@ -114,12 +69,4 @@ describe("Claim Account", function () {
       claimInternal(claim, receiver, claimPrivateKey, { skipValidate: false }),
     );
   });
-  // TODO Tests:
-  // - claim_external
-  // - check with wrong claim data
-  // - claim without enough fee to full-fill execution
-  // - cancel
-  // - get_dust
-  // - All validate branches
-  // - What if ERC20 reverts? (check every fn with that)
 });

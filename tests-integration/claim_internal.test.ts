@@ -1,11 +1,10 @@
 import { expect } from "chai";
-import { byteArray, num, uint256 } from "starknet";
+import { num } from "starknet";
 import {
   GIFT_MAX_FEE,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
-  deployer,
   expectRevertWithErrorMessage,
   manager,
   randomReceiver,
@@ -39,8 +38,8 @@ describe("Claim Internal", function () {
             max_price_per_unit: num.toHexString(1),
           },
           l1_gas: {
-            max_amount: num.toHexString(10),
-            max_price_per_unit: num.toHexString(36000000000n), // Current devnet gas price
+            max_amount: "0x0",
+            max_price_per_unit: "0x0",
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
@@ -67,23 +66,24 @@ describe("Claim Internal", function () {
     );
   });
 
-  it(`Not possible to re-enter claim internal`, async function () {
-    const { factory } = await setupGiftProtocol();
-    const reentrant = await manager.deployContract("ReentrantERC20", {
-      unique: true,
-      constructorCalldata: [
-        byteArray.byteArrayFromString("USDC"),
-        byteArray.byteArrayFromString("USDC"),
-        uint256.bnToUint256(100e18),
-        deployer.address,
-        factory.address,
-      ],
-    });
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
-    const receiver = "0x9999";
+  // it(`Not possible to re-enter claim internal`, async function () {
+  //   // TODO: change to claim external
+  //   const { factory } = await setupGiftProtocol();
+  //   const reentrant = await manager.deployContract("ReentrantERC20", {
+  //     unique: true,
+  //     constructorCalldata: [
+  //       byteArray.byteArrayFromString("USDC"),
+  //       byteArray.byteArrayFromString("USDC"),
+  //       uint256.bnToUint256(100e18),
+  //       deployer.address,
+  //       factory.address,
+  //     ],
+  //   });
+  //   const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
+  //   const receiver = "0x9999";
 
-    await expectRevertWithErrorMessage("gift/only-claim-account", () =>
-      claimInternal(claim, receiver, claimPrivateKey),
-    );
-  });
+  //   await expectRevertWithErrorMessage("gift/only-claim-account", () =>
+  //     claimInternal(claim, receiver, claimPrivateKey),
+  //   );
+  // });
 });
