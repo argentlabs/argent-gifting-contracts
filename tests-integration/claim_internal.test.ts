@@ -43,16 +43,18 @@ describe("Claim Internal", function () {
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
-          claimInternal({ claim, receiver, claimPrivateKey }, { resourceBounds: newResourceBounds, tip: 1 }),
+          claimInternal({ claim, receiver, claimPrivateKey, details: { resourceBounds: newResourceBounds, tip: 1 } }),
         );
       } else {
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
-          claimInternal(
-            { claim, receiver, claimPrivateKey },
-            {
+          claimInternal({
+            claim,
+            receiver,
+            claimPrivateKey,
+            details: {
               maxFee: GIFT_MAX_FEE + 1n,
             },
-          ),
+          }),
         );
       }
     });

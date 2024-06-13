@@ -109,24 +109,26 @@ export async function claimExternal(
   )) as TransactionReceipt;
 }
 
-export async function claimInternal(
-  claimParams: { claim: Claim; receiver: string; claimPrivateKey: string },
-  details?: UniversalDetails,
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string },
-): Promise<TransactionReceipt> {
-  const claimAddress = overrides?.claimAccountAddress || calculateClaimAddress(claimParams.claim);
-  const txVersion = useTxv3(claimParams.claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), claimParams.claimPrivateKey, undefined, txVersion);
+export async function claimInternal(args: {
+  claim: Claim;
+  receiver: string;
+  claimPrivateKey: string;
+  overrides?: { claimAccountAddress?: string; factoryAddress?: string };
+  details?: UniversalDetails;
+}): Promise<TransactionReceipt> {
+  const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
+  const txVersion = useTxv3(args.claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
+  const claimAccount = new Account(manager, num.toHex(claimAddress), args.claimPrivateKey, undefined, txVersion);
   return (await claimAccount.execute(
     [
       {
-        contractAddress: overrides?.factoryAddress || claimParams.claim.factory,
-        calldata: [buildCallDataClaim(claimParams.claim), claimParams.receiver],
+        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
+        calldata: [buildCallDataClaim(args.claim), args.receiver],
         entrypoint: "claim_internal",
       },
     ],
     undefined,
-    { ...details },
+    { ...args.details },
   )) as TransactionReceipt;
 }
 
