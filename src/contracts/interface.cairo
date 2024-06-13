@@ -33,6 +33,7 @@ pub trait IGiftFactory<TContractState> {
         fee_amount: u128,
         claim_pubkey: felt252
     ) -> ContractAddress;
+    fn get_gift_status(self: @TContractState, claim: ClaimData) -> GiftStatus;
 }
 
 #[starknet::interface]
@@ -77,4 +78,11 @@ pub struct AccountConstructorArguments {
     pub fee_token: ContractAddress,
     pub fee_amount: u128,
     pub claim_pubkey: felt252
+}
+
+#[derive(Serde, Drop, Copy)]
+pub enum GiftStatus {
+    ClaimedOrCancelled,
+    Ready,
+    ReadyExternalOnly
 }
