@@ -13,9 +13,7 @@ mod ReentrantERC20 {
         get_caller_address, ContractAddress, get_contract_address, contract_address_const,
         syscalls::call_contract_syscall
     };
-    use starknet_gifting::contracts::interface::{
-        ClaimData, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait
-    };
+    use starknet_gifting::contracts::interface::{ClaimData, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
     use starknet_gifting::contracts::utils::ETH_ADDRESS;
     use super::IMalicious;
 
