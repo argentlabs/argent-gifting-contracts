@@ -68,13 +68,18 @@ export function buildCallDataClaim(claim: Claim) {
   };
 }
 
-export async function signExternalClaim(
-  signParams: { claim: Claim; receiver: string; claimPrivateKey: string },
-  claimAddress?: string,
-): Promise<Signature> {
+export async function signExternalClaim(signParams: {
+  claim: Claim;
+  receiver: string;
+  claimPrivateKey: string;
+  forceClaimAddress?: string;
+}): Promise<Signature> {
   const giftSigner = new LegacyStarknetKeyPair(signParams.claimPrivateKey);
   const claimExternalData = await getClaimExternalData({ receiver: signParams.receiver });
-  return await giftSigner.signMessage(claimExternalData, claimAddress || calculateClaimAddress(signParams.claim));
+  return await giftSigner.signMessage(
+    claimExternalData,
+    signParams.forceClaimAddress || calculateClaimAddress(signParams.claim),
+  );
 }
 
 export async function claimExternal(
@@ -85,10 +90,12 @@ export async function claimExternal(
 ): Promise<TransactionReceipt> {
   const signature =
     overrides?.signature ||
-    (await signExternalClaim(
-      { claim: claimParams.claim, receiver: claimParams.receiver, claimPrivateKey: claimParams.claimPrivateKey },
-      overrides?.claimAccountAddress,
-    ));
+    (await signExternalClaim({
+      claim: claimParams.claim,
+      receiver: claimParams.receiver,
+      claimPrivateKey: claimParams.claimPrivateKey,
+      forceClaimAddress: overrides?.claimAccountAddress,
+    }));
   return (await account.execute(
     [
       {
@@ -108,7 +115,6 @@ export async function claimInternal(
   overrides?: { claimAccountAddress?: string; factoryAddress?: string },
 ): Promise<TransactionReceipt> {
   const claimAddress = overrides?.claimAccountAddress || calculateClaimAddress(claimParams.claim);
-
   const txVersion = useTxv3(claimParams.claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
   const claimAccount = new Account(manager, num.toHex(claimAddress), claimParams.claimPrivateKey, undefined, txVersion);
   return (await claimAccount.execute(
