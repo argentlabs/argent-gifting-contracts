@@ -30,7 +30,7 @@ export async function deposit(depositParams: {
     fee_amount: feeAmount,
     claim_pubkey: claimSignerPubKey,
   };
-  let calls: Array<Call> = [];
+  const calls: Array<Call> = [];
   if (feeTokenAddress === giftTokenAddress) {
     calls.push(feeToken.populateTransaction.approve(factory.address, giftAmount + feeAmount));
   } else {
