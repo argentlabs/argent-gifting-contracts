@@ -72,7 +72,7 @@ mod ReentrantERC20 {
             let sender = get_caller_address();
             let claim = ClaimData {
                 factory: self.factory.read(),
-                class_hash: 0x48acb707978d9d5b886b6d97247cd4a84ab8475398c3437886c6d95f48225ef.try_into().unwrap(),
+                class_hash: 0x71b6334f3a131fb8f120221c849965f0bb2a31906a0361e06e492e8de5ebf63.try_into().unwrap(),
                 sender: sender,
                 gift_token: get_contract_address(),
                 gift_amount: amount,

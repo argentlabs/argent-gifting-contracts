@@ -62,6 +62,7 @@ export async function claimExternal(
   receiver: string,
   claimPrivateKey: string,
   claimAccountAddress?: string,
+  details?: UniversalDetails,
   account = deployer,
 ): Promise<TransactionReceipt> {
   const claimAddress = claimAccountAddress || calculateClaimAddress(claim);
@@ -69,13 +70,17 @@ export async function claimExternal(
   const claimExternalData = await getClaimExternalData({ receiver });
   const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
 
-  return (await account.execute([
-    {
-      contractAddress: claim.factory,
-      calldata: [buildCallDataClaim(claim), receiver, signature],
-      entrypoint: "claim_external",
-    },
-  ])) as TransactionReceipt;
+  return (await account.execute(
+    [
+      {
+        contractAddress: claim.factory,
+        calldata: [buildCallDataClaim(claim), receiver, signature],
+        entrypoint: "claim_external",
+      },
+    ],
+    undefined,
+    { ...details },
+  )) as TransactionReceipt;
 }
 
 export async function claimInternal(
