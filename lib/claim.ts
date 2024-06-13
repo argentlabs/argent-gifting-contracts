@@ -82,30 +82,32 @@ export async function signExternalClaim(signParams: {
   );
 }
 
-export async function claimExternal(
-  claimParams: { claim: Claim; receiver: string; claimPrivateKey: string },
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string; signature?: Signature },
-  details?: UniversalDetails,
-  account = deployer,
-): Promise<TransactionReceipt> {
+export async function claimExternal(args: {
+  claim: Claim;
+  receiver: string;
+  claimPrivateKey: string;
+  overrides?: { claimAccountAddress?: string; factoryAddress?: string; signature?: Signature; account?: Account };
+  details?: UniversalDetails;
+}): Promise<TransactionReceipt> {
+  const account = args.overrides?.account || deployer;
   const signature =
-    overrides?.signature ||
+    args.overrides?.signature ||
     (await signExternalClaim({
-      claim: claimParams.claim,
-      receiver: claimParams.receiver,
-      claimPrivateKey: claimParams.claimPrivateKey,
-      forceClaimAddress: overrides?.claimAccountAddress,
+      claim: args.claim,
+      receiver: args.receiver,
+      claimPrivateKey: args.claimPrivateKey,
+      forceClaimAddress: args.overrides?.claimAccountAddress,
     }));
   return (await account.execute(
     [
       {
-        contractAddress: overrides?.factoryAddress || claimParams.claim.factory,
-        calldata: [buildCallDataClaim(claimParams.claim), claimParams.receiver, signature],
+        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
+        calldata: [buildCallDataClaim(args.claim), args.receiver, signature],
         entrypoint: "claim_external",
       },
     ],
     undefined,
-    { ...details },
+    { ...args.details },
   )) as TransactionReceipt;
 }
 

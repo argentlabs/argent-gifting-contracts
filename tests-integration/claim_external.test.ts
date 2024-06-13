@@ -57,7 +57,7 @@ describe("Claim External", function () {
     claim.factory = "0x2";
 
     await expectRevertWithErrorMessage("gift/invalid-factory-address", () =>
-      claimExternal({ claim, receiver, claimPrivateKey }, { factoryAddress: factory.address }),
+      claimExternal({ claim, receiver, claimPrivateKey, overrides: { factoryAddress: factory.address } }),
     );
   });
 
@@ -106,7 +106,7 @@ describe("Claim External", function () {
     claim.claim_pubkey = 1n;
 
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      claimExternal({ claim, receiver, claimPrivateKey }, { claimAccountAddress: claimAddress }),
+      claimExternal({ claim, receiver, claimPrivateKey, overrides: { claimAccountAddress: claimAddress } }),
     );
   });
 });
