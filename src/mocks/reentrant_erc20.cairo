@@ -13,7 +13,9 @@ mod ReentrantERC20 {
         get_caller_address, ContractAddress, get_contract_address, contract_address_const,
         syscalls::call_contract_syscall
     };
-    use starknet_gifting::contracts::interface::ClaimData;
+    use starknet_gifting::contracts::interface::{
+        ClaimData, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait
+    };
     use starknet_gifting::contracts::utils::ETH_ADDRESS;
     use super::IMalicious;
 
@@ -25,6 +27,7 @@ mod ReentrantERC20 {
     #[storage]
     struct Storage {
         factory: ContractAddress,
+        gift_sender: ContractAddress,
         signature: (felt252, felt252),
         #[substorage(v0)]
         erc20: ERC20Component::Storage,
@@ -47,9 +50,11 @@ mod ReentrantERC20 {
         symbol: ByteArray,
         fixed_supply: u256,
         recipient: ContractAddress,
-        factory: ContractAddress
+        gift_sender: ContractAddress,
+        factory: ContractAddress,
     ) {
         self.factory.write(factory);
+        self.gift_sender.write(gift_sender);
         self.erc20.initializer(name, symbol);
         self.erc20._mint(recipient, fixed_supply);
     }
@@ -77,11 +82,10 @@ mod ReentrantERC20 {
         }
 
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
-            let sender = get_caller_address();
             let claim = ClaimData {
                 factory: self.factory.read(),
                 class_hash: 0x71b6334f3a131fb8f120221c849965f0bb2a31906a0361e06e492e8de5ebf63.try_into().unwrap(),
-                sender: sender,
+                sender: self.gift_sender.read(),
                 gift_token: get_contract_address(),
                 gift_amount: amount,
                 fee_token: ETH_ADDRESS(),
@@ -91,14 +95,8 @@ mod ReentrantERC20 {
 
             let (sig_r, sig_s) = self.signature.read();
 
-            let mut calldata: Array<felt252> = array![];
-            calldata.append_serde(claim);
-            calldata.append_serde(contract_address_const::<9999>());
-            calldata.append_serde(array![sig_r, sig_s]);
-
-            starknet::SyscallResultTrait::unwrap_syscall(
-                call_contract_syscall(self.factory.read(), selector!("claim_external"), calldata.span(),)
-            );
+            IGiftFactoryDispatcher { contract_address: self.factory.read() }
+                .claim_external(claim, contract_address_const::<9999>(), array![sig_r, sig_s]);
             true
         }
 

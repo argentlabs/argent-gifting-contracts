@@ -121,6 +121,7 @@ describe("Claim External", function () {
         byteArray.byteArrayFromString("RUSDC"),
         uint256.bnToUint256(100e18),
         deployer.address,
+        deployer.address,
         factory.address,
       ],
     });
