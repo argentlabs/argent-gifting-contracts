@@ -71,11 +71,11 @@ export function buildCallDataClaim(claim: Claim) {
 export async function claimExternal(
   claim: Claim,
   receiver: string,
-  giftPrivateKey: string,
+  claimPrivateKey: string,
   account = deployer,
 ): Promise<TransactionReceipt> {
   const claimAddress = calculateClaimAddress(claim);
-  const giftSigner = new LegacyStarknetKeyPair(giftPrivateKey);
+  const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
   const claimExternalData = await getClaimExternalData({ receiver });
   const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
 
@@ -91,13 +91,13 @@ export async function claimExternal(
 export async function claimInternal(
   claim: Claim,
   receiver: string,
-  claimSignerPrivateKey: string,
+  claimPrivateKey: string,
   details?: UniversalDetails,
 ): Promise<InvokeFunctionResponse> {
   const claimAddress = calculateClaimAddress(claim);
 
   const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), claimSignerPrivateKey, undefined, txVersion);
+  const claimAccount = new Account(manager, num.toHex(claimAddress), claimPrivateKey, undefined, txVersion);
   return await claimAccount.execute(
     [
       {
