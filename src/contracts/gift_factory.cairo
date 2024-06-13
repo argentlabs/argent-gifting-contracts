@@ -11,6 +11,7 @@ mod GiftFactory {
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::interface::{
         IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
+        GiftStatus
     };
     use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
     use starknet_gifting::contracts::utils::{
@@ -235,6 +236,28 @@ mod GiftFactory {
 
         fn get_latest_claim_class_hash(self: @ContractState) -> ClassHash {
             self.claim_class_hash.read()
+        }
+
+        fn get_gift_status(self: @ContractState, claim: ClaimData) -> GiftStatus {
+            let claim_address = self.check_claim_and_get_account_address(claim);
+            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
+            if gift_balance < claim.gift_amount {
+                return GiftStatus::ClaimedOrCancelled;
+            }
+            if (claim.gift_token == claim.fee_token) {
+                if gift_balance < claim.gift_amount + claim.fee_amount.into() {
+                    return GiftStatus::ReadyExternalOnly;
+                } else {
+                    return GiftStatus::Ready;
+                }
+            } else {
+                let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
+                if fee_balance < claim.fee_amount.into() {
+                    return GiftStatus::ReadyExternalOnly;
+                } else {
+                    return GiftStatus::Ready;
+                }
+            }
         }
 
         fn get_claim_address(
