@@ -20,7 +20,8 @@ struct StarknetDomain {
     revision: felt252,
 }
 
-/// @notice The struct the person claiming the gift has to sign when using claim_external
+/// @notice The SNIP-12 message that needs to be signed when using claim_external
+/// @param receiver The receiver of the gift
 #[derive(Drop, Copy)]
 pub struct ClaimExternal {
     pub receiver: ContractAddress

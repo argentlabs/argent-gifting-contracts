@@ -32,11 +32,11 @@ pub fn serialize<E, impl ESerde: Serde<E>>(value: @E) -> Array<felt252> {
     output
 }
 
-/// @notice Computes the ContractAddress of an account corresponding to a given claim
-/// @dev The salt used is 0, as the account contract is not expected to be deployed multiple times
+/// @notice Computes the ContractAddress of an account for a given claim
+/// @dev The salt used is 0, as the account contract should not be deployed multiple times
 /// @dev The deployer_address is the factory address, as the account contract is deployed by the factory
-/// @param claim The claim data
-/// @return The ContractAddress of the account contract
+/// @param claim The claim data for which you need to calculate the account contract address
+/// @return The ContractAddress of the account contract corresponding to the claim
 pub fn calculate_claim_account_address(claim: ClaimData) -> ContractAddress {
     let constructor_arguments = AccountConstructorArguments {
         sender: claim.sender,

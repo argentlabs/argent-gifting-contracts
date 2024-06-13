@@ -3,7 +3,8 @@ use starknet::ClassHash;
 #[starknet::interface]
 pub trait ITimelockUpgrade<TContractState> {
     /// @notice Propose a new implementation for the contract to upgrade to
-    /// @dev There is a 7-day window to propose the upgrade. The upgrade can then be performed within a 7-day window
+    /// @dev There is a 7-day window before it is possible to do the upgrade.
+    /// @dev After the 7-day waiting period, the upgrade can be performed within a 7-day window
     /// @dev If there is an ongoing upgrade, the previous proposition will be overwritten
     /// @param new_implementation The class hash of the new implementation
     fn propose_upgrade(ref self: TContractState, new_implementation: ClassHash);
@@ -13,7 +14,7 @@ pub trait ITimelockUpgrade<TContractState> {
     fn cancel_upgrade(ref self: TContractState);
 
     /// @notice Perform the upgrade to the proposed implementation
-    /// @dev There is a 7-day window to propose the upgrade. The upgrade can then be performed within a 7-day window
+    /// @dev Can only be called after the 7 days waiting period and is valid only for a 7 days window
     /// @param calldata The calldata to be used for the upgrade
     fn upgrade(ref self: TContractState, calldata: Array<felt252>);
 

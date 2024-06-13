@@ -9,7 +9,7 @@ pub trait IAccount<TContractState> {
 
 #[starknet::interface]
 pub trait IGiftFactory<TContractState> {
-    /// @notice Create a new claim
+    /// @notice Creates a new claim
     /// @dev This function can be paused by the owner of the factory and prevent any further deposits
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
