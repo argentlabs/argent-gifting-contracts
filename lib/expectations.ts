@@ -24,6 +24,7 @@ export async function expectRevertWithErrorMessage(
     await manager.waitForTransaction(executionResult["transaction_hash"]);
   } catch (e: any) {
     if (e.toString().includes(errorMessage)) {
+      console.log("DIS IS CORRECT");
       return;
     }
     if (!e.toString().includes(shortString.encodeShortString(errorMessage))) {
