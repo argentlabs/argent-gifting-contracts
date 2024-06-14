@@ -1,3 +1,5 @@
+import { expect } from "chai";
+import { byteArray, uint256 } from "starknet";
 import {
   calculateClaimAddress,
   claimExternal,
@@ -7,6 +9,7 @@ import {
   manager,
   randomReceiver,
   setupGiftProtocol,
+  signExternalClaim,
 } from "../lib";
 
 describe("Claim External", function () {
@@ -15,8 +18,14 @@ describe("Claim External", function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
+      const claimAddress = calculateClaimAddress(claim);
 
       await claimExternal({ claim, receiver, claimPrivateKey });
+
+      const token = await manager.loadContract(claim.gift_token);
+      const finalBalance = await token.balance_of(claimAddress);
+      expect(finalBalance < claim.fee_amount).to.be.true;
+      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount + claim.fee_amount);
     });
   }
 
@@ -107,6 +116,31 @@ describe("Claim External", function () {
 
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
       claimExternal({ claim, receiver, claimPrivateKey, overrides: { claimAccountAddress: claimAddress } }),
+    );
+  });
+
+  it(`Not possible to claim more via reentrancy`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const receiver = randomReceiver();
+    const reentrant = await manager.deployContract("ReentrantERC20", {
+      unique: true,
+      constructorCalldata: [
+        byteArray.byteArrayFromString("ReentrantUSDC"),
+        byteArray.byteArrayFromString("RUSDC"),
+        uint256.bnToUint256(100e18),
+        deployer.address,
+        factory.address,
+      ],
+    });
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
+
+    const claimSig = await signExternalClaim({ claim, receiver, claimPrivateKey });
+
+    reentrant.connect(deployer);
+    await reentrant.set_claim_data(claim, receiver, claimSig);
+
+    await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 });
