@@ -45,7 +45,7 @@ As we use OpenZeppelin's Ownable component, this factory has an owner.
 
 ### Get Dust
 
-The factory has a function allowing it to claim the dust left on an account. This action can only be done after a claim has been performed. This can also be used to recover in case a user has sent some tokens to the account.
+The factory has a function allowing it to claim the dust left on an account. This action can only be done after a claim has been performed. This can also be used to recover any excess tokens a user may have sent to the account.
 
 ### Pausable
 
