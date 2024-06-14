@@ -13,7 +13,7 @@ pub trait IGiftFactory<TContractState> {
     /// @dev This function can be paused by the owner of the factory and prevent any further deposits
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
-    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address)
+    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift through claim_internal
     /// @param fee_amount The amount of the fee
     /// @param claim_pubkey The public key associated with the gift
     fn deposit(
