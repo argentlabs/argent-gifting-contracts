@@ -26,7 +26,7 @@ pub trait IGiftFactory<TContractState> {
     );
 
     /// @notice Allows a claim account contract to claim the gift
-    /// @dev Can only be called by a claim account contract
+    /// @dev Can only be called by the claim account contract corresponding to the claim
     /// @param claim The claim data
     /// @param receiver The address of the receiver
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
