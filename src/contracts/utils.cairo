@@ -33,7 +33,7 @@ pub fn serialize<E, impl ESerde: Serde<E>>(value: @E) -> Array<felt252> {
 }
 
 /// @notice Computes the ContractAddress of an account for a given claim
-/// @dev The salt used is 0, as the account contract should not be deployed multiple times
+/// @dev The salt used is fixed to 0 to ensure there's only one contract for a given claim.
 /// @dev The deployer_address is the factory address, as the account contract is deployed by the factory
 /// @param claim The claim data for which you need to calculate the account contract address
 /// @return The ContractAddress of the account contract corresponding to the claim
