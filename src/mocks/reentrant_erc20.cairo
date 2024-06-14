@@ -1,6 +1,6 @@
 use starknet::{ClassHash, ContractAddress};
 
-#[derive(Serde, Drop, Copy, starknet::Store)]
+#[derive(Serde, Drop, Copy, starknet::Store, Debug)]
 struct TestClaimData {
     factory: ContractAddress,
     class_hash: ClassHash,
@@ -22,7 +22,8 @@ trait IMalicious<TContractState> {
 
 #[starknet::contract]
 mod ReentrantERC20 {
-    use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
+    use openzeppelin::token::erc20::erc20::ERC20Component::InternalTrait;
+use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use openzeppelin::utils::serde::SerializedAppend;
     use starknet::{
@@ -44,6 +45,7 @@ mod ReentrantERC20 {
         factory: ContractAddress,
         claim: TestClaimData,
         receiver: ContractAddress,
+        has_reentered: bool,
         signature: (felt252, felt252),
         #[substorage(v0)]
         erc20: ERC20Component::Storage,
@@ -96,23 +98,28 @@ mod ReentrantERC20 {
         }
 
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
-            let (sig_r, sig_s) = self.signature.read();
-            let test_claim: TestClaimData = self.claim.read();
-            let claim = ClaimData {
-                factory: test_claim.factory,
-                class_hash: test_claim.class_hash,
-                sender: test_claim.sender,
-                gift_token: test_claim.gift_token,
-                gift_amount: test_claim.gift_amount,
-                fee_token: test_claim.fee_token,
-                fee_amount: test_claim.fee_amount,
-                claim_pubkey: test_claim.claim_pubkey,
-            };
-
-            if (IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(self.receiver.read()) > 0) {
+            if (!self.has_reentered.read()) {
+                self.has_reentered.write(true);
+                let (sig_r, sig_s) = self.signature.read();
+                let test_claim: TestClaimData = self.claim.read();
+                let claim = ClaimData {
+                    factory: test_claim.factory,
+                    class_hash: test_claim.class_hash,
+                    sender: test_claim.sender,
+                    gift_token: test_claim.gift_token,
+                    gift_amount: test_claim.gift_amount,
+                    fee_token: test_claim.fee_token,
+                    fee_amount: test_claim.fee_amount,
+                    claim_pubkey: test_claim.claim_pubkey,
+                };
+        
                 IGiftFactoryDispatcher { contract_address: self.factory.read() }
                     .claim_external(claim, self.receiver.read(), array![sig_r, sig_s]);
+                
             }
+
+            self.erc20._transfer(get_caller_address(), recipient, amount);
+
             true
         }
 

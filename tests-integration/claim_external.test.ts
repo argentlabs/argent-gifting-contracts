@@ -119,9 +119,9 @@ describe("Claim External", function () {
     );
   });
 
-  it(`Not possible to re-enter claim external`, async function () {
+  it(`Not possible to claim more via reentrancy`, async function () {
     const { factory } = await setupGiftProtocol();
-    const receiver = "0x9999";
+    const receiver = randomReceiver();
     const reentrant = await manager.deployContract("ReentrantERC20", {
       unique: true,
       constructorCalldata: [
@@ -139,10 +139,8 @@ describe("Claim External", function () {
     reentrant.connect(deployer);
     await reentrant.set_claim_data(claim, receiver, claimSig);
 
-    await claimExternal({ claim, receiver, claimPrivateKey });
-
-    // await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-    //   claimExternal({ claim, receiver, claimPrivateKey }),
-    // );
+    await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
+      claimExternal({ claim, receiver, claimPrivateKey }),
+    );
   });
 });
