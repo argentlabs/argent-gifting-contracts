@@ -119,8 +119,7 @@ export async function claimInternal(args: {
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
   const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
-  const txVersion = useTxv3(args.claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), args.claimPrivateKey, undefined, txVersion);
+  const claimAccount = getClaimAccount(args.claim, args.claimPrivateKey, claimAddress);
   return (await claimAccount.execute(
     [
       {
@@ -147,10 +146,10 @@ export const randomReceiver = (): string => {
   return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
 };
 
-export function getClaimAccount(claim: Claim, claimPrivateKey: string): Account {
+export function getClaimAccount(claim: Claim, claimPrivateKey: string, forceClaimAddress?: string): Account {
   return new Account(
     manager,
-    num.toHex(calculateClaimAddress(claim)),
+    forceClaimAddress || num.toHex(calculateClaimAddress(claim)),
     claimPrivateKey,
     undefined,
     useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2,

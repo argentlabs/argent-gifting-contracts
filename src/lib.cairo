@@ -11,5 +11,4 @@ pub mod contracts {
 mod mocks {
     mod broken_erc20;
     mod erc20;
-    mod reentrant_erc20;
 }

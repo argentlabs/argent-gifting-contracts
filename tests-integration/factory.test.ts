@@ -14,10 +14,10 @@ import {
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
-import { GIFT_MAX_FEE } from "./../lib/deposit";
+import { GIFT_MAX_FEE } from "./../lib";
 
-describe("Factory", function () {
-  it(`Test calculate claim address`, async function () {
+describe("Test Core Factory Functions", function () {
+  it(`Calculate claim address`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup(factory);
 
@@ -59,16 +59,15 @@ describe("Factory", function () {
       await token.balance_of(receiverDust).should.eventually.equal(dustBalance);
     });
   }
-  it(`Test pausable`, async function () {
+  it(`Pausable`, async function () {
     // Deploy factory
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
     const claimSigner = new LegacyStarknetKeyPair();
 
     const token = await manager.tokens.feeTokenContract(false);
+
     // pause / unpause
-    factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
     factory.connect(deployer);
     await factory.pause();
     await expectRevertWithErrorMessage("Pausable: paused", async () => {
@@ -87,5 +86,35 @@ describe("Factory", function () {
     await factory.unpause();
     const { claim } = await defaultDepositTestSetup(factory, false, BigInt(claimSigner.privateKey));
     await claimInternal({ claim, receiver, claimPrivateKey: claimSigner.privateKey });
+  });
+
+  it("Ownable: Pause", async function () {
+    const { factory } = await setupGiftProtocol();
+
+    factory.connect(genericAccount);
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
+  });
+
+  it("Ownable: Unpause", async function () {
+    const { factory } = await setupGiftProtocol();
+
+    factory.connect(deployer);
+    await factory.pause();
+
+    factory.connect(genericAccount);
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.unpause());
+
+    // needed for next tests
+    factory.connect(deployer);
+    await factory.unpause();
+  });
+
+  it("Ownable: Get Dust", async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim } = await defaultDepositTestSetup(factory);
+    const receiverDust = randomReceiver();
+
+    factory.connect(genericAccount);
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.get_dust(claim, receiverDust));
   });
 });
