@@ -14,7 +14,7 @@ pub trait ITimelockUpgrade<TContractState> {
     fn cancel_upgrade(ref self: TContractState);
 
     /// @notice Perform the upgrade to the proposed implementation
-    /// @dev Can only be called after the 7 days waiting period and is valid only for a 7 days window
+    /// @dev Can only be called after a 7 day waiting period and is valid only for a 7 day window
     /// @param calldata The calldata to be used for the upgrade
     fn upgrade(ref self: TContractState, calldata: Array<felt252>);
 

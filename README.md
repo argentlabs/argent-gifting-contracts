@@ -1,6 +1,6 @@
 # Starknet Gifting
 
-The protocol implemented in this repository can be used for gifting tokens to a recipient without giving custody of the tokens to a third party without knowing what the recipient is upfront. Since the escrow contract functions as an account, it can pay for its own transactions, meaning the recipient doesn't need funds to initiate the claim. This is ideal for onboarding new users who can claim a gift to a newly created and even undeployed account.
+The protocol implemented in this repository can be used for gifting tokens to a recipient without giving custody of the tokens to a third party or knowing who the recipient is upfront. Since the escrow contract functions as an account, it can pay for its own transactions, meaning the recipient doesn't need funds to initiate the claim. This is ideal for onboarding new users who can claim a gift to a newly created and even undeployed account.
 
 ## High level Flow
 
@@ -27,15 +27,15 @@ Claim can be done in two ways:
 ### Through the account
 
 The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens to cover the fee, it will be used for the claiming operation.  
-Once this is done, the account becomes blocked and it is not possible to send any transactions through it.
+Once this is done, the account becomes blocked and is no longer able to send any further transactions.
 
 ### Through the factory
 
 It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using `claim_key.priv` to acknowledge that they approve only a specific recipient. This can then be submitted to the factory using `claim_external`.
 
-## Canceling Gifts
+## Cancelling Gifts
 
-Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the amount gifted and the fee he agreed paid for that gift.  
+Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the `gift_amount` and the `fee_amount` he agreed to pay for that gift.  
 If the gift has already been claimed, this allows the sender to redeem the leftover dust remaining.
 
 ## Factory Operations
