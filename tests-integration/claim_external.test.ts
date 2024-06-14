@@ -12,7 +12,7 @@ import {
   signExternalClaim,
 } from "../lib";
 
-describe.only("Claim External", function () {
+describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
     it(`Testing claim_external flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
