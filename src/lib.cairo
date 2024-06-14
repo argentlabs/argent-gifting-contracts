@@ -10,4 +10,5 @@ pub mod contracts {
 
 mod mocks {
     mod erc20;
+    mod erc20_transfer;
 }
