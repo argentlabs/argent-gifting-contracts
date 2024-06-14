@@ -25,6 +25,7 @@ export async function expectRevertWithErrorMessage(
   } catch (e: any) {
     if (e.toString().includes(errorMessage)) {
       console.log("DIS IS CORRECT");
+      console.log(e);
       return;
     }
     if (!e.toString().includes(shortString.encodeShortString(errorMessage))) {
