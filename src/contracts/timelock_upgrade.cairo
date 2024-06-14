@@ -89,6 +89,12 @@ pub mod TimelockUpgradeComponent {
         fn propose_upgrade(ref self: ComponentState<TContractState>, new_implementation: ClassHash) {
             self.assert_only_owner();
             assert(new_implementation.is_non_zero(), 'upgrade/new-implementation-null');
+
+            let pending_implementation = self.pending_implementation.read();
+            if pending_implementation.is_non_zero() {
+                self.emit(UpgradeCancelled { new_implementation: pending_implementation })
+            }
+
             self.pending_implementation.write(new_implementation);
             let ready_at = get_block_timestamp() + MIN_SECURITY_PERIOD;
             self.ready_at.write(ready_at);

@@ -1,6 +1,6 @@
 pub mod contracts {
     mod claim_account;
-    mod claim_hash;
+    pub mod claim_hash;
     mod gift_factory;
     pub mod interface;
     mod timelock_upgrade;
