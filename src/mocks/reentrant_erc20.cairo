@@ -15,7 +15,11 @@ struct TestClaimData {
 #[starknet::interface]
 trait IMalicious<TContractState> {
     fn set_claim_data(
-        ref self: TContractState, claim: TestClaimData, receiver: ContractAddress, claim_signature: Array<felt252>
+        ref self: TContractState,
+        claim: TestClaimData,
+        receiver: ContractAddress,
+        dust_receiver: ContractAddress,
+        claim_signature: Array<felt252>
     );
 }
 
@@ -45,6 +49,7 @@ mod ReentrantERC20 {
         factory: ContractAddress,
         claim: TestClaimData,
         receiver: ContractAddress,
+        dust_receiver: ContractAddress,
         has_reentered: bool,
         signature: (felt252, felt252),
         #[substorage(v0)]
@@ -114,7 +119,7 @@ mod ReentrantERC20 {
                 };
 
                 IGiftFactoryDispatcher { contract_address: self.factory.read() }
-                    .claim_external(claim, self.receiver.read(), array![sig_r, sig_s]);
+                    .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), array![sig_r, sig_s]);
             }
 
             self.erc20._transfer(get_caller_address(), recipient, amount);
@@ -130,11 +135,16 @@ mod ReentrantERC20 {
     #[abi(embed_v0)]
     impl MaliciousImpl of IMalicious<ContractState> {
         fn set_claim_data(
-            ref self: ContractState, claim: TestClaimData, receiver: ContractAddress, claim_signature: Array<felt252>
+            ref self: ContractState,
+            claim: TestClaimData,
+            receiver: ContractAddress,
+            dust_receiver: ContractAddress,
+            claim_signature: Array<felt252>
         ) {
             self.signature.write((*claim_signature[0], *claim_signature[1]));
             self.claim.write(claim);
             self.receiver.write(receiver);
+            self.dust_receiver.write(dust_receiver);
         }
     }
 }

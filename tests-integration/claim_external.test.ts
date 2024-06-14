@@ -24,8 +24,8 @@ describe("Claim External", function () {
 
       const token = await manager.loadContract(claim.gift_token);
       const finalBalance = await token.balance_of(claimAddress);
-      expect(finalBalance < claim.fee_amount).to.be.true;
-      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount + claim.fee_amount);
+      expect(finalBalance == claim.fee_amount).to.be.true;
+      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
     });
   }
 
@@ -52,7 +52,6 @@ describe("Claim External", function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
       claimExternal({ claim, receiver, claimPrivateKey: "0x1234" }),
     );
@@ -109,7 +108,6 @@ describe("Claim External", function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-
     const claimAddress = calculateClaimAddress(claim);
 
     claim.claim_pubkey = 1n;
@@ -122,6 +120,7 @@ describe("Claim External", function () {
   it(`Not possible to claim more via reentrancy`, async function () {
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
+
     const reentrant = await manager.deployContract("ReentrantERC20", {
       unique: true,
       constructorCalldata: [
@@ -137,7 +136,7 @@ describe("Claim External", function () {
     const claimSig = await signExternalClaim({ claim, receiver, claimPrivateKey });
 
     reentrant.connect(deployer);
-    await reentrant.set_claim_data(claim, receiver, claimSig);
+    await reentrant.set_claim_data(claim, receiver, "0x0", claimSig);
 
     await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
       claimExternal({ claim, receiver, claimPrivateKey }),

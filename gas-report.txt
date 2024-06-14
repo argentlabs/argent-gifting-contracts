@@ -16,11 +16,11 @@ Resources:
 │           (index)            │ bitwise │ ec_op │ ecdsa │ keccak │ pedersen │ poseidon │ range_check │ steps │
 ├──────────────────────────────┼─────────┼───────┼───────┼────────┼──────────┼──────────┼─────────────┼───────┤
 │ Gifting WEI (FeeToken: WEI)  │    0    │   3   │   0   │   0    │    47    │    0     │     334     │ 14506 │
-│ Claiming WEI (FeeToken: WEI) │    0    │   3   │   0   │   0    │    75    │    0     │     475     │ 13657 │
+│ Claiming WEI (FeeToken: WEI) │    0    │   3   │   0   │   0    │    75    │    0     │     475     │ 13651 │
 │ Gifting WEI (FeeToken: FRI)  │    0    │   3   │   0   │   0    │    63    │    0     │     460     │ 20478 │
-│ Claiming WEI (FeeToken: FRI) │    0    │   3   │   0   │   0    │    75    │    0     │     509     │ 13855 │
+│ Claiming WEI (FeeToken: FRI) │    0    │   3   │   0   │   0    │    75    │    0     │     509     │ 13849 │
 │ Gifting FRI (FeeToken: WEI)  │    0    │   3   │   0   │   0    │    63    │    0     │     460     │ 20477 │
-│ Claiming FRI (FeeToken: WEI) │    0    │   3   │   0   │   0    │    75    │    0     │     475     │ 13657 │
+│ Claiming FRI (FeeToken: WEI) │    0    │   3   │   0   │   0    │    75    │    0     │     475     │ 13651 │
 │ Gifting FRI (FeeToken: FRI)  │    0    │   3   │   0   │   0    │    47    │    0     │     334     │ 14507 │
-│ Claiming FRI (FeeToken: FRI) │    0    │   3   │   0   │   0    │    75    │    0     │     509     │ 13855 │
+│ Claiming FRI (FeeToken: FRI) │    0    │   3   │   0   │   0    │    75    │    0     │     509     │ 13849 │
 └──────────────────────────────┴─────────┴───────┴───────┴────────┴──────────┴──────────┴─────────────┴───────┘
