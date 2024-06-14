@@ -33,7 +33,7 @@ for (const { giftTokenContract, unit } of tokens) {
 
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimInternal(claim, receiver, claimPrivateKey),
+      await claimInternal({ claim, receiver, claimPrivateKey }),
     );
   }
 }

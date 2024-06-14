@@ -2,7 +2,7 @@ import {
   Account,
   InvokeFunctionResponse,
   RPC,
-  TransactionReceipt,
+  Signature,
   UniversalDetails,
   ec,
   encode,
@@ -72,47 +72,73 @@ export function buildCallDataClaim(claim: Claim) {
   };
 }
 
-export async function claimExternal(
-  claim: Claim,
-  receiver: string,
-  claimPrivateKey: string,
-  account = deployer,
-  dustReceiver = "0x0",
-): Promise<TransactionReceipt> {
-  const claimAddress = calculateClaimAddress(claim);
-  const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-  const claimExternalData = await getClaimExternalData({ receiver, dustReceiver });
-  const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
-
-  return (await account.execute([
-    {
-      contractAddress: claim.factory,
-      calldata: [buildCallDataClaim(claim), receiver, dustReceiver, signature],
-      entrypoint: "claim_external",
-    },
-  ])) as TransactionReceipt;
+export async function signExternalClaim(signParams: {
+  claim: Claim;
+  receiver: string;
+  claimPrivateKey: string;
+  dustReceiver?: string;
+  forceClaimAddress?: string;
+}): Promise<Signature> {
+  const giftSigner = new LegacyStarknetKeyPair(signParams.claimPrivateKey);
+  const claimExternalData = await getClaimExternalData({
+    receiver: signParams.receiver,
+    dustReceiver: signParams.dustReceiver,
+  });
+  return await giftSigner.signMessage(
+    claimExternalData,
+    signParams.forceClaimAddress || calculateClaimAddress(signParams.claim),
+  );
 }
 
-export async function claimInternal(
-  claim: Claim,
-  receiver: string,
-  claimPrivateKey: string,
-  details?: UniversalDetails,
-): Promise<InvokeFunctionResponse> {
-  const claimAddress = calculateClaimAddress(claim);
+export async function claimExternal(args: {
+  claim: Claim;
+  receiver: string;
+  dust_receiver?: string;
+  claimPrivateKey: string;
+  overrides?: { claimAccountAddress?: string; factoryAddress?: string; signature?: Signature; account?: Account };
+  details?: UniversalDetails;
+}): Promise<InvokeFunctionResponse> {
+  const account = args.overrides?.account || deployer;
+  const signature =
+    args.overrides?.signature ||
+    (await signExternalClaim({
+      claim: args.claim,
+      receiver: args.receiver,
+      claimPrivateKey: args.claimPrivateKey,
+      forceClaimAddress: args.overrides?.claimAccountAddress,
+    }));
+  return await account.execute(
+    [
+      {
+        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
+        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dust_receiver || "0x0", signature],
+        entrypoint: "claim_external",
+      },
+    ],
+    undefined,
+    { ...args.details },
+  );
+}
 
-  const txVersion = useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2;
-  const claimAccount = new Account(manager, num.toHex(claimAddress), claimPrivateKey, undefined, txVersion);
+export async function claimInternal(args: {
+  claim: Claim;
+  receiver: string;
+  claimPrivateKey: string;
+  overrides?: { claimAccountAddress?: string; factoryAddress?: string };
+  details?: UniversalDetails;
+}): Promise<InvokeFunctionResponse> {
+  const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
+  const claimAccount = getClaimAccount(args.claim, args.claimPrivateKey, claimAddress);
   return await claimAccount.execute(
     [
       {
-        contractAddress: claim.factory,
-        calldata: [buildCallDataClaim(claim), receiver],
+        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
+        calldata: [buildCallDataClaim(args.claim), args.receiver],
         entrypoint: "claim_internal",
       },
     ],
     undefined,
-    { ...details },
+    { ...args.details },
   );
 }
 
@@ -128,3 +154,13 @@ function useTxv3(tokenAddress: string): boolean {
 export const randomReceiver = (): string => {
   return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
 };
+
+export function getClaimAccount(claim: Claim, claimPrivateKey: string, forceClaimAddress?: string): Account {
+  return new Account(
+    manager,
+    forceClaimAddress || num.toHex(calculateClaimAddress(claim)),
+    claimPrivateKey,
+    undefined,
+    useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2,
+  );
+}

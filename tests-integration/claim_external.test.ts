@@ -1,26 +1,31 @@
+import { expect } from "chai";
+import { byteArray, uint256 } from "starknet";
 import {
-  LegacyStarknetKeyPair,
-  buildCallDataClaim,
   calculateClaimAddress,
   claimExternal,
   defaultDepositTestSetup,
-  deployMockERC20,
   deployer,
   expectRevertWithErrorMessage,
-  getClaimExternalData,
   manager,
   randomReceiver,
   setupGiftProtocol,
+  signExternalClaim,
 } from "../lib";
 
-describe("claim_external", function () {
+describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
     it(`Testing claim_external flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
+      const claimAddress = calculateClaimAddress(claim);
 
-      await claimExternal(claim, receiver, claimPrivateKey);
+      await claimExternal({ claim, receiver, claimPrivateKey });
+
+      const token = await manager.loadContract(claim.gift_token);
+      const finalBalance = await token.balance_of(claimAddress);
+      expect(finalBalance == claim.fee_amount).to.be.true;
+      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
     });
   }
 
@@ -29,7 +34,7 @@ describe("claim_external", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = "0x0";
 
-    await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal(claim, receiver, claimPrivateKey));
+    await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal({ claim, receiver, claimPrivateKey }));
   });
 
   it(`Cannot call claim external twice`, async function () {
@@ -37,9 +42,9 @@ describe("claim_external", function () {
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
 
-    await claimExternal(claim, receiver, claimPrivateKey);
+    await claimExternal({ claim, receiver, claimPrivateKey });
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimExternal(claim, receiver, claimPrivateKey),
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 
@@ -47,13 +52,8 @@ describe("claim_external", function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-    const dustReceiver = "0x0";
-    const signature = ["0x1", "0x2"];
-
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      deployer.execute(
-        factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, dustReceiver, signature),
-      ),
+      claimExternal({ claim, receiver, claimPrivateKey: "0x1234" }),
     );
   });
 
@@ -61,20 +61,11 @@ describe("claim_external", function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-    const dustReceiver = "0x0";
 
     claim.factory = "0x2";
 
-    const claimAddress = calculateClaimAddress(claim);
-
-    const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-    const claimExternalData = await getClaimExternalData({ receiver });
-    const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
-
     await expectRevertWithErrorMessage("gift/invalid-factory-address", () =>
-      deployer.execute(
-        factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, dustReceiver, signature),
-      ),
+      claimExternal({ claim, receiver, claimPrivateKey, overrides: { factoryAddress: factory.address } }),
     );
   });
 
@@ -86,7 +77,7 @@ describe("claim_external", function () {
     claim.class_hash = "0x1";
 
     await expectRevertWithErrorMessage("gift/invalid-class-hash", () =>
-      claimExternal(claim, receiver, claimPrivateKey),
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 
@@ -109,7 +100,7 @@ describe("claim_external", function () {
     await token.balance_of(claimAddress).should.eventually.equal(0n);
 
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimExternal(claim, receiver, claimPrivateKey),
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 
@@ -117,43 +108,38 @@ describe("claim_external", function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
-    const dustReceiver = "0x0";
-
     const claimAddress = calculateClaimAddress(claim);
-    const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-    const claimExternalData = await getClaimExternalData({ receiver });
-    const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
 
     claim.claim_pubkey = 1n;
 
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      deployer.execute(
-        factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, dustReceiver, signature),
-      ),
+      claimExternal({ claim, receiver, claimPrivateKey, overrides: { claimAccountAddress: claimAddress } }),
     );
   });
 
-  it(`Cannot replay signature to claim all tokens`, async function () {
-    const mockERC20 = await deployMockERC20();
+  it(`Not possible to claim more via reentrancy`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
     const receiver = randomReceiver();
-    const dustReceiver = "0x0";
 
-    const claimAddress = calculateClaimAddress(claim);
+    const reentrant = await manager.deployContract("ReentrantERC20", {
+      unique: true,
+      constructorCalldata: [
+        byteArray.byteArrayFromString("ReentrantUSDC"),
+        byteArray.byteArrayFromString("RUSDC"),
+        uint256.bnToUint256(100e18),
+        deployer.address,
+        factory.address,
+      ],
+    });
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
 
-    const giftSigner = new LegacyStarknetKeyPair(claimPrivateKey);
-    const claimExternalData = await getClaimExternalData({ receiver });
-    const signature = await giftSigner.signMessage(claimExternalData, claimAddress);
-    await deployer.execute(
-      factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, dustReceiver, signature),
-    );
+    const claimSig = await signExternalClaim({ claim, receiver, claimPrivateKey });
 
-    claim.gift_token = claim.fee_token;
-    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      deployer.execute(
-        factory.populateTransaction.claim_external(buildCallDataClaim(claim), receiver, dustReceiver, signature),
-      ),
+    reentrant.connect(deployer);
+    await reentrant.set_claim_data(claim, receiver, "0x0", claimSig);
+
+    await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
+      claimExternal({ claim, receiver, claimPrivateKey }),
     );
   });
 });
