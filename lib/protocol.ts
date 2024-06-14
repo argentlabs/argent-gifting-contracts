@@ -21,6 +21,24 @@ export async function deployMockERC20(): Promise<Contract> {
   return mockERC20;
 }
 
+export async function deployLoopERC20(): Promise<Contract> {
+  if (cache["LoopERC20"]) {
+    return cache["LoopERC20"];
+  }
+  const mockERC20 = await manager.deployContract("LoopERC20", {
+    unique: true,
+    constructorCalldata: [
+      byteArray.byteArrayFromString("LOOP"),
+      byteArray.byteArrayFromString("LOOP"),
+      uint256.bnToUint256(100e18),
+      deployer.address,
+      deployer.address,
+    ],
+  });
+  cache["LoopERC20"] = mockERC20;
+  return mockERC20;
+}
+
 export async function setupGiftProtocol(): Promise<{
   factory: Contract;
   claimAccountClassHash: string;
