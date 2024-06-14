@@ -1,6 +1,6 @@
 # Starknet Gifting
 
-The protocol implemented in this repository can be used for gifting tokens to a recipient without giving custody of the tokens to a third party or knowing who the recipient is upfront. Since the escrow contract functions as an account, it can pay for its own transactions, meaning the recipient doesn't need funds to initiate the claim. This is ideal for onboarding new users who can claim a gift to a newly created and even undeployed account.
+The goal of this protocol is to allow sending tokens to a recipient without knowing their address. This is done using a non-custodial escrow contract. Since the escrow contract functions as an account, it can pay for its own transactions, meaning the recipient doesn't need funds to initiate the claim. This is ideal for onboarding new users who can claim a gift to a newly created and even undeployed account.
 
 ## High level Flow
 
