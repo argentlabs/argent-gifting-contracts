@@ -28,7 +28,7 @@ Claim can be done in two ways:
 
 ### Through the account
 
-The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens to cover the fee, it will be used for the claiming operation.  
+The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens (ETH or STRK) which will be used for the claiming operation.  
 Once this is done, the account becomes blocked and is no longer able to send any further transactions.
 
 ### Through the factory
