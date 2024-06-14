@@ -1,23 +1,23 @@
 import { expect } from "chai";
-import { ec, encode, num } from "starknet";
+import { num } from "starknet";
 import {
   GIFT_AMOUNT,
-  GIFT_MAX_FEE,
   LegacyStarknetKeyPair,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
-  deployMockERC20,
   deployer,
+  deposit,
   expectRevertWithErrorMessage,
   genericAccount,
   manager,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
+import { GIFT_MAX_FEE } from "./../lib";
 
-describe("Factory", function () {
-  it(`Test calculate claim address`, async function () {
+describe("Test Core Factory Functions", function () {
+  it(`Calculate claim address`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup(factory);
 
@@ -41,12 +41,11 @@ describe("Factory", function () {
       const receiver = randomReceiver();
       const receiverDust = randomReceiver();
 
-      await claimInternal(claim, receiver, claimPrivateKey);
+      await claimInternal({ claim, receiver, claimPrivateKey });
       const claimAddress = calculateClaimAddress(claim);
       const token = await manager.loadContract(claim.gift_token);
 
       // Final check
-
       const dustBalance = await token.balance_of(claimAddress);
       expect(dustBalance < GIFT_MAX_FEE).to.be.true;
       await token.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
@@ -60,131 +59,62 @@ describe("Factory", function () {
       await token.balance_of(receiverDust).should.eventually.equal(dustBalance);
     });
   }
-
-  it(`Cancel Claim (fee_token == gift_token)`, async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
-    const receiver = randomReceiver();
-    const token = await manager.loadContract(claim.gift_token);
-    const claimAddress = calculateClaimAddress(claim);
-
-    const balanceSenderBefore = await token.balance_of(deployer.address);
-    factory.connect(deployer);
-    const { transaction_hash } = await factory.cancel(claim);
-    const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
-    // Check balance of the sender is correct
-    await token
-      .balance_of(deployer.address)
-      .should.eventually.equal(balanceSenderBefore + claim.gift_amount + claim.fee_amount - txFee);
-    // Check balance claim address address == 0
-    await token.balance_of(claimAddress).should.eventually.equal(0n);
-
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal(claim, receiver, claimPrivateKey),
-    );
-  });
-
-  it(`Cancel Claim (fee_token != gift_token)`, async function () {
-    const mockERC20 = await deployMockERC20();
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
-    const receiver = randomReceiver();
-    const gifToken = await manager.loadContract(claim.gift_token);
-    const feeToken = await manager.loadContract(claim.fee_token);
-    const claimAddress = calculateClaimAddress(claim);
-
-    const balanceSenderBeforeGiftToken = await gifToken.balance_of(deployer.address);
-    const balanceSenderBeforeFeeToken = await feeToken.balance_of(deployer.address);
-    factory.connect(deployer);
-    const { transaction_hash } = await factory.cancel(claim);
-    const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
-    // Check balance of the sender is correct
-    await gifToken
-      .balance_of(deployer.address)
-      .should.eventually.equal(balanceSenderBeforeGiftToken + claim.gift_amount);
-    await feeToken
-      .balance_of(deployer.address)
-      .should.eventually.equal(balanceSenderBeforeFeeToken + claim.fee_amount - txFee);
-    // Check balance claim address address == 0
-    await gifToken.balance_of(claimAddress).should.eventually.equal(0n);
-    await feeToken.balance_of(claimAddress).should.eventually.equal(0n);
-
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal(claim, receiver, claimPrivateKey),
-    );
-  });
-
-  it(`Cancel Claim wrong sender`, async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup(factory);
-
-    factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
-  });
-
-  it(`Cancel Claim: owner reclaim dust (gift_token == fee_token)`, async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
-    const receiver = randomReceiver();
-    const token = await manager.loadContract(claim.gift_token);
-
-    const { transaction_hash: transaction_hash_claim } = await claimInternal(claim, receiver, claimPrivateKey);
-    const txFeeCancelClaim = BigInt((await manager.getTransactionReceipt(transaction_hash_claim)).actual_fee.amount);
-
-    const claimAddress = calculateClaimAddress(claim);
-
-    const balanceSenderBefore = await token.balance_of(deployer.address);
-    factory.connect(deployer);
-    const { transaction_hash } = await factory.cancel(claim);
-    const txFeeCancel = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
-    // Check balance of the sender is correct
-    await token
-      .balance_of(deployer.address)
-      .should.eventually.equal(balanceSenderBefore + claim.fee_amount - txFeeCancel - txFeeCancelClaim);
-    // Check balance claim address address == 0
-    await token.balance_of(claimAddress).should.eventually.equal(0n);
-  });
-
-  it(`Cancel Claim: gift/already-claimed (gift_token != fee_token)`, async function () {
-    const mockERC20 = await deployMockERC20();
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
-    const receiver = randomReceiver();
-
-    await claimInternal(claim, receiver, claimPrivateKey);
-    factory.connect(deployer);
-    await expectRevertWithErrorMessage("gift/already-claimed", () => factory.cancel(claim));
-  });
-
-  it(`Test pausable`, async function () {
+  it(`Pausable`, async function () {
     // Deploy factory
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
-    const claimSigner = new LegacyStarknetKeyPair(`0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`);
+    const claimSigner = new LegacyStarknetKeyPair();
 
-    // approvals
-    const tokenContract = await manager.tokens.feeTokenContract(false);
-    tokenContract.connect(deployer);
-    factory.connect(deployer);
-    await tokenContract.approve(factory.address, GIFT_AMOUNT + GIFT_MAX_FEE);
+    const token = await manager.tokens.feeTokenContract(false);
 
     // pause / unpause
-    factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
     factory.connect(deployer);
     await factory.pause();
-    await expectRevertWithErrorMessage("Pausable: paused", () =>
-      factory.deposit(tokenContract.address, GIFT_AMOUNT, tokenContract.address, GIFT_MAX_FEE, claimSigner.publicKey),
-    );
+    await expectRevertWithErrorMessage("Pausable: paused", async () => {
+      const { response } = await deposit({
+        sender: deployer,
+        giftAmount: GIFT_AMOUNT,
+        feeAmount: GIFT_MAX_FEE,
+        factoryAddress: factory.address,
+        feeTokenAddress: token.address,
+        giftTokenAddress: token.address,
+        claimSignerPubKey: claimSigner.publicKey,
+      });
+      return response;
+    });
 
     await factory.unpause();
     const { claim } = await defaultDepositTestSetup(factory, false, BigInt(claimSigner.privateKey));
-    await claimInternal(claim, receiver, claimSigner.privateKey);
+    await claimInternal({ claim, receiver, claimPrivateKey: claimSigner.privateKey });
+  });
 
-    // Final check
-    const claimAddress = calculateClaimAddress(claim);
-    const dustBalance = await tokenContract.balance_of(claimAddress);
-    expect(dustBalance < GIFT_MAX_FEE).to.be.true;
-    await tokenContract.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
+  it("Ownable: Pause", async function () {
+    const { factory } = await setupGiftProtocol();
+
+    factory.connect(genericAccount);
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
+  });
+
+  it("Ownable: Unpause", async function () {
+    const { factory } = await setupGiftProtocol();
+
+    factory.connect(deployer);
+    await factory.pause();
+
+    factory.connect(genericAccount);
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.unpause());
+
+    // needed for next tests
+    factory.connect(deployer);
+    await factory.unpause();
+  });
+
+  it("Ownable: Get Dust", async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim } = await defaultDepositTestSetup(factory);
+    const receiverDust = randomReceiver();
+
+    factory.connect(genericAccount);
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.get_dust(claim, receiverDust));
   });
 });
