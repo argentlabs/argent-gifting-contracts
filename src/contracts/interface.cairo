@@ -23,7 +23,7 @@ pub trait IGiftFactory<TContractState> {
         claim: ClaimData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
-        signature: Array<felt252>
+        signature: (felt252, felt252)
     );
     fn cancel(ref self: TContractState, claim: ClaimData);
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);

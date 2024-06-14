@@ -174,12 +174,13 @@ mod GiftFactory {
             claim: ClaimData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
-            signature: Array<felt252>
+            signature: (felt252, felt252)
         ) {
             let claim_address = self.check_claim_and_get_account_address(claim);
             let claim_external_hash = ClaimExternal { receiver, dust_receiver }.get_message_hash_rev_1(claim_address);
+            let (signature_r, signature_s): (felt252, felt252) = signature;
             assert(
-                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
+                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, signature_r, signature_s),
                 'gift/invalid-ext-signature'
             );
             self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);

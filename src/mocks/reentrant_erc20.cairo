@@ -19,7 +19,7 @@ trait IMalicious<TContractState> {
         claim: TestClaimData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
-        claim_signature: Array<felt252>
+        claim_signature: (felt252, felt252),
     );
 }
 
@@ -105,7 +105,6 @@ mod ReentrantERC20 {
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
             if (!self.has_reentered.read()) {
                 self.has_reentered.write(true);
-                let (sig_r, sig_s) = self.signature.read();
                 let test_claim: TestClaimData = self.claim.read();
                 let claim = ClaimData {
                     factory: test_claim.factory,
@@ -119,7 +118,7 @@ mod ReentrantERC20 {
                 };
 
                 IGiftFactoryDispatcher { contract_address: self.factory.read() }
-                    .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), array![sig_r, sig_s]);
+                    .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
             }
 
             self.erc20._transfer(get_caller_address(), recipient, amount);
@@ -139,9 +138,9 @@ mod ReentrantERC20 {
             claim: TestClaimData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
-            claim_signature: Array<felt252>
+            claim_signature: (felt252, felt252),
         ) {
-            self.signature.write((*claim_signature[0], *claim_signature[1]));
+            self.signature.write(claim_signature);
             self.claim.write(claim);
             self.receiver.write(receiver);
             self.dust_receiver.write(dust_receiver);
