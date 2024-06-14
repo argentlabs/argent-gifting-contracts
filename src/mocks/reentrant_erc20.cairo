@@ -1,6 +1,22 @@
+use starknet::{ClassHash, ContractAddress};
+
+#[derive(Serde, Drop, Copy, starknet::Store)]
+struct TestClaimData {
+    factory: ContractAddress,
+    class_hash: ClassHash,
+    sender: ContractAddress,
+    gift_token: ContractAddress,
+    gift_amount: u256,
+    fee_token: ContractAddress,
+    fee_amount: u128,
+    claim_pubkey: felt252
+}
+
 #[starknet::interface]
-pub trait IMalicious<TContractState> {
-    fn set_signature(ref self: TContractState, claim_signature: Array<felt252>);
+trait IMalicious<TContractState> {
+    fn set_claim_data(
+        ref self: TContractState, claim: TestClaimData, receiver: ContractAddress, claim_signature: Array<felt252>
+    );
 }
 
 
@@ -16,6 +32,7 @@ mod ReentrantERC20 {
     use starknet_gifting::contracts::interface::{ClaimData, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
     use starknet_gifting::contracts::utils::ETH_ADDRESS;
     use super::IMalicious;
+    use super::TestClaimData;
 
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -25,7 +42,8 @@ mod ReentrantERC20 {
     #[storage]
     struct Storage {
         factory: ContractAddress,
-        gift_sender: ContractAddress,
+        claim: TestClaimData,
+        receiver: ContractAddress,
         signature: (felt252, felt252),
         #[substorage(v0)]
         erc20: ERC20Component::Storage,
@@ -48,11 +66,9 @@ mod ReentrantERC20 {
         symbol: ByteArray,
         fixed_supply: u256,
         recipient: ContractAddress,
-        gift_sender: ContractAddress,
         factory: ContractAddress,
     ) {
         self.factory.write(factory);
-        self.gift_sender.write(gift_sender);
         self.erc20.initializer(name, symbol);
         self.erc20._mint(recipient, fixed_supply);
     }
@@ -80,21 +96,20 @@ mod ReentrantERC20 {
         }
 
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
-            let claim = ClaimData {
-                factory: self.factory.read(),
-                class_hash: 0x71b6334f3a131fb8f120221c849965f0bb2a31906a0361e06e492e8de5ebf63.try_into().unwrap(),
-                sender: self.gift_sender.read(),
-                gift_token: get_contract_address(),
-                gift_amount: amount,
-                fee_token: ETH_ADDRESS(),
-                fee_amount: 50000000000000,
-                claim_pubkey: 3512654880572580671014088124487384125967296770469815068887364768195237224797 // pk of 0x123456
-            };
-
             let (sig_r, sig_s) = self.signature.read();
-
+            let test_claim: TestClaimData = self.claim.read();
+            let claim = ClaimData {
+                factory: test_claim.factory,
+                class_hash: test_claim.class_hash,
+                sender: test_claim.sender,
+                gift_token: test_claim.gift_token,
+                gift_amount: test_claim.gift_amount,
+                fee_token: test_claim.fee_token,
+                fee_amount: test_claim.fee_amount,
+                claim_pubkey: test_claim.claim_pubkey,
+            };
             IGiftFactoryDispatcher { contract_address: self.factory.read() }
-                .claim_external(claim, contract_address_const::<9999>(), array![sig_r, sig_s]);
+                .claim_external(claim, self.receiver.read(), array![sig_r, sig_s]);
             true
         }
 
@@ -105,8 +120,12 @@ mod ReentrantERC20 {
 
     #[abi(embed_v0)]
     impl MaliciousImpl of IMalicious<ContractState> {
-        fn set_signature(ref self: ContractState, claim_signature: Array<felt252>) {
+        fn set_claim_data(
+            ref self: ContractState, claim: TestClaimData, receiver: ContractAddress, claim_signature: Array<felt252>
+        ) {
             self.signature.write((*claim_signature[0], *claim_signature[1]));
+            self.claim.write(claim);
+            self.receiver.write(receiver);
         }
     }
 }

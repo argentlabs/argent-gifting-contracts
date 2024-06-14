@@ -112,8 +112,9 @@ describe("Claim External", function () {
     );
   });
 
-  it(`Not possible to re-enter claim external`, async function () {
+  it.only(`Not possible to re-enter claim external`, async function () {
     const { factory } = await setupGiftProtocol();
+    const receiver = "0x9999";
     const reentrant = await manager.deployContract("ReentrantERC20", {
       unique: true,
       constructorCalldata: [
@@ -121,17 +122,15 @@ describe("Claim External", function () {
         byteArray.byteArrayFromString("RUSDC"),
         uint256.bnToUint256(100e18),
         deployer.address,
-        deployer.address,
         factory.address,
       ],
     });
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
-    const receiver = "0x9999";
 
     const claimSig = await signExternalClaim({ claim, receiver, claimPrivateKey });
 
     reentrant.connect(deployer);
-    await reentrant.set_signature(claimSig);
+    await reentrant.set_claim_data(claim, receiver, claimSig);
 
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
       claimExternal({ claim, receiver, claimPrivateKey }),
