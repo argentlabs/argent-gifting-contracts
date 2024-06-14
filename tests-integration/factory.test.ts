@@ -14,7 +14,7 @@ import {
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
-import { GIFT_MAX_FEE } from "./../lib/deposit";
+import { GIFT_MAX_FEE } from "./../lib";
 
 describe("Factory", function () {
   it(`Test calculate claim address`, async function () {
