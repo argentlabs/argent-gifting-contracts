@@ -29,7 +29,7 @@ Claim can be done in two ways:
 ### Through the account
 
 The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens (ETH or STRK) which will be used for the claiming operation.  
-Once this is done, the account becomes blocked and is no longer able to send any further transactions.
+If this transaction fails for any reason, the account won't allow to submit another transaction. But the gift can still be claimed using the external method.
 
 ### Through the factory
 
