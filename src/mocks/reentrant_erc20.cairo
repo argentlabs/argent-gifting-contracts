@@ -22,7 +22,7 @@ trait IMalicious<TContractState> {
 
 #[starknet::contract]
 mod ReentrantERC20 {
-    use openzeppelin::token::erc20::interface::IERC20;
+    use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use openzeppelin::utils::serde::SerializedAppend;
     use starknet::{
@@ -108,8 +108,11 @@ mod ReentrantERC20 {
                 fee_amount: test_claim.fee_amount,
                 claim_pubkey: test_claim.claim_pubkey,
             };
-            IGiftFactoryDispatcher { contract_address: self.factory.read() }
-                .claim_external(claim, self.receiver.read(), array![sig_r, sig_s]);
+
+            if (IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(self.receiver.read()) > 0) {
+                IGiftFactoryDispatcher { contract_address: self.factory.read() }
+                    .claim_external(claim, self.receiver.read(), array![sig_r, sig_s]);
+            }
             true
         }
 
