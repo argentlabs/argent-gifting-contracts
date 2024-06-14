@@ -31,7 +31,7 @@ Once this is done, the account becomes blocked and is no longer able to send any
 
 ### Through the factory
 
-It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using the private key to acknowledge that they approve only a specific recipient. This can then be submitted to the factory using `claim_external`.
+It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using the private key. The object they need to sign is as follows: `ClaimExternal { receiver }`, which ensures that the user acknowledges and approves only a specific recipient. This signature can then be used as an argument in when calling `claim_external` on the factory.
 
 ## Cancelling Gifts
 
