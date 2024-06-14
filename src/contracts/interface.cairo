@@ -31,8 +31,9 @@ pub trait IGiftFactory<TContractState> {
         claim: ClaimData,
         original_caller: ContractAddress,
         outside_execution: OutsideExecution,
-        signature: Span<felt252>
+        remaining_signature: Span<felt252>
     ) -> Array<Span<felt252>>;
+
     fn cancel(ref self: TContractState, claim: ClaimData);
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
 

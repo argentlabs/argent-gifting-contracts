@@ -16,7 +16,10 @@ mod ClaimAccount {
     };
 
     #[storage]
-    struct Storage {}
+    struct Storage {
+        /// Keeps track of used nonces for outside transactions (`execute_from_outside`)
+        outside_nonces: LegacyMap<felt252, bool>,
+    }
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -92,17 +95,19 @@ mod ClaimAccount {
     impl OutsideExecutionImpl of IOutsideExecution<ContractState> {
         // TODO implement supports_interface
         fn execute_from_outside_v2(
-            ref self: ContractState, outside_execution: OutsideExecution, signature: Span<felt252>
+            ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            let mut signature_copy = signature;
-            let claim: ClaimData = Serde::deserialize(ref signature_copy).expect('gift-acc/invalid-claim');
+            assert(!self.outside_nonces.read(outside_execution.nonce), 'gift-acc/dup-outside-nonce');
+            self.outside_nonces.write(outside_execution.nonce, true);
+
+            let claim: ClaimData = Serde::deserialize(ref signature).expect('gift-acc/invalid-claim');
             assert_valid_claim(claim);
             IGiftFactoryDispatcher { contract_address: claim.factory }
                 .perform_execute_from_outside(claim, get_caller_address(), outside_execution, signature)
         }
 
         fn is_valid_outside_execution_nonce(self: @ContractState, nonce: felt252) -> bool {
-            true // TODO delegate to factory
+            !self.outside_nonces.read(nonce)
         }
     }
 
