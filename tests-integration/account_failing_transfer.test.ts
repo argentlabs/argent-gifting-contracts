@@ -79,17 +79,17 @@ describe.only("Failing transfer impossible", function () {
     expect(revert_reason).to.contains("Fail ERC20 transfer TEST");
 
     await claimAccount.getNonce().should.eventually.equal("0x1");
-    let finalBalanceGift = await loopERC20.balance_of(claimAccount.address);
+    const failingBalanceGift = await loopERC20.balance_of(claimAccount.address);
     const feeToken = await manager.tokens.strkContract();
-    const feeBalance = await feeToken.balance_of(claimAccount.address);
-    expect(finalBalanceGift).to.be.equal(claim.gift_amount);
-    expect(feeBalance < claim.fee_amount).to.be.true;
+    const failingFeeBalance = await feeToken.balance_of(claimAccount.address);
+    expect(failingBalanceGift).to.be.equal(claim.gift_amount);
+    expect(failingFeeBalance < claim.fee_amount).to.be.true;
 
     await loopERC20.should_fail(false);
     await claimExternal(claim, receiver, claimPrivateKey);
-    finalBalanceGift = await loopERC20.balance_of(claimAccount.address);
+    const finalBalanceGift = await loopERC20.balance_of(claimAccount.address);
     const finalBalanceFee = await feeToken.balance_of(claimAccount.address);
-    expect(feeBalance).to.be.equal(finalBalanceFee);
+    expect(failingFeeBalance).to.be.equal(finalBalanceFee);
     expect(finalBalanceGift).to.be.equal(0n);
   });
 });
