@@ -4,11 +4,11 @@ The protocol implemented in this repository can be used for gifting tokens to a 
 
 ## High level Flow
 
-1. The sender creates a key pair `claim_key` locally.
-2. The sender deposits the tokens to be transferred, along with a small amount of fee token (ETH or STK) to cover the fee, to the factory. The sender also specifies `claim_key.pub` as an identifier.
+1. The sender creates a key pair locally called **claim_key**.
+2. The sender deposits the tokens to be transferred, along with a small amount of fee token (ETH or STK) to cover the fee, to the factory. The sender also specifies the **public key** as an identifier.
 3. The factory deploys an escrow account.
-4. The sender shares the private key `claim_key.priv` with the recipient over an external channel such as email or phone.
-5. The recipient can claims the tokens by transferring them from the escrow account to an account he controls using `claim_key.priv` to sign the transaction.
+4. The sender shares the **private key** with the recipient over an external channel such as email or phone.
+5. The recipient can claims the tokens by transferring them from the escrow account to an account he controls using the private key to sign the transaction.
 
 ### Gift account address calculation
 
@@ -31,7 +31,7 @@ Once this is done, the account becomes blocked and is no longer able to send any
 
 ### Through the factory
 
-It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using `claim_key.priv` to acknowledge that they approve only a specific recipient. This can then be submitted to the factory using `claim_external`.
+It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using the private key to acknowledge that they approve only a specific recipient. This can then be submitted to the factory using `claim_external`.
 
 ## Cancelling Gifts
 
