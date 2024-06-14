@@ -5,10 +5,12 @@ The protocol implemented in this repository can be used for gifting tokens to a 
 ## High level Flow
 
 1. The sender creates a key pair locally called **claim_key**.
-2. The sender deposits the tokens to be transferred, along with a small amount of fee token (ETH or STK) to cover the fee, to the factory. The sender also specifies the **public key** as an identifier.
-3. The factory deploys an escrow account.
+2. The sender deposits the tokens to be transferred, along with a small amount of fee token (ETH or STK) to cover the claim transaction, to the factory. The sender also specifies the **public key** as an identifier.
+3. The factory deploys an escrow account to which the gift amount is transferred along with the fee amount.
 4. The sender shares the **private key** with the recipient over an external channel such as email or phone.
 5. The recipient can claims the tokens by transferring them from the escrow account to an account he controls using the private key to sign the transaction.
+
+As the fee should be larger than the claiming transaction cost, there might be a small amount of fee token left. We will refer to this leftover amount as "dust."
 
 ### Gift account address calculation
 
