@@ -102,14 +102,8 @@ mod BrokenERC20 {
         }
 
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
-            let caller = get_caller_address();
-            let caller_balance = self.erc20.ERC20_balances.read(caller);
-            if caller_balance < amount {
-                return false;
-            }
-            self.erc20.ERC20_balances.write(caller, caller_balance - amount);
-            let recipient_balance = self.erc20.ERC20_balances.read(recipient);
-            self.erc20.ERC20_balances.write(recipient, recipient_balance + amount);
+            let sender = get_caller_address();
+            self.erc20._transfer(sender, recipient, amount);
             true
         }
 

@@ -66,9 +66,11 @@ mod TransferERC20 {
 
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
             if self.should_fail.read() {
-                panic!("Fail");
+                panic!("Fail ERC20 transfer TEST");
             }
-            false
+            let sender = get_caller_address();
+            self.erc20._transfer(sender, recipient, amount);
+            true
         }
 
         fn total_supply(self: @ContractState) -> u256 {
@@ -77,7 +79,7 @@ mod TransferERC20 {
     }
 
     #[external(v0)]
-    fn make_fail(ref self: ContractState, should_fail: bool) {
+    fn should_fail(ref self: ContractState, should_fail: bool) {
         self.should_fail.write(should_fail);
     }
 }

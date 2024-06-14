@@ -23,6 +23,9 @@ export async function expectRevertWithErrorMessage(
     }
     await manager.waitForTransaction(executionResult["transaction_hash"]);
   } catch (e: any) {
+    if (e.toString().includes(errorMessage)) {
+      return;
+    }
     if (!e.toString().includes(shortString.encodeShortString(errorMessage))) {
       const match = e.toString().match(/\[([^\]]+)]/);
       if (match && match.length > 1) {

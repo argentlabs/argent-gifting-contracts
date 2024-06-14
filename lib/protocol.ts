@@ -21,11 +21,11 @@ export async function deployMockERC20(): Promise<Contract> {
   return mockERC20;
 }
 
-export async function deployLoopERC20(): Promise<Contract> {
-  if (cache["LoopERC20"]) {
-    return cache["LoopERC20"];
+export async function deployFailingTransferERC20(): Promise<Contract> {
+  if (cache["TransferERC20"]) {
+    return cache["TransferERC20"];
   }
-  const mockERC20 = await manager.deployContract("LoopERC20", {
+  const mockERC20 = await manager.deployContract("TransferERC20", {
     unique: true,
     constructorCalldata: [
       byteArray.byteArrayFromString("LOOP"),
@@ -35,7 +35,7 @@ export async function deployLoopERC20(): Promise<Contract> {
       deployer.address,
     ],
   });
-  cache["LoopERC20"] = mockERC20;
+  cache["TransferERC20"] = mockERC20;
   return mockERC20;
 }
 

@@ -123,3 +123,13 @@ function useTxv3(tokenAddress: string): boolean {
 export const randomReceiver = (): string => {
   return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
 };
+
+export function getClaimAccount(claim: Claim, claimPrivateKey: string, forceClaimAddress?: string): Account {
+  return new Account(
+    manager,
+    forceClaimAddress || num.toHex(calculateClaimAddress(claim)),
+    claimPrivateKey,
+    undefined,
+    useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2,
+  );
+}
