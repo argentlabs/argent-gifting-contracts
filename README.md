@@ -31,7 +31,7 @@ Once this is done, the account becomes blocked and is no longer able to send any
 
 ### Through the factory
 
-It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using the private key. The object they need to sign is as follows: `ClaimExternal { receiver }`, which ensures that the user acknowledges and approves only a specific recipient. This signature can then be used as an argument when calling `claim_external` on the factory.
+It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using the private key. The SNIP-12 compliant message the user must sign is as follows: `ClaimExternal { receiver }`. This ensures that the user acknowledges and approves only a specific recipient. This signature should then be used as an argument when calling `claim_external` on the factory.
 
 ## Cancelling Gifts
 
