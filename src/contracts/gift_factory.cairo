@@ -5,6 +5,7 @@ use starknet_gifting::contracts::utils::{serialize};
 mod GiftFactory {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
+    use core::panic_with_felt252;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::PausableComponent;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
@@ -117,6 +118,7 @@ mod GiftFactory {
             claim_pubkey: felt252
         ) {
             self.pausable.assert_not_paused();
+            assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
             if gift_token == fee_token {
                 // This is needed so we can tell if an gift has been claimed or not just by looking at the balances
                 assert(fee_amount.into() < gift_amount, 'gift-fac/fee-too-high');
@@ -198,7 +200,8 @@ mod GiftFactory {
             outside_execution: OutsideExecution,
             remaining_signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            starknet::panic_with_felt252('outside-execution-not-allowed');
+            panic_with_felt252('outside-execution-not-allowed');
+            array![]
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
