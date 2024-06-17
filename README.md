@@ -10,17 +10,7 @@ The goal of this protocol is to allow sending tokens to a recipient without know
 4. The sender shares the **private key** with the recipient over an external channel such as text or email.
 5. The recipient can claim the tokens by transferring them from the escrow account to their account using the private key to sign the transaction.
 
-As the fee should be larger than the claiming transaction cost, there might be a small amount of fee token left. We will refer to this leftover amount as "dust."
-
-### Gift account address calculation
-
-To compute the address of the escrow account, you can either call `get_claim_address()` with the relevant arguments. Or you can do it off-chain using, for example, starknetJS.  
-The parameters are as follow:
-
-- Salt: 0
-- Class hash: the class hash of the escrow account
-- Constructor calldata: The constructor argument used to deploy the escrow account
-- Deployer address: The address of the factory
+As the fee should be larger than the claiming transaction cost, there might be a small amount of fee token left. We will refer to this leftover amount as "dust".
 
 ## Claiming
 
@@ -58,6 +48,16 @@ The owner has the capability to pause all deposits. However, it cannot prevent a
 The factory can be upgraded to a newer version, allowing it to potentially recover from future user mistakes and add more functionalities as needed.  
 The upgrade cannot be done immediately and must go through a waiting period of 7 days. There is then a window of 7 days to perform the upgrade.  
 It is important to note that through an upgrade, the ownership of the factory and its upgradeability can both be revoked.
+
+## Gift account address calculation
+
+To compute the address of the escrow account, you can either call `get_claim_address()` with the relevant arguments. Or you can do it off-chain using, for example, starknetJS.  
+The parameters are as follow:
+
+- Salt: 0
+- Class hash: the class hash of the escrow account
+- Constructor calldata: The constructor argument used to deploy the escrow account
+- Deployer address: The address of the factory
 
 # Development
 
