@@ -33,15 +33,15 @@ describe("Claim External", function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
-      const dust_receiver = randomReceiver();
+      const dustReceiver = randomReceiver();
       const claimAddress = calculateClaimAddress(claim);
 
       const balanceBefore = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      await claimExternal({ claim, receiver, claimPrivateKey, dust_receiver });
+      await claimExternal({ claim, receiver, claimPrivateKey, dustReceiver });
 
       await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
       await manager.tokens
-        .tokenBalance(dust_receiver, claim.gift_token)
+        .tokenBalance(dustReceiver, claim.gift_token)
         .should.eventually.equal(balanceBefore - claim.gift_amount);
       await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
       await manager.tokens.tokenBalance(claimAddress, claim.fee_token).should.eventually.equal(0n);
@@ -53,13 +53,13 @@ describe("Claim External", function () {
     const giftToken = await deployMockERC20();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, giftToken.address);
     const receiver = randomReceiver();
-    const dust_receiver = randomReceiver();
+    const dustReceiver = randomReceiver();
     const claimAddress = calculateClaimAddress(claim);
 
-    await claimExternal({ claim, receiver, claimPrivateKey, dust_receiver });
+    await claimExternal({ claim, receiver, claimPrivateKey, dustReceiver });
 
     await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
-    await manager.tokens.tokenBalance(dust_receiver, claim.fee_token).should.eventually.equal(claim.fee_amount);
+    await manager.tokens.tokenBalance(dustReceiver, claim.fee_token).should.eventually.equal(claim.fee_amount);
     await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
     await manager.tokens.tokenBalance(claimAddress, claim.fee_token).should.eventually.equal(0n);
   });
