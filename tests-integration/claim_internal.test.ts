@@ -26,6 +26,21 @@ describe("Claim Internal", function () {
       await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
     });
 
+    it(`Can't claim if no fee amount deposited (fee token == gift token)`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const receiver = randomReceiver();
+
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({
+        factory,
+        useTxV3,
+        overrides: { giftAmount: 100n, feeAmount: 0n },
+      });
+
+      expect(claimInternal({ claim, receiver, claimPrivateKey })).to.eventually.throw(
+        "Account balance is smaller than the transaction's max_fee: undefined",
+      );
+    });
+
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
@@ -59,7 +74,7 @@ describe("Claim Internal", function () {
     });
   }
 
-  it(`Call claim internal twice`, async function () {
+  it(`Cant call claim internal twice`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();

@@ -61,8 +61,8 @@ export async function defaultDepositTestSetup(args: {
   claimPrivateKey: string;
   response: InvokeFunctionResponse;
 }> {
-  const giftAmount = args.overrides?.giftAmount || GIFT_AMOUNT;
-  const feeAmount = args.overrides?.feeAmount || GIFT_MAX_FEE;
+  const giftAmount = args.overrides?.giftAmount ?? GIFT_AMOUNT;
+  const feeAmount = args.overrides?.feeAmount ?? GIFT_MAX_FEE;
   const useTxV3 = args.useTxV3 || false;
 
   const feeToken = args.overrides?.feeTokenAddress
