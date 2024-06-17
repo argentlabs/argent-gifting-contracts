@@ -19,7 +19,7 @@ import { GIFT_MAX_FEE } from "./../lib";
 describe("Test Core Factory Functions", function () {
   it(`Calculate claim address`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup(factory);
+    const { claim } = await defaultDepositTestSetup({ factory });
 
     const claimAddress = await factory.get_claim_address(
       claim.class_hash,
@@ -37,7 +37,7 @@ describe("Test Core Factory Functions", function () {
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
       const receiver = randomReceiver();
       const receiverDust = randomReceiver();
 
@@ -83,7 +83,10 @@ describe("Test Core Factory Functions", function () {
     });
 
     await factory.unpause();
-    const { claim } = await defaultDepositTestSetup(factory, false, BigInt(claimSigner.privateKey));
+    const { claim } = await defaultDepositTestSetup({
+      factory,
+      overrides: { claimPrivateKey: BigInt(claimSigner.privateKey) },
+    });
     await claimInternal({ claim, receiver, claimPrivateKey: claimSigner.privateKey });
   });
 
@@ -110,7 +113,7 @@ describe("Test Core Factory Functions", function () {
 
   it("Ownable: Get Dust", async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup(factory);
+    const { claim } = await defaultDepositTestSetup({ factory });
     const receiverDust = randomReceiver();
 
     factory.connect(genericAccount);

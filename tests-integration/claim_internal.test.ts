@@ -15,7 +15,7 @@ describe("Claim Internal", function () {
   for (const useTxV3 of [false, true]) {
     it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, useTxV3);
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       const claimAddress = calculateClaimAddress(claim);
 
@@ -28,7 +28,7 @@ describe("Claim Internal", function () {
 
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, useTxV3);
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
         const newResourceBounds = {
@@ -61,7 +61,7 @@ describe("Claim Internal", function () {
 
   it(`Call claim internal twice`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     await claimInternal({ claim, receiver, claimPrivateKey });
