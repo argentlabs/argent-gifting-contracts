@@ -1,5 +1,12 @@
 import { expect } from "chai";
-import { calculateClaimAddress, defaultDepositTestSetup, deployMockERC20, manager, setupGiftProtocol } from "../lib";
+import {
+  calculateClaimAddress,
+  defaultDepositTestSetup,
+  deployMockERC20,
+  expectRevertWithErrorMessage,
+  manager,
+  setupGiftProtocol,
+} from "../lib";
 
 describe("Deposit", function () {
   for (const useTxV3 of [false, true]) {
@@ -32,5 +39,32 @@ describe("Deposit", function () {
       const feeTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.fee_token);
       expect(feeTokenBalance == claim.fee_amount).to.be.true;
     });
+
+    it(`Max fee too high claim.gift > claim.fee (gift token == fee token)`, async function () {
+      const { factory } = await setupGiftProtocol();
+
+      await expectRevertWithErrorMessage("gift-fac/fee-too-high", async () => {
+        const { response } = await defaultDepositTestSetup({
+          factory,
+          useTxV3,
+          overrides: { giftAmount: 100n, feeAmount: 101n },
+        });
+        return response;
+      });
+    });
   }
+  it("Deposit fails if erc reverts", async function () {
+    const brokenERC20 = await manager.deployContract("BrokenERC20", {
+      unique: true,
+    });
+    const { factory } = await setupGiftProtocol();
+
+    await expectRevertWithErrorMessage("gift-fac/transfer-gift-failed", async () => {
+      const { response } = await defaultDepositTestSetup({
+        factory,
+        overrides: { giftTokenAddress: brokenERC20.address },
+      });
+      return response;
+    });
+  });
 });
