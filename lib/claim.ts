@@ -9,7 +9,15 @@ import {
   shortString,
   uint256,
 } from "starknet";
-import { LegacyStarknetKeyPair, calculateClaimAddress, deployer, ethAddress, manager, strkAddress } from ".";
+import {
+  LegacyStarknetKeyPair,
+  StarknetSignature,
+  calculateClaimAddress,
+  deployer,
+  ethAddress,
+  manager,
+  strkAddress,
+} from ".";
 
 const typesRev1 = {
   StarknetDomain: [
@@ -70,11 +78,6 @@ export function buildCallDataClaim(claim: Claim) {
     gift_amount: uint256.bnToUint256(claim.gift_amount),
   };
 }
-
-export type StarknetSignature = {
-  r: bigint;
-  s: bigint;
-};
 
 export async function signExternalClaim(signParams: {
   claim: Claim;

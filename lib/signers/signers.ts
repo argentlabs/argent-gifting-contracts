@@ -19,6 +19,11 @@ import {
   typedData,
 } from "starknet";
 
+export type StarknetSignature = {
+  r: bigint;
+  s: bigint;
+};
+
 /**
  * This class allows to easily implement custom signers by overriding the `signRaw` method.
  * This is based on Starknet.js implementation of Signer, but it delegates the actual signing to an abstract function
