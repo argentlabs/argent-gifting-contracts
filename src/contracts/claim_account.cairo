@@ -93,15 +93,9 @@ mod ClaimAccount {
         }
 
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
-            if interface_id == SRC5_INTERFACE_ID {
-                true
-            } else if interface_id == SRC5_ACCOUNT_INTERFACE_ID {
-                true
-            } else if interface_id == ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_1 {
-                true
-            } else {
-                false
-            }
+            interface_id == SRC5_INTERFACE_ID
+                || interface_id == SRC5_ACCOUNT_INTERFACE_ID
+                || interface_id == ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_1
         }
     }
 
