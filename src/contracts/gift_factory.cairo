@@ -18,7 +18,7 @@ mod GiftFactory {
 
     use starknet_gifting::contracts::interface::{
         IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        ITimelockUpgradeCallback, OutsideExecution, GiftStatus
+        ITimelockUpgradeCallback, OutsideExecution, GiftStatus, StarknetSignature
     };
     use starknet_gifting::contracts::timelock_upgrade::TimelockUpgradeComponent;
     use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize};
@@ -176,12 +176,12 @@ mod GiftFactory {
             claim: ClaimData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
-            signature: Array<felt252>
+            signature: StarknetSignature
         ) {
             let claim_address = self.check_claim_and_get_account_address(claim);
             let claim_external_hash = ClaimExternal { receiver, dust_receiver }.get_message_hash_rev_1(claim_address);
             assert(
-                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
+                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, signature.r, signature.s),
                 'gift/invalid-ext-signature'
             );
             self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);
