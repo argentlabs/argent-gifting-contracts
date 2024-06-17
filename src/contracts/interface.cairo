@@ -5,6 +5,7 @@ pub trait IAccount<TContractState> {
     fn __validate__(ref self: TContractState, calls: Array<Call>) -> felt252;
     fn __execute__(ref self: TContractState, calls: Array<Call>) -> Array<Span<felt252>>;
     fn is_valid_signature(self: @TContractState, hash: felt252, signature: Array<felt252>) -> felt252;
+    fn supports_interface(self: @TContractState, interface_id: felt252) -> bool;
 }
 
 #[starknet::interface]
@@ -25,6 +26,10 @@ pub trait IGiftFactory<TContractState> {
         dust_receiver: ContractAddress,
         signature: Array<felt252>
     );
+
+    fn is_valid_account_signature(
+        self: @TContractState, claim: ClaimData, hash: felt252, remaining_signature: Span<felt252>
+    ) -> felt252;
 
     fn perform_execute_from_outside(
         ref self: TContractState,

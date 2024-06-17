@@ -15,6 +15,15 @@ mod ClaimAccount {
         full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
     };
 
+    const SRC5_INTERFACE_ID: felt252 = 0x3f918d17e5ee77373b56385708f855659a07f75997f365cf87748628532a055;
+    const SRC5_ACCOUNT_INTERFACE_ID: felt252 = 0x2ceccef7f994940b3962a6c67e0ba4fcd37df7d131417c604f91e03caecc1cd;
+    // Interface ID for revision 1 of the OutsideExecute interface
+    // see https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-9.md
+    // calculated using https://github.com/ericnordelo/src5-rs
+    const ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_REV_1: felt252 =
+        0x1d1144bb2138366ff28d8e9ab57456b1d332ac42196230c3a602003c89872;
+
+
     #[storage]
     struct Storage {
         /// Keeps track of used nonces for outside transactions (`execute_from_outside`)
@@ -76,7 +85,23 @@ mod ClaimAccount {
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
-            0
+            let mut signature_span = signature.span();
+            let claim: ClaimData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-claim');
+            assert_valid_claim(claim);
+            IGiftFactoryDispatcher { contract_address: claim.factory }
+                .is_valid_account_signature(claim, hash, signature_span)
+        }
+
+        fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
+            if interface_id == SRC5_INTERFACE_ID {
+                true
+            } else if interface_id == SRC5_ACCOUNT_INTERFACE_ID {
+                true
+            } else if interface_id == ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_REV_1 {
+                true
+            } else {
+                false
+            }
         }
     }
 
@@ -93,7 +118,6 @@ mod ClaimAccount {
 
     #[abi(embed_v0)]
     impl OutsideExecutionImpl of IOutsideExecution<ContractState> {
-        // TODO implement supports_interface
         fn execute_from_outside_v2(
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {

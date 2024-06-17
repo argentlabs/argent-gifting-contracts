@@ -185,6 +185,21 @@ mod GiftFactory {
             self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);
         }
 
+        fn is_valid_account_signature(
+            self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
+        ) -> felt252 {
+            let claim_address = self.check_claim_and_get_account_address(claim);
+            assert(get_caller_address() == claim_address, 'gift/only-claim-account');
+
+            let (r, s): (felt252, felt252) = full_deserialize(remaining_signature)
+                .expect('gift-fact/invalid-signature');
+            if check_ecdsa_signature(hash, claim.claim_pubkey, r, s) {
+                starknet::VALIDATED
+            } else {
+                0
+            }
+        }
+
         fn perform_execute_from_outside(
             ref self: ContractState,
             claim: ClaimData,
