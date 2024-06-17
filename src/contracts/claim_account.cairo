@@ -15,12 +15,12 @@ mod ClaimAccount {
         full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
     };
 
+    // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
     const SRC5_INTERFACE_ID: felt252 = 0x3f918d17e5ee77373b56385708f855659a07f75997f365cf87748628532a055;
+    // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-6.md
     const SRC5_ACCOUNT_INTERFACE_ID: felt252 = 0x2ceccef7f994940b3962a6c67e0ba4fcd37df7d131417c604f91e03caecc1cd;
-    // Interface ID for revision 1 of the OutsideExecute interface
-    // see https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-9.md
-    // calculated using https://github.com/ericnordelo/src5-rs
-    const ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_REV_1: felt252 =
+    // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-9.md version 1
+    const ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_1: felt252 =
         0x1d1144bb2138366ff28d8e9ab57456b1d332ac42196230c3a602003c89872;
 
 
@@ -97,7 +97,7 @@ mod ClaimAccount {
                 true
             } else if interface_id == SRC5_ACCOUNT_INTERFACE_ID {
                 true
-            } else if interface_id == ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_REV_1 {
+            } else if interface_id == ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_1 {
                 true
             } else {
                 false

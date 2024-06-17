@@ -25,7 +25,6 @@ fn test_deposit_correct_token() {
     assert(mock_strk.balance_of(gift_factory.contract_address) == 20, 'STRK deposit failed');
 }
 
-
 #[test]
 #[should_panic(expected: ('gift-fac/transfer-failed',))]
 fn test_transfer_from_fail() {

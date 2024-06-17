@@ -190,7 +190,7 @@ mod GiftFactory {
         fn is_valid_account_signature(
             self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
         ) -> felt252 {
-            0
+            0 // Accounts don't support offchain signatures now, but it could
         }
 
         fn perform_execute_from_outside(
