@@ -22,10 +22,9 @@ describe("Claim External", function () {
 
       await claimExternal({ claim, receiver, claimPrivateKey });
 
-      const token = await manager.loadContract(claim.gift_token);
-      const finalBalance = await token.balance_of(claimAddress);
+      const finalBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
       expect(finalBalance == claim.fee_amount).to.be.true;
-      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
+      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
     });
   }
 
@@ -87,17 +86,16 @@ describe("Claim External", function () {
     const receiver = randomReceiver();
     const claimAddress = calculateClaimAddress(claim);
 
-    const token = await manager.loadContract(claim.gift_token);
-    const balanceSenderBefore = await token.balance_of(deployer.address);
+    const balanceSenderBefore = await manager.tokens.tokenBalance(deployer.address, claim.gift_token);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
-    await token
-      .balance_of(deployer.address)
+    await manager.tokens
+      .tokenBalance(deployer.address, claim.gift_token)
       .should.eventually.equal(balanceSenderBefore + claim.gift_amount + claim.fee_amount - txFee);
     // Check balance claim address address == 0
-    await token.balance_of(claimAddress).should.eventually.equal(0n);
+    await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
 
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
       claimExternal({ claim, receiver, claimPrivateKey }),

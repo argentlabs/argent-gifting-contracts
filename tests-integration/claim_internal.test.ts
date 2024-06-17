@@ -21,10 +21,9 @@ describe("Claim Internal", function () {
 
       await claimInternal({ claim, receiver, claimPrivateKey });
 
-      const token = await manager.loadContract(claim.gift_token);
-      const finalBalance = await token.balance_of(claimAddress);
+      const finalBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
       expect(finalBalance < claim.fee_amount).to.be.true;
-      await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
+      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
     });
 
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {

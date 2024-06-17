@@ -41,13 +41,8 @@ export class TokenManager {
     return this.strkCache;
   }
 
-  async ethBalance(accountAddress: string): Promise<bigint> {
-    const ethContract = await this.ethContract();
-    return await ethContract.balanceOf(accountAddress);
-  }
-
-  async strkBalance(accountAddress: string): Promise<bigint> {
-    const strkContract = await this.strkContract();
-    return await strkContract.balanceOf(accountAddress);
+  async tokenBalance(accountAddress: string, tokenAddress: string): Promise<bigint> {
+    const token = await this.manager.loadContract(tokenAddress);
+    return await token.balance_of(accountAddress);
   }
 }
