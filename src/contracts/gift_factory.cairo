@@ -65,7 +65,6 @@ mod GiftFactory {
         TimelockUpgradeEvent: TimelockUpgradeComponent::Event,
         GiftCreated: GiftCreated,
         GiftClaimed: GiftClaimed,
-        GiftClaimedExternal: GiftClaimedExternal,
         GiftCanceled: GiftCanceled,
     }
 
@@ -87,14 +86,7 @@ mod GiftFactory {
     struct GiftClaimed {
         #[key]
         gift_address: ContractAddress,
-        receiver: ContractAddress
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct GiftClaimedExternal {
-        #[key]
-        gift_address: ContractAddress,
-        receiver: ContractAddress
+        dust_receiver: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
@@ -170,27 +162,23 @@ mod GiftFactory {
         fn claim_internal(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
             let claim_address = self.check_claim_and_get_account_address(claim);
             assert(get_caller_address() == claim_address, 'gift/only-claim-account');
-            assert(receiver.is_non_zero(), 'gift/zero-receiver');
-            let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
-            assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
-            self.transfer_from_account(claim, claim_address, claim.gift_token, claim.gift_amount, receiver);
-            self.emit(GiftClaimed { gift_address: claim_address, receiver });
+            self.proceed_with_claim(claim_address, claim, receiver, Zero::zero());
         }
 
         fn claim_external(
-            ref self: ContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>
+            ref self: ContractState,
+            claim: ClaimData,
+            receiver: ContractAddress,
+            dust_receiver: ContractAddress,
+            signature: Array<felt252>
         ) {
             let claim_address = self.check_claim_and_get_account_address(claim);
-            let claim_external_hash = ClaimExternal { receiver }.get_message_hash_rev_1(claim_address);
+            let claim_external_hash = ClaimExternal { receiver, dust_receiver }.get_message_hash_rev_1(claim_address);
             assert(
                 check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
                 'gift/invalid-ext-signature'
             );
-            assert(receiver.is_non_zero(), 'gift/zero-receiver');
-            let balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
-            assert(balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
-            self.transfer_from_account(claim, claim_address, claim.gift_token, balance, receiver);
-            self.emit(GiftClaimedExternal { gift_address: claim_address, receiver });
+            self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
@@ -309,6 +297,43 @@ mod GiftFactory {
 
     #[generate_trait]
     impl Private of PrivateTrait {
+        fn proceed_with_claim(
+            ref self: ContractState,
+            gift_address: ContractAddress,
+            claim: ClaimData,
+            receiver: ContractAddress,
+            dust_receiver: ContractAddress
+        ) {
+            assert(receiver.is_non_zero(), 'gift/zero-receiver');
+            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(gift_address);
+            assert(gift_balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
+
+            // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
+            // but will increase the complexity of the code for a small performance GiftCanceled
+
+            // Transfer the gift
+            let mut calls = array![
+                TransferFromAccount { token: claim.gift_token, amount: claim.gift_amount, receiver: receiver }
+            ];
+
+            // Transfer the dust
+            if dust_receiver.is_non_zero() {
+                let dust = if claim.gift_token == claim.fee_token {
+                    gift_balance - claim.gift_amount
+                } else {
+                    IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(gift_address)
+                };
+                if dust > 0 {
+                    calls
+                        .append(
+                            TransferFromAccount { token: claim.fee_token, amount: dust.into(), receiver: dust_receiver }
+                        );
+                }
+            }
+            self.transfers_from_account(claim, gift_address, calls.span());
+            self.emit(GiftClaimed { gift_address, dust_receiver });
+        }
+
         fn check_claim_and_get_account_address(self: @ContractState, claim: ClaimData) -> ContractAddress {
             assert(claim.factory == get_contract_address(), 'gift/invalid-factory-address');
             assert(claim.class_hash == self.claim_class_hash.read(), 'gift/invalid-class-hash');

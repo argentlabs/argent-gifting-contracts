@@ -35,8 +35,15 @@ pub trait IGiftFactory<TContractState> {
     /// @dev Will claim the balance of the gift. The fee will be left if it is a different token than the gift
     /// @param claim The claim data
     /// @param receiver The address of the receiver
+    /// @param dust_receiver The address of the person that should receive the dust (leftovers)
     /// @param signature The signature of the claimer of the ClaimExternal { receiver }
-    fn claim_external(ref self: TContractState, claim: ClaimData, receiver: ContractAddress, signature: Array<felt252>);
+    fn claim_external(
+        ref self: TContractState,
+        claim: ClaimData,
+        receiver: ContractAddress,
+        dust_receiver: ContractAddress,
+        signature: Array<felt252>
+    );
 
     /// @notice Allows the sender of a gift to cancel their gift
     /// @dev Will refund both the gift and the fee

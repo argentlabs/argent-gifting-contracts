@@ -19,7 +19,10 @@ const typesRev1 = {
     { name: "chainId", type: "shortstring" },
     { name: "revision", type: "shortstring" },
   ],
-  ClaimExternal: [{ name: "receiver", type: "ContractAddress" }],
+  ClaimExternal: [
+    { name: "receiver", type: "ContractAddress" },
+    { name: "dust receiver", type: "ContractAddress" },
+  ],
 };
 
 function getDomain(chainId: string) {
@@ -35,6 +38,7 @@ function getDomain(chainId: string) {
 
 export interface ClaimExternal {
   receiver: string;
+  dustReceiver?: string;
 }
 
 export async function getClaimExternalData(claimExternal: ClaimExternal) {
@@ -43,7 +47,7 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
     types: typesRev1,
     primaryType: "ClaimExternal",
     domain: getDomain(chainId),
-    message: { ...claimExternal },
+    message: { receiver: claimExternal.receiver, "dust receiver": claimExternal.dustReceiver || "0x0" },
   };
 }
 
@@ -72,10 +76,14 @@ export async function signExternalClaim(signParams: {
   claim: Claim;
   receiver: string;
   claimPrivateKey: string;
+  dustReceiver?: string;
   forceClaimAddress?: string;
 }): Promise<Signature> {
   const giftSigner = new LegacyStarknetKeyPair(signParams.claimPrivateKey);
-  const claimExternalData = await getClaimExternalData({ receiver: signParams.receiver });
+  const claimExternalData = await getClaimExternalData({
+    receiver: signParams.receiver,
+    dustReceiver: signParams.dustReceiver,
+  });
   return await giftSigner.signMessage(
     claimExternalData,
     signParams.forceClaimAddress || calculateClaimAddress(signParams.claim),
@@ -85,6 +93,7 @@ export async function signExternalClaim(signParams: {
 export async function claimExternal(args: {
   claim: Claim;
   receiver: string;
+  dust_receiver?: string;
   claimPrivateKey: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string; signature?: Signature; account?: Account };
   details?: UniversalDetails;
@@ -102,7 +111,7 @@ export async function claimExternal(args: {
     [
       {
         contractAddress: args.overrides?.factoryAddress || args.claim.factory,
-        calldata: [buildCallDataClaim(args.claim), args.receiver, signature],
+        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dust_receiver || "0x0", signature],
         entrypoint: "claim_external",
       },
     ],

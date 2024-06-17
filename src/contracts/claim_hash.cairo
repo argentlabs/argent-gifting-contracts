@@ -25,7 +25,8 @@ pub struct StarknetDomain {
 /// @param receiver The receiver of the gift
 #[derive(Drop, Copy)]
 pub struct ClaimExternal {
-    pub receiver: ContractAddress
+    pub receiver: ContractAddress,
+    pub dust_receiver: ContractAddress,
 }
 
 const STARKNET_DOMAIN_TYPE_HASH_REV_1: felt252 =
@@ -33,7 +34,8 @@ const STARKNET_DOMAIN_TYPE_HASH_REV_1: felt252 =
         "\"StarknetDomain\"(\"name\":\"shortstring\",\"version\":\"shortstring\",\"chainId\":\"shortstring\",\"revision\":\"shortstring\")"
     );
 
-const CLAIM_EXTERNAL_TYPE_HASH_REV_1: felt252 = selector!("\"ClaimExternal\"(\"receiver\":\"ContractAddress\")");
+const CLAIM_EXTERNAL_TYPE_HASH_REV_1: felt252 =
+    selector!("\"ClaimExternal\"(\"receiver\":\"ContractAddress\",\"dust receiver\":\"ContractAddress\")");
 
 impl StructHashStarknetDomain of IStructHashRev1<StarknetDomain> {
     fn get_struct_hash_rev_1(self: @StarknetDomain) -> felt252 {
@@ -46,7 +48,12 @@ impl StructHashStarknetDomain of IStructHashRev1<StarknetDomain> {
 impl StructHashClaimExternal of IStructHashRev1<ClaimExternal> {
     fn get_struct_hash_rev_1(self: @ClaimExternal) -> felt252 {
         poseidon_hash_span(
-            array![CLAIM_EXTERNAL_TYPE_HASH_REV_1, (*self).receiver.try_into().expect('receiver')].span()
+            array![
+                CLAIM_EXTERNAL_TYPE_HASH_REV_1,
+                (*self).receiver.try_into().expect('receiver'),
+                (*self).dust_receiver.try_into().expect('dust receiver')
+            ]
+                .span()
         )
     }
 }
