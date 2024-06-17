@@ -4,6 +4,7 @@ import {
   calculateClaimAddress,
   claimExternal,
   defaultDepositTestSetup,
+  deployMockERC20,
   deployer,
   expectRevertWithErrorMessage,
   manager,
@@ -14,7 +15,7 @@ import {
 
 describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
-    it(`Testing claim_external flow using txV3: ${useTxV3}`, async function () {
+    it(`Testing claim_external flow using txV3: ${useTxV3} (no dust receiver)`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
@@ -26,9 +27,42 @@ describe("Claim External", function () {
       expect(finalBalance == claim.fee_amount).to.be.true;
       await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
     });
+
+    it(`Testing claim_external flow using txV3: ${useTxV3} (w/ dust receiver)`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+      const receiver = randomReceiver();
+      const dust_receiver = randomReceiver();
+      const claimAddress = calculateClaimAddress(claim);
+
+      const balanceBefore = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
+      await claimExternal({ claim, receiver, claimPrivateKey, dust_receiver });
+
+      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
+      await manager.tokens
+        .tokenBalance(dust_receiver, claim.gift_token)
+        .should.eventually.equal(balanceBefore - claim.gift_amount);
+      await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
+    });
   }
 
-  it(`Invalid Receiver`, async function () {
+  it(`Testing claim_external w/ dust receiver (gift_token != fee_token)`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const giftToken = await deployMockERC20();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, giftToken.address);
+    const receiver = randomReceiver();
+    const dust_receiver = randomReceiver();
+    const claimAddress = calculateClaimAddress(claim);
+
+    await claimExternal({ claim, receiver, claimPrivateKey, dust_receiver });
+
+    await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
+    await manager.tokens.tokenBalance(dust_receiver, claim.fee_token).should.eventually.equal(claim.fee_amount);
+    await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
+    await manager.tokens.tokenBalance(claimAddress, claim.fee_token).should.eventually.equal(0n);
+  });
+
+  it(`Zero Receiver`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = "0x0";

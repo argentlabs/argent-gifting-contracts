@@ -106,6 +106,7 @@ export async function claimExternal(args: {
       receiver: args.receiver,
       claimPrivateKey: args.claimPrivateKey,
       forceClaimAddress: args.overrides?.claimAccountAddress,
+      dustReceiver: args.dust_receiver,
     }));
   return await account.execute(
     [
