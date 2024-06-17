@@ -7,6 +7,12 @@ pub trait IAccount<TContractState> {
     fn is_valid_signature(self: @TContractState, hash: felt252, signature: Array<felt252>) -> felt252;
 }
 
+#[derive(Serde, Drop, Copy, starknet::Store)]
+pub struct StarknetSignature {
+    pub r: felt252,
+    pub s: felt252,
+}
+
 #[starknet::interface]
 pub trait IGiftFactory<TContractState> {
     fn deposit(
@@ -23,7 +29,7 @@ pub trait IGiftFactory<TContractState> {
         claim: ClaimData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
-        signature: Array<felt252>
+        signature: StarknetSignature
     );
     fn cancel(ref self: TContractState, claim: ClaimData);
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
