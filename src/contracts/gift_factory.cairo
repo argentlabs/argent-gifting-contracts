@@ -188,16 +188,7 @@ mod GiftFactory {
         fn is_valid_account_signature(
             self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
         ) -> felt252 {
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            assert(get_caller_address() == claim_address, 'gift/only-claim-account');
-
-            let (r, s): (felt252, felt252) = full_deserialize(remaining_signature)
-                .expect('gift-fact/invalid-signature');
-            if check_ecdsa_signature(hash, claim.claim_pubkey, r, s) {
-                starknet::VALIDATED
-            } else {
-                0
-            }
+            0
         }
 
         fn perform_execute_from_outside(
@@ -207,55 +198,7 @@ mod GiftFactory {
             outside_execution: OutsideExecution,
             remaining_signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            assert(get_caller_address() == claim_address, 'gift/only-claim-account');
-            // Nonce is checked and updated in the account
-
-            // TODO hashing
-            let claim_external_hash = 0x1236;
-            // let hash = outside_execution.get_message_hash_rev_1(claim_address);
-
-            let (r, s): (felt252, felt252) = full_deserialize(remaining_signature)
-                .expect('gift-fact/invalid-signature');
-            assert(
-                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, r, s), 'gift-fact/invalid-out-signature'
-            );
-
-            if outside_execution.caller.into() != 'ANY_CALLER' {
-                assert(original_caller == outside_execution.caller, 'argent/invalid-caller');
-            }
-
-            let block_timestamp = get_block_timestamp();
-            assert(
-                outside_execution.execute_after < block_timestamp && block_timestamp < outside_execution.execute_before,
-                'argent/invalid-timestamp'
-            );
-
-            assert(outside_execution.calls.len() == 2, 'gift-fact/call-len');
-            let refund_call = outside_execution.calls.at(0);
-            assert(*refund_call.selector == selector!("transfer"), 'gift-fact/refcall-selector');
-            assert(*refund_call.to == claim.fee_token, 'gift-fact/refcall-to');
-            let (refund_receiver, refund_amount): (ContractAddress, u256) = full_deserialize(*refund_call.calldata)
-                .expect('gift-fact/invalid-ref-calldata');
-            assert(refund_receiver.is_non_zero(), 'gift-fact/refcall-receiver');
-            assert(refund_amount <= claim.fee_amount.into(), 'gift-fact/refcall-amount');
-            let claim_call = outside_execution.calls.at(1);
-            assert(*claim_call.to == claim.factory, 'gift-fact/claimcall-to');
-            // TODO ideally the function claim_from_outside actually exists in the factory to help with the gas estimation
-            assert(*claim_call.selector == selector!("claim_from_outside"), 'gift-fact/claimcall-to');
-            let (claim_receiver, dust_receiver): (ContractAddress, ContractAddress) = full_deserialize(
-                *refund_call.calldata
-            )
-                .expect('gift-fact/claimcall-calldata');
-
-            // We could optimize and make only one call to `execute_factory_calls`
-            self.transfer_from_account(claim, claim_address, claim.fee_token, refund_amount, refund_receiver);
-
-            self.proceed_with_claim(claim_address, claim, claim_receiver, dust_receiver);
-            array![
-                serialize(@(true)).span(), // simulated return from the transfer call
-                array![].span() // return from the claim call
-            ]
+            starknet::panic_with_felt252('outside-execution-not-allowed');
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
