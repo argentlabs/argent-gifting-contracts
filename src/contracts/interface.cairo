@@ -8,6 +8,12 @@ pub trait IAccount<TContractState> {
     fn supports_interface(self: @TContractState, interface_id: felt252) -> bool;
 }
 
+#[derive(Serde, Drop, Copy, starknet::Store)]
+pub struct StarknetSignature {
+    pub r: felt252,
+    pub s: felt252,
+}
+
 #[starknet::interface]
 pub trait IGiftFactory<TContractState> {
     fn deposit(
@@ -24,7 +30,7 @@ pub trait IGiftFactory<TContractState> {
         claim: ClaimData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
-        signature: Array<felt252>
+        signature: StarknetSignature
     );
 
     fn is_valid_account_signature(
