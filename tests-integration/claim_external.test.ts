@@ -15,7 +15,7 @@ import {
 
 describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
-    it(`Normal flow using txV3: ${useTxV3} (gift_token == fee_token) (no dust receiver)`, async function () {
+    it(`gift_token == fee_token flow using txV3: ${useTxV3} (no dust receiver)`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
