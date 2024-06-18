@@ -12,7 +12,7 @@ import {
   signExternalClaim,
 } from "../lib";
 
-describe.only("Claim External", function () {
+describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
     it(`Testing claim_external flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
@@ -81,7 +81,7 @@ describe.only("Claim External", function () {
     );
   });
 
-  it.only(`Claim gift cancelled`, async function () {
+  it(`Claim gift cancelled`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
@@ -105,7 +105,7 @@ describe.only("Claim External", function () {
     );
   });
 
-  it.only(`Wrong claim pubkey`, async function () {
+  it(`Wrong claim pubkey`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
@@ -118,7 +118,7 @@ describe.only("Claim External", function () {
     );
   });
 
-  it.only(`Not possible to claim more via reentrancy`, async function () {
+  it(`Not possible to claim more via reentrancy`, async function () {
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
 
@@ -139,6 +139,7 @@ describe.only("Claim External", function () {
     reentrant.connect(deployer);
     await reentrant.set_claim_data(claim, receiver, "0x0", claimSig);
 
+    // Error thrown ==> doesn't work here
     await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
       claimExternal({ claim, receiver, claimPrivateKey }),
     );
