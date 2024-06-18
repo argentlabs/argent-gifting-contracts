@@ -29,7 +29,7 @@ describe("Claim External", function () {
       await manager.tokens.tokenBalance(claimAddress, claim.fee_token).should.eventually.equal(claim.fee_amount);
     });
 
-    it(`Normal flow using txV3: ${useTxV3} (gift_token == fee_token) (w/ dust receiver)`, async function () {
+    it(`gift_token == fee_token flow using txV3: ${useTxV3}  (w/ dust receiver)`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
@@ -48,7 +48,7 @@ describe("Claim External", function () {
     });
   }
 
-  it(`Normal flow (gift_token != fee_token) (w/ dust receiver)`, async function () {
+  it(`gift_token != fee_token (w/ dust receiver)`, async function () {
     const { factory } = await setupGiftProtocol();
     const giftToken = await deployMockERC20();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, giftToken.address);
@@ -64,7 +64,7 @@ describe("Claim External", function () {
     await manager.tokens.tokenBalance(claimAddress, claim.fee_token).should.eventually.equal(0n);
   });
 
-  it(`Normal flow (gift_token != fee_token) (no dust receiver)`, async function () {
+  it(`gift_token != fee_token (no dust receiver)`, async function () {
     const { factory } = await setupGiftProtocol();
     const giftToken = await deployMockERC20();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, giftToken.address);
