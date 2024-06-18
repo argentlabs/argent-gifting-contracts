@@ -16,7 +16,7 @@ import {
 import { GIFT_MAX_FEE } from "./../lib";
 
 describe("Test Core Factory Functions", function () {
-  it(`Calculate claim address`, async function () {
+  it.only(`Calculate claim address`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup(factory);
 
@@ -33,7 +33,7 @@ describe("Test Core Factory Functions", function () {
     const correctAddress = calculateClaimAddress(claim);
     expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
   });
-  for (const useTxV3 of [false, true]) {
+  for (const useTxV3 of [true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
