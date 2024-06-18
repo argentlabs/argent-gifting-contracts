@@ -1,8 +1,8 @@
 import { Account, Call, CallData, Contract, InvokeFunctionResponse, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
-export const GIFT_AMOUNT = 1000000000000000n;
-export const GIFT_MAX_FEE = 50000000000000n;
+export const GIFT_MAX_FEE = 5000000000000000n;
+export const GIFT_AMOUNT =  GIFT_MAX_FEE + 1n;
 
 export async function deposit(depositParams: {
   sender: Account;
@@ -58,7 +58,7 @@ export async function defaultDepositTestSetup(
   claimPrivateKey: string;
   response: InvokeFunctionResponse;
 }> {
-  const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
+  const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
   const claimSigner = new LegacyStarknetKeyPair(giftPrivateKey);
   const claimPubKey = claimSigner.publicKey;
 
@@ -67,11 +67,11 @@ export async function defaultDepositTestSetup(
     giftAmount,
     feeAmount: giftMaxFee,
     factoryAddress: factory.address,
-    feeTokenAddress: tokenContract.address,
-    giftTokenAddress: giftTokenAddress || tokenContract.address,
+    feeTokenAddress: feeTokenContract.address,
+    giftTokenAddress: giftTokenAddress || feeTokenContract.address,
     claimSignerPubKey: claimPubKey,
   });
-
+  await manager.waitForTransaction(response.transaction_hash);
   return { claim, claimPrivateKey: claimSigner.privateKey, response };
 }
 

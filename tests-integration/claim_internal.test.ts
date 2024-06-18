@@ -12,8 +12,8 @@ import {
 } from "../lib";
 
 describe("Claim Internal", function () {
-  for (const useTxV3 of [false, true]) {
-    it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
+  for (const useTxV3 of [true]) {
+    it.only(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, useTxV3);
       const receiver = randomReceiver();

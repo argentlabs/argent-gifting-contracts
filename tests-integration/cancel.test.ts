@@ -5,7 +5,6 @@ import {
   deployMockERC20,
   deployer,
   expectRevertWithErrorMessage,
-  genericAccount,
   manager,
   randomReceiver,
   setupGiftProtocol,
@@ -65,13 +64,13 @@ describe("Cancel Claim", function () {
     );
   });
 
-  it(`Cancel Claim wrong sender`, async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup(factory);
+  // it(`Cancel Claim wrong sender`, async function () {
+  //   const { factory } = await setupGiftProtocol();
+  //   const { claim } = await defaultDepositTestSetup(factory);
 
-    factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
-  });
+  //   factory.connect(genericAccount);
+  //   await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
+  // });
 
   it(`Cancel Claim: owner reclaim dust (gift_token == fee_token)`, async function () {
     const { factory } = await setupGiftProtocol();

@@ -138,7 +138,7 @@ export async function claimInternal(args: {
 }): Promise<InvokeFunctionResponse> {
   const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
   const claimAccount = getClaimAccount(args.claim, args.claimPrivateKey, claimAddress);
-  return await claimAccount.execute(
+  const response = await claimAccount.execute(
     [
       {
         contractAddress: args.overrides?.factoryAddress || args.claim.factory,
@@ -149,6 +149,8 @@ export async function claimInternal(args: {
     undefined,
     { ...args.details },
   );
+  await manager.waitForTransaction(response.transaction_hash);
+  return response;
 }
 
 function useTxv3(tokenAddress: string): boolean {
