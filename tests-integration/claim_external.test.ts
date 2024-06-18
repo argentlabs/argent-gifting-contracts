@@ -81,7 +81,7 @@ describe.only("Claim External", function () {
     );
   });
 
-  it(`Claim gift cancelled`, async function () {
+  it.only(`Claim gift cancelled`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
@@ -91,6 +91,7 @@ describe.only("Claim External", function () {
     const balanceSenderBefore = await token.balance_of(deployer.address);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
+    await manager.waitForTransaction(transaction_hash);
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await token
@@ -104,7 +105,7 @@ describe.only("Claim External", function () {
     );
   });
 
-  it(`Wrong claim pubkey`, async function () {
+  it.only(`Wrong claim pubkey`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
     const receiver = randomReceiver();
@@ -117,7 +118,7 @@ describe.only("Claim External", function () {
     );
   });
 
-  it(`Not possible to claim more via reentrancy`, async function () {
+  it.only(`Not possible to claim more via reentrancy`, async function () {
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
 
