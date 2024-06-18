@@ -21,6 +21,8 @@ describe("Cancel Claim", function () {
     const balanceSenderBefore = await token.balance_of(deployer.address);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
+    await manager.waitForTransaction(transaction_hash);
+
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await token
@@ -47,6 +49,7 @@ describe("Cancel Claim", function () {
     const balanceSenderBeforeFeeToken = await feeToken.balance_of(deployer.address);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
+    await manager.waitForTransaction(transaction_hash);
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await gifToken
@@ -86,6 +89,7 @@ describe("Cancel Claim", function () {
     const balanceSenderBefore = await token.balance_of(deployer.address);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
+    await manager.waitForTransaction(transaction_hash);
     const txFeeCancel = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await token
@@ -100,8 +104,9 @@ describe("Cancel Claim", function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
     const receiver = randomReceiver();
-
-    await claimInternal({ claim, receiver, claimPrivateKey });
+    
+     const { transaction_hash } = await claimInternal({ claim, receiver, claimPrivateKey });
+    await manager.waitForTransaction(transaction_hash);
     factory.connect(deployer);
     await expectRevertWithErrorMessage("gift/already-claimed", () => factory.cancel(claim));
   });
