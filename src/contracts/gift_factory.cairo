@@ -1,6 +1,3 @@
-use starknet::{ContractAddress, account::Call};
-use starknet_gifting::contracts::utils::{serialize};
-
 #[starknet::contract]
 mod GiftFactory {
     use core::ecdsa::check_ecdsa_signature;
@@ -14,15 +11,14 @@ mod GiftFactory {
         get_block_timestamp
     };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::claim_utils::{calculate_claim_account_address};
-
     use starknet_gifting::contracts::interface::{
         IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        ITimelockUpgradeCallback, OutsideExecution, GiftStatus, StarknetSignature
+        OutsideExecution, GiftStatus, StarknetSignature
     };
-    use starknet_gifting::contracts::timelock_upgrade::TimelockUpgradeComponent;
-    use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize};
-    use super::build_transfer_call;
+    use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
+    use starknet_gifting::contracts::utils::{
+        calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
+    };
 
     // Ownable 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -302,7 +298,7 @@ mod GiftFactory {
             // This should do some sanity checks 
             // We should check that the new implementation is a valid implementation
             // Execute the upgrade using replace_class_syscall(...)
-            core::panic_with_felt252('downgrade-not-allowed');
+            panic_with_felt252('downgrade-not-allowed');
         }
     }
 
@@ -400,8 +396,9 @@ mod GiftFactory {
                 }
         }
     }
-}
 
-fn build_transfer_call(token: ContractAddress, amount: u256, receiver: ContractAddress,) -> Call {
-    Call { to: token, selector: selector!("transfer"), calldata: serialize(@(receiver, amount)).span() }
+
+    fn build_transfer_call(token: ContractAddress, amount: u256, receiver: ContractAddress,) -> Call {
+        Call { to: token, selector: selector!("transfer"), calldata: serialize(@(receiver, amount)).span() }
+    }
 }

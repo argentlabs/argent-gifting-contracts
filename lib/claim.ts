@@ -36,7 +36,7 @@ function getDomain(chainId: string) {
   // WARNING! revision is encoded as a number in the StarkNetDomain type and not as shortstring
   // This is due to a bug in the Braavos implementation, and has been kept for compatibility
   return {
-    name: "GiftAccount.claim_external",
+    name: "GiftFactory.claim_external",
     version: shortString.encodeShortString("1"),
     chainId,
     revision: "1",
