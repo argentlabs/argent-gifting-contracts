@@ -39,24 +39,23 @@ describe("Test Core Factory Functions", function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
       const receiver = randomReceiver();
-      const receiverDust = randomReceiver();
+      const dustReceiver = randomReceiver();
 
       await claimInternal({ claim, receiver, claimPrivateKey });
       const claimAddress = calculateClaimAddress(claim);
-      const token = await manager.loadContract(claim.gift_token);
 
       // Final check
-      const dustBalance = await token.balance_of(claimAddress);
+      const dustBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
       expect(dustBalance < GIFT_MAX_FEE).to.be.true;
-      await token.balance_of(receiver).should.eventually.equal(GIFT_AMOUNT);
+      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(GIFT_AMOUNT);
 
       // Test dust
-      await token.balance_of(receiverDust).should.eventually.equal(0n);
+      await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(0n);
 
       factory.connect(deployer);
-      await factory.get_dust(claim, receiverDust);
-      await token.balance_of(claimAddress).should.eventually.equal(0n);
-      await token.balance_of(receiverDust).should.eventually.equal(dustBalance);
+      await factory.get_dust(claim, dustReceiver);
+      await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
+      await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(dustBalance);
     });
   }
   it(`Pausable`, async function () {
@@ -112,9 +111,9 @@ describe("Test Core Factory Functions", function () {
   it("Ownable: Get Dust", async function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup(factory);
-    const receiverDust = randomReceiver();
+    const dustReceiver = randomReceiver();
 
     factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.get_dust(claim, receiverDust));
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.get_dust(claim, dustReceiver));
   });
 });
