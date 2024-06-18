@@ -24,7 +24,7 @@ describe("Claim External", function () {
       await claimExternal({ claim, receiver, claimPrivateKey });
 
       const finalBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(finalBalance == claim.fee_amount).to.be.true;
+      expect(finalBalance).to.equal(claim.fee_amount);
       await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
       await manager.tokens.tokenBalance(claimAddress, claim.fee_token).should.eventually.equal(claim.fee_amount);
     });

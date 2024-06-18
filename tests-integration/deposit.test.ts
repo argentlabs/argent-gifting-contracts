@@ -18,7 +18,7 @@ describe("Deposit", function () {
       const claimAddress = calculateClaimAddress(claim);
 
       const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(giftTokenBalance == claim.gift_amount + claim.fee_amount).to.be.true;
+      expect(giftTokenBalance).to.equal(claim.gift_amount + claim.fee_amount);
     });
 
     it(`Deposit works using txV3: ${useTxV3} with 0 fee amount set (gift token == claim token)`, async function () {
@@ -33,7 +33,7 @@ describe("Deposit", function () {
       const claimAddress = calculateClaimAddress(claim);
 
       const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(giftTokenBalance == claim.gift_amount + claim.fee_amount).to.be.true;
+      expect(giftTokenBalance).to.equal(claim.gift_amount + claim.fee_amount);
     });
 
     it(`Deposit works using txV3: ${useTxV3} with 0 fee amount set (gift token != claim token)`, async function () {
@@ -49,10 +49,10 @@ describe("Deposit", function () {
       const claimAddress = calculateClaimAddress(claim);
 
       const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(giftTokenBalance == claim.gift_amount).to.be.true;
+      expect(giftTokenBalance).to.equal(claim.gift_amount);
 
       const feeTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.fee_token);
-      expect(feeTokenBalance == claim.fee_amount).to.be.true;
+      expect(feeTokenBalance).to.equal(claim.fee_amount);
     });
 
     it(`Deposit works using: ${useTxV3} (gift token != claim token)`, async function () {
@@ -68,10 +68,10 @@ describe("Deposit", function () {
       const claimAddress = calculateClaimAddress(claim);
 
       const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(giftTokenBalance == claim.gift_amount).to.be.true;
+      expect(giftTokenBalance).to.equal(claim.gift_amount);
 
       const feeTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.fee_token);
-      expect(feeTokenBalance == claim.fee_amount).to.be.true;
+      expect(feeTokenBalance).to.equal(claim.fee_amount);
     });
 
     it(`Max fee too high claim.gift > claim.fee (gift token == fee token)`, async function () {
