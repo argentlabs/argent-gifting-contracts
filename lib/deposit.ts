@@ -1,8 +1,11 @@
 import { Account, Call, CallData, Contract, InvokeFunctionResponse, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
-export const GIFT_MAX_FEE = 200000000000000000n;
-export const GIFT_AMOUNT =  GIFT_MAX_FEE + 1n;
+// export const GIFT_MAX_FEE = 200000000000000000n;
+// export const GIFT_AMOUNT =  GIFT_MAX_FEE + 1n;
+export const GIFT_MAX_FEE = 200000000000000n;
+export const GIFT_AMOUNT = GIFT_MAX_FEE + 1n;
+
 export async function deposit(depositParams: {
   sender: Account;
   giftAmount: bigint;

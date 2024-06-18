@@ -12,7 +12,7 @@ import {
   signExternalClaim,
 } from "../lib";
 
-describe("Claim External", function () {
+describe.only("Claim External", function () {
   for (const useTxV3 of [false, true]) {
     it(`Testing claim_external flow using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
@@ -24,7 +24,7 @@ describe("Claim External", function () {
 
       const token = await manager.loadContract(claim.gift_token);
       const finalBalance = await token.balance_of(claimAddress);
-      expect(finalBalance == claim.fee_amount).to.be.true;
+      expect(finalBalance).to.be.equal(claim.fee_amount);
       await token.balance_of(receiver).should.eventually.equal(claim.gift_amount);
     });
   }

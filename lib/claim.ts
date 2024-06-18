@@ -116,7 +116,7 @@ export async function claimExternal(args: {
     claimPrivateKey: args.claimPrivateKey,
     forceClaimAddress: args.overrides?.claimAccountAddress,
   });
-  return await account.execute(
+  const response = await account.execute(
     [
       {
         contractAddress: args.overrides?.factoryAddress || args.claim.factory,
@@ -127,6 +127,9 @@ export async function claimExternal(args: {
     undefined,
     { ...args.details },
   );
+
+  await manager.waitForTransaction(response.transaction_hash);
+  return response;
 }
 
 export async function claimInternal(args: {
