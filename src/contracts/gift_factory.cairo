@@ -2,16 +2,18 @@
 mod GiftFactory {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
+    use core::panic_with_felt252;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::PausableComponent;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{
-        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call
+        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
+        get_block_timestamp
     };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::interface::{
         IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        GiftStatus
+        OutsideExecution, GiftStatus, StarknetSignature
     };
     use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
     use starknet_gifting::contracts::utils::{
@@ -170,15 +172,32 @@ mod GiftFactory {
             claim: ClaimData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
-            signature: Array<felt252>
+            signature: StarknetSignature
         ) {
             let claim_address = self.check_claim_and_get_account_address(claim);
             let claim_external_hash = ClaimExternal { receiver, dust_receiver }.get_message_hash_rev_1(claim_address);
             assert(
-                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, *signature[0], *signature[1]),
+                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, signature.r, signature.s),
                 'gift/invalid-ext-signature'
             );
             self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);
+        }
+
+        fn is_valid_account_signature(
+            self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
+        ) -> felt252 {
+            0 // Accounts don't support offchain signatures now, but it could
+        }
+
+        fn perform_execute_from_outside(
+            ref self: ContractState,
+            claim: ClaimData,
+            original_caller: ContractAddress,
+            outside_execution: OutsideExecution,
+            remaining_signature: Span<felt252>
+        ) -> Array<Span<felt252>> {
+            panic_with_felt252('outside-execution-not-allowed');
+            array![]
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
@@ -279,7 +298,7 @@ mod GiftFactory {
             // This should do some sanity checks 
             // We should check that the new implementation is a valid implementation
             // Execute the upgrade using replace_class_syscall(...)
-            core::panic_with_felt252('downgrade-not-allowed');
+            panic_with_felt252('downgrade-not-allowed');
         }
     }
 

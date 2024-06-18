@@ -2,7 +2,6 @@ import {
   Account,
   InvokeFunctionResponse,
   RPC,
-  Signature,
   UniversalDetails,
   ec,
   encode,
@@ -10,7 +9,15 @@ import {
   shortString,
   uint256,
 } from "starknet";
-import { LegacyStarknetKeyPair, calculateClaimAddress, deployer, ethAddress, manager, strkAddress } from ".";
+import {
+  LegacyStarknetKeyPair,
+  StarknetSignature,
+  calculateClaimAddress,
+  deployer,
+  ethAddress,
+  manager,
+  strkAddress,
+} from ".";
 
 const typesRev1 = {
   StarknetDomain: [
@@ -78,40 +85,43 @@ export async function signExternalClaim(signParams: {
   claimPrivateKey: string;
   dustReceiver?: string;
   forceClaimAddress?: string;
-}): Promise<Signature> {
+}): Promise<StarknetSignature> {
   const giftSigner = new LegacyStarknetKeyPair(signParams.claimPrivateKey);
   const claimExternalData = await getClaimExternalData({
     receiver: signParams.receiver,
     dustReceiver: signParams.dustReceiver,
   });
-  return await giftSigner.signMessage(
+  const stringArray = (await giftSigner.signMessage(
     claimExternalData,
     signParams.forceClaimAddress || calculateClaimAddress(signParams.claim),
-  );
+  )) as string[];
+  if (stringArray.length !== 2) {
+    throw new Error("Invalid signature");
+  }
+  return { r: BigInt(stringArray[0]), s: BigInt(stringArray[1]) };
 }
 
 export async function claimExternal(args: {
   claim: Claim;
   receiver: string;
-  dust_receiver?: string;
+  dustReceiver?: string;
   claimPrivateKey: string;
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string; signature?: Signature; account?: Account };
+  overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
   details?: UniversalDetails;
 }): Promise<InvokeFunctionResponse> {
   const account = args.overrides?.account || deployer;
-  const signature =
-    args.overrides?.signature ||
-    (await signExternalClaim({
-      claim: args.claim,
-      receiver: args.receiver,
-      claimPrivateKey: args.claimPrivateKey,
-      forceClaimAddress: args.overrides?.claimAccountAddress,
-    }));
+  const signature = await signExternalClaim({
+    claim: args.claim,
+    receiver: args.receiver,
+    claimPrivateKey: args.claimPrivateKey,
+    forceClaimAddress: args.overrides?.claimAccountAddress,
+    dustReceiver: args.dustReceiver,
+  });
   return await account.execute(
     [
       {
         contractAddress: args.overrides?.factoryAddress || args.claim.factory,
-        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dust_receiver || "0x0", signature],
+        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dustReceiver || "0x0", signature],
         entrypoint: "claim_external",
       },
     ],
