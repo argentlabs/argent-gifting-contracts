@@ -13,7 +13,7 @@ import {
 
 describe("Claim Internal", function () {
   for (const useTxV3 of [false, true]) {
-    it(`Testing simple claim flow using txV3: ${useTxV3}`, async function () {
+    it(`gift token == fee token using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
@@ -36,7 +36,7 @@ describe("Claim Internal", function () {
         overrides: { giftAmount: 100n, feeAmount: 0n },
       });
 
-      expect(claimInternal({ claim, receiver, claimPrivateKey })).to.eventually.throw(
+      await expect(claimInternal({ claim, receiver, claimPrivateKey })).to.be.rejectedWith(
         "Account balance is smaller than the transaction's max_fee: undefined",
       );
     });
