@@ -1,53 +1,95 @@
-// TODO This is outdated
-
 # Starknet Gifting
 
-The protocol implemented in this repository can be used for gifting tokens to a recipient without giving custody of the tokens to a third party. But it can also be used to transfer tokens to a repicient identified by an email or a phone number. Both products are supported by the same smart-contract and depends solely on the client being built on top.
+The goal of this protocol is to allow sending tokens to a recipient without knowing their address. This is done using a non-custodial escrow contract. Since the escrow contract functions as an account, it can pay for its own transactions, meaning the recipient doesn't need funds to initiate the claim. This is ideal for onboarding new users who can claim a gift to a newly created and even undeployed account.
 
 ## High level Flow
 
-- The sender creates a key pair `claim_key` locally and deposits the tokens to transfer to the escrow account together with a small amount of fee token (ETH or STRK) to cover the claim. He provides the public key `claim_key.pub` as an identifier for the transfer.
-- The sender shares the private key `claim_key.priv` with the recipient over an external channel such as email or phone.
-- The recipient claims the tokens by transferring them from the escrow to an account he controls using `claim_key.priv` to sign the transaction.
+1. The sender creates a key pair locally called **claim_key**.
+2. The sender deposits the tokens to be transferred, along with a small amount of fee token (ETH or STK) to cover the claim transaction, to the factory. The sender also specifies the **public key** as an identifier.
+3. The factory deploys an escrow account to which the gift amount is transferred along with the fee amount.
+4. The sender shares the **private key** with the recipient over an external channel such as text or email.
+5. The recipient can claim the tokens by transferring them from the escrow account to their account using the private key to sign the transaction.
 
-## Fee
+As the fee should be larger than the claiming transaction cost, there might be a small amount of fee token left. We will refer to this leftover amount as "dust".
 
-Because the escrow is an account, it can pay for its own transactions and the recipient doesn't need to have funds to initiate the claim. This makes it great to onboard new users that can claim a gift to a newly created and undeployed account.
+## Claiming
 
-The Escrow contract can operate in 2 modes depending on the value of the `use_fee` flag.
+Claim can be done in two ways:
 
-When `use_fee = false` the sender doesn't need to cover the fee for the claim because the operator of the escrow sponsors the transfers by depositing sufficient ETH or STRK on the escrow contract.
+### Through the account
 
-When `use_fee = true` the fee of the claim must be covered by the sender, and he is required to deposit some ETH or STRK together with the token being gifted. The amount of fee token he provides must be sufficient to cover the claim. The recipient of the claim can use up to that value as specified in the max fee of the claim transaction.
+The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens (ETH or STRK) which will be used for the claiming operation.  
+If this transaction fails for any reason, the account won't allow to submit another transaction. But the gift can still be claimed using the external method.
 
-If the max fee of the claim transaction is less than the max fee allocated to the claim, the difference is added to a counter and can be later retrieved by the operator of the escrow contract as a paiement for his operation of the protocol. However, the difference between the max fee of the claim transaction and the actual fee of the transaction cannot be acounted for in the contract and will be stuck. We can imagine using that dust later by setting `use_fee = true` and sponsoring gifts for a limited period.
+### Through the factory
 
-## Canceling Gifts
+It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using the private key. The SNIP-12 compliant message the user must sign is as follows: `ClaimExternal { receiver }`. This ensures that the user acknowledges and approves only a specific recipient. This signature should then be used as an argument when calling `claim_external` on the factory.
 
-Gifts can be canceled by the sender provided that they have not been claimed yet. If the gift covers the claim fee the sender can recover both the gift and the claim fee he provided.
+## Cancelling Gifts
 
-In the unlikely event that the recipient tried to claim a gift but the transaction failed in execution, some of the claim fee will have been used. The gift can no longer be claimed but can be canceled by the sender. Canceling the gift will only recover the gift but not the remaining claim fee.
+Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the `gift_amount` and the `fee_amount` he agreed to pay for that gift.  
+If the gift has already been claimed, this allows the sender to redeem the leftover dust remaining.
 
-## Development
+## Factory Operations
 
-### asdf
+This section outlines all the operations that the factory is allowed to perform.  
+As we use OpenZeppelin's Ownable component, this factory has an owner.
 
-Install asdf following [instructions](https://asdf-vm.com/guide/getting-started.html) and run this
+### Get Dust
 
-```
-asdf plugin add scarb
-asdf plugin add starknet-foundry
-asdf install
-```
+The factory has a function allowing it to claim the dust left on an account. This action can only be done after a claim has been performed. This can also be used to recover any excess tokens a user may have sent to the account.
 
-### Setup scarb and foundry
+### Pausable
 
+The owner has the capability to pause all deposits. However, it cannot prevent any claims from happening, nor can it prevent any cancellations.
+
+### Upgrade
+
+The factory can be upgraded to a newer version, allowing it to potentially recover from future user mistakes and add more functionalities as needed.  
+The upgrade cannot be done immediately and must go through a waiting period of 7 days. There is then a window of 7 days to perform the upgrade.  
+It is important to note that through an upgrade, the ownership of the factory and its upgradeability can both be revoked.
+
+## Gift account address calculation
+
+To compute the address of the escrow account, you can either call `get_claim_address()` with the relevant arguments. Or you can do it off-chain using, for example, starknetJS.  
+The parameters are as follow:
+
+- Salt: 0
+- Class hash: the class hash of the escrow account
+- Constructor calldata: The constructor argument used to deploy the escrow account
+- Deployer address: The address of the factory
+
+# Development
+
+## Local development
+
+We recommend you to install scarb through ASDF. Please refer to [these instructions](https://docs.swmansion.com/scarb/download.html#install-via-asdf).  
 Thanks to the [.tool-versions file](./.tool-versions), you don't need to install a specific scarb or starknet foundry version. The correct one will be automatically downloaded and installed.
 
-### Build the contracts
+##@ Test the contracts (Cairo)
 
-`scarb build`
+```
+scarb test
+```
 
-### Test the contracts
+### Install the devnet (run in project root folder)
 
-`snforge test`
+You should have docker installed in your machine then you can start the devnet by running the following command:
+
+```shell
+scarb run start-devnet
+```
+
+### Install JS dependencies
+
+Install all packages:
+
+```shell
+yarn
+```
+
+Run all integration tests:
+
+```shell
+scarb run test-ts
+```

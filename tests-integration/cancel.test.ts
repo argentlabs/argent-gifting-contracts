@@ -14,7 +14,7 @@ import {
 describe("Cancel Claim", function () {
   it(`Cancel Claim (fee_token == gift_token)`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
     const claimAddress = calculateClaimAddress(claim);
 
@@ -37,7 +37,10 @@ describe("Cancel Claim", function () {
   it(`Cancel Claim (fee_token != gift_token)`, async function () {
     const mockERC20 = await deployMockERC20();
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({
+      factory,
+      overrides: { giftTokenAddress: mockERC20.address },
+    });
     const receiver = randomReceiver();
     const claimAddress = calculateClaimAddress(claim);
 
@@ -64,7 +67,7 @@ describe("Cancel Claim", function () {
 
   it(`Cancel Claim wrong sender`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup(factory);
+    const { claim } = await defaultDepositTestSetup({ factory });
 
     factory.connect(genericAccount);
     await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
@@ -72,7 +75,7 @@ describe("Cancel Claim", function () {
 
   it(`Cancel Claim: owner reclaim dust (gift_token == fee_token)`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     const { transaction_hash: transaction_hash_claim } = await claimInternal({ claim, receiver, claimPrivateKey });
@@ -95,7 +98,10 @@ describe("Cancel Claim", function () {
   it(`Cancel Claim: gift/already-claimed (gift_token != fee_token)`, async function () {
     const mockERC20 = await deployMockERC20();
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, mockERC20.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({
+      factory,
+      overrides: { giftTokenAddress: mockERC20.address },
+    });
     const receiver = randomReceiver();
 
     await claimInternal({ claim, receiver, claimPrivateKey });

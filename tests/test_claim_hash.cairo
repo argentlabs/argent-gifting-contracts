@@ -8,7 +8,7 @@ use starknet_gifting::contracts::claim_hash::{
 
 fn get_domain_hash() -> felt252 {
     let domain = StarknetDomain {
-        name: 'GiftAccount.claim_external', version: '1', chain_id: get_tx_info().unbox().chain_id, revision: 1,
+        name: 'GiftFactory.claim_external', version: '1', chain_id: get_tx_info().unbox().chain_id, revision: 1,
     };
     domain.get_struct_hash_rev_1()
 }
@@ -20,7 +20,7 @@ fn precalculated_hash_sepolia() {
 
     assert_eq!(
         domain_hash,
-        3089891524171017171252056067537035313619375025444953524224631832598161345861,
+        1044702367038635622945218048687216661819128576871663722017781331499517520675,
         "Precalculated domain hash is incorrect"
     );
     let (ch0, ch1, ch2) = hades_permutation('StarkNet Message', domain_hash, 0);
@@ -37,7 +37,7 @@ fn precalculated_hash_mainnet() {
 
     assert_eq!(
         domain_hash,
-        2359399896352899451220170504813339515847665113764356141486469080669996868811,
+        234325029197410387606259685107849809841952619146295364245967447938203337307,
         "Precalculated domain hash is incorrect"
     );
     let (ch0, ch1, ch2) = hades_permutation('StarkNet Message', domain_hash, 0);

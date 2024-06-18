@@ -17,21 +17,21 @@ describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
     it(`gift_token == fee_token flow using txV3: ${useTxV3} (no dust receiver)`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
       const receiver = randomReceiver();
       const claimAddress = calculateClaimAddress(claim);
 
       await claimExternal({ claim, receiver, claimPrivateKey });
 
       const finalBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(finalBalance == claim.fee_amount).to.be.true;
+      expect(finalBalance).to.equal(claim.fee_amount);
       await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
       await manager.tokens.tokenBalance(claimAddress, claim.fee_token).should.eventually.equal(claim.fee_amount);
     });
 
     it(`gift_token == fee_token flow using txV3: ${useTxV3}  (w/ dust receiver)`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
       const receiver = randomReceiver();
       const dustReceiver = randomReceiver();
       const claimAddress = calculateClaimAddress(claim);
@@ -51,7 +51,10 @@ describe("Claim External", function () {
   it(`gift_token != fee_token (w/ dust receiver)`, async function () {
     const { factory } = await setupGiftProtocol();
     const giftToken = await deployMockERC20();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, giftToken.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({
+      factory,
+      overrides: { giftTokenAddress: giftToken.address },
+    });
     const receiver = randomReceiver();
     const dustReceiver = randomReceiver();
     const claimAddress = calculateClaimAddress(claim);
@@ -67,7 +70,10 @@ describe("Claim External", function () {
   it(`gift_token != fee_token (no dust receiver)`, async function () {
     const { factory } = await setupGiftProtocol();
     const giftToken = await deployMockERC20();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, undefined, giftToken.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({
+      factory,
+      overrides: { giftTokenAddress: giftToken.address },
+    });
     const receiver = randomReceiver();
     const claimAddress = calculateClaimAddress(claim);
 
@@ -80,7 +86,7 @@ describe("Claim External", function () {
 
   it(`Zero Receiver`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = "0x0";
 
     await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal({ claim, receiver, claimPrivateKey }));
@@ -88,7 +94,7 @@ describe("Claim External", function () {
 
   it(`Cannot call claim external twice`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     await claimExternal({ claim, receiver, claimPrivateKey });
@@ -99,7 +105,7 @@ describe("Claim External", function () {
 
   it(`Invalid Signature`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup(factory);
+    const { claim } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
     await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
       claimExternal({ claim, receiver, claimPrivateKey: "0x1234" }),
@@ -108,7 +114,7 @@ describe("Claim External", function () {
 
   it(`Invalid factory address`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     claim.factory = "0x2";
@@ -120,7 +126,7 @@ describe("Claim External", function () {
 
   it(`gift/invalid-class-hash`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     claim.class_hash = "0x1";
@@ -132,7 +138,7 @@ describe("Claim External", function () {
 
   it(`Claim gift cancelled`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
     const claimAddress = calculateClaimAddress(claim);
 
@@ -154,7 +160,7 @@ describe("Claim External", function () {
 
   it(`Wrong claim pubkey`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
     const claimAddress = calculateClaimAddress(claim);
 
@@ -179,7 +185,10 @@ describe("Claim External", function () {
         factory.address,
       ],
     });
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory, false, 123456n, reentrant.address);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({
+      factory,
+      overrides: { claimPrivateKey: 123456n, giftTokenAddress: reentrant.address },
+    });
 
     const claimSig = await signExternalClaim({ claim, receiver, claimPrivateKey });
 
