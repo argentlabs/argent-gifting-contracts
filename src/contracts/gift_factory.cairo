@@ -5,18 +5,20 @@ use starknet_gifting::contracts::utils::{serialize};
 mod GiftFactory {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
+    use core::panic_with_felt252;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::PausableComponent;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{
-        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call
+        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
+        get_block_timestamp
     };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::claim_utils::{calculate_claim_account_address};
 
     use starknet_gifting::contracts::interface::{
         IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        ITimelockUpgradeCallback, GiftStatus, StarknetSignature
+        ITimelockUpgradeCallback, OutsideExecution, GiftStatus, StarknetSignature
     };
     use starknet_gifting::contracts::timelock_upgrade::TimelockUpgradeComponent;
     use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize};
@@ -183,6 +185,23 @@ mod GiftFactory {
                 'gift/invalid-ext-signature'
             );
             self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);
+        }
+
+        fn is_valid_account_signature(
+            self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
+        ) -> felt252 {
+            0 // Accounts don't support offchain signatures now, but it could
+        }
+
+        fn perform_execute_from_outside(
+            ref self: ContractState,
+            claim: ClaimData,
+            original_caller: ContractAddress,
+            outside_execution: OutsideExecution,
+            remaining_signature: Span<felt252>
+        ) -> Array<Span<felt252>> {
+            panic_with_felt252('outside-execution-not-allowed');
+            array![]
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
