@@ -1,4 +1,4 @@
-import { claimInternal, defaultDepositTestSetup, manager, setupGiftProtocol } from "../lib";
+import { claimExternal, claimInternal, defaultDepositTestSetup, deployer, manager, randomReceiver, setupGiftProtocol } from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -16,6 +16,19 @@ const tokens = [
   { giftTokenContract: strkContract, unit: "FRI" },
 ];
 
+ethContract.connect(deployer);
+strkContract.connect(deployer);
+await profiler.profile(
+  `Transfer ETH (FeeToken: ${manager.tokens.unitTokenContract(false)})`,
+  await ethContract.transfer(randomReceiver(), 1),
+);
+
+ethContract.connect(deployer);
+await profiler.profile(
+  `Transfer STRK (FeeToken: ${manager.tokens.unitTokenContract(false)})`,
+  await strkContract.transfer(randomReceiver(), 1),
+);
+
 for (const { giftTokenContract, unit } of tokens) {
   for (const useTxV3 of [false, true]) {
     const receiver = "0x42";
@@ -31,11 +44,25 @@ for (const { giftTokenContract, unit } of tokens) {
       },
     });
 
+    const { claim: claimExternalOj, claimPrivateKey:claimPrivateKeyExternal } = await defaultDepositTestSetup({
+      factory,
+      useTxV3,
+      overrides: {
+        claimPrivateKey: 43n,
+        giftTokenAddress: giftTokenContract.address,
+      },
+    });
+
     await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
 
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
       await claimInternal({ claim, receiver, claimPrivateKey }),
+    );
+
+    await profiler.profile(
+      `Claiming external ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
+      await claimExternal({ claim:claimExternalOj, receiver, claimPrivateKey:claimPrivateKeyExternal }),
     );
   }
 }
