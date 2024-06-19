@@ -107,8 +107,8 @@ describe("Cancel Claim", function () {
       overrides: { giftTokenAddress: mockERC20.address },
     });
     const receiver = randomReceiver();
-    
-     const { transaction_hash } = await claimInternal({ claim, receiver, claimPrivateKey });
+
+    const { transaction_hash } = await claimInternal({ claim, receiver, claimPrivateKey });
     await manager.waitForTransaction(transaction_hash);
     factory.connect(deployer);
     await expectRevertWithErrorMessage("gift/already-claimed", () => factory.cancel(claim));
