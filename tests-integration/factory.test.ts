@@ -97,8 +97,8 @@ describe("Test Core Factory Functions", function () {
     });
     await claimInternal({ claim, receiver, claimPrivateKey: claimSigner.privateKey });
   });
-  
-  describe.only("Ownable", function () {
+
+  describe("Ownable", function () {
     it("Pause", async function () {
       const { factory } = await setupGiftProtocol();
 
