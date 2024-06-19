@@ -13,6 +13,7 @@ import {
   signExternalClaim,
 } from "../lib";
 
+// FILE TESTED SUCCESSFULLY (But last one fails)
 describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
     it(`gift_token == fee_token flow using txV3: ${useTxV3} (no dust receiver)`, async function () {

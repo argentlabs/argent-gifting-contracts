@@ -43,7 +43,6 @@ describe("Claim Internal", function () {
       );
     });
 
-    
     // Both green with refactored error expectation and devnetGasPrice updated
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
