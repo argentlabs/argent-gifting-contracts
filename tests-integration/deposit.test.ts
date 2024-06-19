@@ -5,10 +5,22 @@ import {
   deployMockERC20,
   expectRevertWithErrorMessage,
   manager,
+  randomReceiver,
   setupGiftProtocol,
 } from "../lib";
 
 describe("Deposit", function () {
+  it(`Double deposit`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const claimPrivateKey = BigInt(randomReceiver());
+    await defaultDepositTestSetup({ factory, overrides: { claimPrivateKey } });
+    try {
+      await defaultDepositTestSetup({ factory, overrides: { claimPrivateKey } });
+    } catch (e: any) {
+      expect(e.toString()).to.include("is unavailable for deployment");
+    }
+  });
+
   for (const useTxV3 of [false, true]) {
     it(`Deposit works using txV3: ${useTxV3} (gift token == claim token)`, async function () {
       const { factory } = await setupGiftProtocol();
@@ -87,6 +99,7 @@ describe("Deposit", function () {
       });
     });
   }
+
   it("Deposit fails if erc reverts", async function () {
     const brokenERC20 = await manager.deployContract("BrokenERC20", {
       unique: true,
