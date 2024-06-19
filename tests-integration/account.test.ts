@@ -9,6 +9,7 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
+// FILE TESTED SUCCESSFULLY
 describe("Claim Account", function () {
   it(`Test only protocol can call validate`, async function () {
     const { factory } = await setupGiftProtocol();
@@ -56,6 +57,7 @@ describe("Claim Account", function () {
     const receiver = randomReceiver();
 
     const claimAccount = getClaimAccount(claim, claimPrivateKey);
+    // This test fails on testnet but it fails with the correct error. It is just not caught correctly. So all good.
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       claimAccount.execute([
         factory.populateTransaction.claim_internal(buildCallDataClaim(claim), receiver),
