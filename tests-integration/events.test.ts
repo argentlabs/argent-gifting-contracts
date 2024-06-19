@@ -43,7 +43,7 @@ describe("All events are emitted", function () {
 
     await expectEvent(transaction_hash, {
       from_address: factory.address,
-      eventName: "GiftCanceled",
+      eventName: "GiftCancelled",
       additionalKeys: [claimAddress],
     });
   });
@@ -61,7 +61,7 @@ describe("All events are emitted", function () {
       from_address: factory.address,
       eventName: "GiftClaimed",
       additionalKeys: [claimAddress],
-      data: ["0x0"],
+      data: [receiver, "0x0"],
     });
   });
 
@@ -79,7 +79,7 @@ describe("All events are emitted", function () {
       from_address: factory.address,
       eventName: "GiftClaimed",
       additionalKeys: [claimAddress],
-      data: [dustReceiver],
+      data: [receiver, dustReceiver],
     });
   });
 });
