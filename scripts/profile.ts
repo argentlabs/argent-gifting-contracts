@@ -25,13 +25,12 @@ const tokens = [
 ];
 
 ethContract.connect(deployer);
-strkContract.connect(deployer);
 await profiler.profile(
   `Transfer ETH (FeeToken: ${manager.tokens.unitTokenContract(false)})`,
   await ethContract.transfer(randomReceiver(), 1),
 );
 
-ethContract.connect(deployer);
+strkContract.connect(deployer);
 await profiler.profile(
   `Transfer STRK (FeeToken: ${manager.tokens.unitTokenContract(false)})`,
   await strkContract.transfer(randomReceiver(), 1),
