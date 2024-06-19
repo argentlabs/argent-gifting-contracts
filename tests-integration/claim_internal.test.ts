@@ -56,7 +56,7 @@ describe("Claim Internal", function () {
       );
     });
 
-    xit(`Test max fee too high using txV3: ${useTxV3}`, async function () {
+    it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       // Won't work as we gotta get from the receipt
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });

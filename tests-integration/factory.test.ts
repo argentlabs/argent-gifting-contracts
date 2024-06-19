@@ -17,7 +17,7 @@ import {
 import { GIFT_MAX_FEE } from "./../lib";
 
 describe("Test Core Factory Functions", function () {
-  xit(`Calculate claim address`, async function () {
+  it(`Calculate claim address`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup({ factory });
 
