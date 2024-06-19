@@ -57,7 +57,7 @@ describe("Claim Account", function () {
     const receiver = randomReceiver();
 
     const claimAccount = getClaimAccount(claim, claimPrivateKey);
-    // This test fails on testnet but it fails with the correct error. It is just not caught correctly. So all good.
+    // Caught as expected with reworked `expectRevertWithErrorMessage()`
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       claimAccount.execute([
         factory.populateTransaction.claim_internal(buildCallDataClaim(claim), receiver),

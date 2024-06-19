@@ -12,6 +12,7 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
+// ALL PASSES BUT "Can't claim if no fee" will look later
 describe("Claim Internal", function () {
   for (const useTxV3 of [false, true]) {
     it(`gift token == fee token using txV3: ${useTxV3}`, async function () {
@@ -42,21 +43,24 @@ describe("Claim Internal", function () {
       );
     });
 
+    
+    // Both green with refactored error expectation and devnetGasPrice updated
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
-      // Won't work as we gotta get from the receipt
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
-        const devnetGasPrice = 36000000000n;
+        // Number taken from the error message
+        const devnetGasPrice = 19000000000000n;
+        // const devnetGasPrice = 36000000000n;
         const newResourceBounds = {
           l2_gas: {
             max_amount: "0x0",
             max_price_per_unit: "0x0",
           },
           l1_gas: {
-            max_amount: num.toHexString(STRK_GIFT_MAX_FEE / devnetGasPrice + 1n), // / 14587088830559n),
-            max_price_per_unit: num.toHexString(devnetGasPrice), //14587088830559), // Number taken from the error message
+            max_amount: num.toHexString(STRK_GIFT_MAX_FEE / devnetGasPrice + 1n),
+            max_price_per_unit: num.toHexString(devnetGasPrice), //14587088830559),
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
@@ -77,6 +81,7 @@ describe("Claim Internal", function () {
     });
   }
 
+  // Passes
   it(`Cant call claim internal twice`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
