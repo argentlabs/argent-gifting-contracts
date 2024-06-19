@@ -99,7 +99,7 @@ describe("Test Core Factory Functions", function () {
   it("Ownable: Pause", async function () {
     const { factory } = await setupGiftProtocol();
 
-    factory.connect(genericAccount);
+    factory.connect(genericAccount());
     await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
   });
 
@@ -109,7 +109,7 @@ describe("Test Core Factory Functions", function () {
     factory.connect(deployer);
     await factory.pause();
 
-    factory.connect(genericAccount);
+    factory.connect(genericAccount());
     await expectRevertWithErrorMessage("Caller is not the owner", () => factory.unpause());
 
     // needed for next tests
@@ -122,7 +122,7 @@ describe("Test Core Factory Functions", function () {
     const { claim } = await defaultDepositTestSetup({ factory });
     const dustReceiver = randomReceiver();
 
-    factory.connect(genericAccount);
+    factory.connect(genericAccount());
     await expectRevertWithErrorMessage("Caller is not the owner", () => factory.get_dust(claim, dustReceiver));
   });
 });

@@ -72,7 +72,7 @@ describe("Cancel Claim", function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup({ factory });
 
-    factory.connect(genericAccount);
+    factory.connect(genericAccount());
     await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
   });
 

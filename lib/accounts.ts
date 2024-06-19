@@ -16,14 +16,16 @@ export const deployer = (() => {
   throw new Error("Missing deployer address or private key, please set ADDRESS and PRIVATE_KEY env variables.");
 })();
 
-export const genericAccount = (() => {
+export function genericAccount() {
   if (manager.isDevnet) {
     const devnetAddress = "0x78662e7352d062084b0010068b99288486c2d8b914f6e2a55ce945f8792c8b1";
     const devnetPrivateKey = "0xe1406455b7d66b1690803be066cbe5e";
     return new Account(manager, devnetAddress, devnetPrivateKey, undefined, RPC.ETransactionVersion.V2);
   }
+  it.skip("Only works in devnet.");
+  // gotta keep this line for the return type
   throw new Error("Only works in devnet.");
-})();
+}
 
 export const deployerV3 = setDefaultTransactionVersionV3(deployer);
 
