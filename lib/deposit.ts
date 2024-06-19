@@ -1,10 +1,18 @@
 import { Account, Call, CallData, Contract, InvokeFunctionResponse, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
-// export const GIFT_MAX_FEE = 200000000000000000n;
-// export const GIFT_AMOUNT =  GIFT_MAX_FEE + 1n;
-export const GIFT_MAX_FEE = 200000000000000n;
-export const GIFT_AMOUNT = GIFT_MAX_FEE + 1n;
+export const STRK_GIFT_MAX_FEE = 200000000000000000n; // 0.2 STRK
+export const STRK_GIFT_AMOUNT = STRK_GIFT_MAX_FEE + 1n;
+export const ETH_GIFT_MAX_FEE = 200000000000000n; // 0.0002 ETH
+export const ETH_GIFT_AMOUNT = ETH_GIFT_MAX_FEE + 1n;
+
+export function getMaxFee(useTxV3: boolean): bigint {
+  return useTxV3 ? STRK_GIFT_MAX_FEE : ETH_GIFT_MAX_FEE;
+}
+
+export function getMaxGift(useTxV3: boolean): bigint {
+  return useTxV3 ? STRK_GIFT_AMOUNT : ETH_GIFT_AMOUNT;
+}
 
 export async function deposit(depositParams: {
   sender: Account;
@@ -63,9 +71,9 @@ export async function defaultDepositTestSetup(args: {
   claimPrivateKey: string;
   response: InvokeFunctionResponse;
 }> {
-  const giftAmount = args.overrides?.giftAmount ?? GIFT_AMOUNT;
-  const feeAmount = args.overrides?.feeAmount ?? GIFT_MAX_FEE;
   const useTxV3 = args.useTxV3 || false;
+  const giftAmount = args.overrides?.giftAmount ?? getMaxGift(useTxV3);
+  const feeAmount = args.overrides?.feeAmount ?? getMaxFee(useTxV3);
 
   const feeToken = args.overrides?.feeTokenAddress
     ? await manager.loadContract(args.overrides.feeTokenAddress)

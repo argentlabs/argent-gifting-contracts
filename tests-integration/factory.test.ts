@@ -1,8 +1,9 @@
 import { expect } from "chai";
 import { num } from "starknet";
 import {
-  GIFT_AMOUNT,
   LegacyStarknetKeyPair,
+  STRK_GIFT_AMOUNT,
+  STRK_GIFT_MAX_FEE,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
@@ -10,11 +11,12 @@ import {
   deposit,
   expectRevertWithErrorMessage,
   genericAccount,
+  getMaxFee,
+  getMaxGift,
   manager,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
-import { GIFT_MAX_FEE } from "./../lib";
 
 describe("Test Core Factory Functions", function () {
   it(`Calculate claim address`, async function () {
@@ -38,7 +40,7 @@ describe("Test Core Factory Functions", function () {
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       const dustReceiver = randomReceiver();
 
@@ -47,8 +49,10 @@ describe("Test Core Factory Functions", function () {
 
       // Final check
       const dustBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(dustBalance < GIFT_MAX_FEE).to.be.true;
-      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(GIFT_AMOUNT);
+      const maxFee = getMaxFee(useTxV3);
+      const giftAmount = getMaxGift(useTxV3);
+      expect(dustBalance < maxFee).to.be.true;
+      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(giftAmount);
 
       // Test dust
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(0n);
@@ -74,8 +78,8 @@ describe("Test Core Factory Functions", function () {
     await expectRevertWithErrorMessage("Pausable: paused", async () => {
       const { response } = await deposit({
         sender: deployer,
-        giftAmount: GIFT_AMOUNT,
-        feeAmount: GIFT_MAX_FEE,
+        giftAmount: STRK_GIFT_AMOUNT,
+        feeAmount: STRK_GIFT_MAX_FEE,
         factoryAddress: factory.address,
         feeTokenAddress: token.address,
         giftTokenAddress: token.address,

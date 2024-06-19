@@ -1,7 +1,8 @@
 import { expect } from "chai";
 import { num } from "starknet";
 import {
-  GIFT_MAX_FEE,
+  ETH_GIFT_MAX_FEE,
+  STRK_GIFT_MAX_FEE,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
@@ -54,7 +55,7 @@ describe("Claim Internal", function () {
             max_price_per_unit: "0x0",
           },
           l1_gas: {
-            max_amount: num.toHexString(GIFT_MAX_FEE / devnetGasPrice + 1n), // / 14587088830559n),
+            max_amount: num.toHexString(STRK_GIFT_MAX_FEE / devnetGasPrice + 1n), // / 14587088830559n),
             max_price_per_unit: num.toHexString(devnetGasPrice), //14587088830559), // Number taken from the error message
           },
         };
@@ -68,7 +69,7 @@ describe("Claim Internal", function () {
             receiver,
             claimPrivateKey,
             details: {
-              maxFee: GIFT_MAX_FEE + 1n,
+              maxFee: ETH_GIFT_MAX_FEE + 1n,
             },
           }),
         );
