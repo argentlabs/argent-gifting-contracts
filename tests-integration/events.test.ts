@@ -20,7 +20,7 @@ describe("All events are emitted", function () {
     await expectEvent(response.transaction_hash, {
       from_address: factory.address,
       eventName: "GiftCreated",
-      additionalKeys: [claimAddress, deployer.address],
+      keys: [claimAddress, deployer.address],
       data: CallData.compile([
         claimAccountClassHash,
         claim.gift_token,
@@ -44,7 +44,7 @@ describe("All events are emitted", function () {
     await expectEvent(transaction_hash, {
       from_address: factory.address,
       eventName: "GiftCancelled",
-      additionalKeys: [claimAddress],
+      keys: [claimAddress],
     });
   });
 
@@ -60,7 +60,7 @@ describe("All events are emitted", function () {
     await expectEvent(transaction_hash, {
       from_address: factory.address,
       eventName: "GiftClaimed",
-      additionalKeys: [claimAddress],
+      keys: [claimAddress],
       data: [receiver, "0x0"],
     });
   });
@@ -78,7 +78,7 @@ describe("All events are emitted", function () {
     await expectEvent(transaction_hash, {
       from_address: factory.address,
       eventName: "GiftClaimed",
-      additionalKeys: [claimAddress],
+      keys: [claimAddress],
       data: [receiver, dustReceiver],
     });
   });
