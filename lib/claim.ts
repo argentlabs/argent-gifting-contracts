@@ -117,7 +117,7 @@ export async function claimExternal(args: {
     forceClaimAddress: args.overrides?.claimAccountAddress,
     dustReceiver: args.dustReceiver,
   });
-  
+
   const response = await account.execute(
     [
       {

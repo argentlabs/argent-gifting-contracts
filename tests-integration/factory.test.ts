@@ -34,7 +34,7 @@ describe("Test Core Factory Functions", function () {
     const correctAddress = calculateClaimAddress(claim);
     expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
   });
-  
+
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();

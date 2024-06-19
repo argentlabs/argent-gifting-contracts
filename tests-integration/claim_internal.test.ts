@@ -47,14 +47,15 @@ describe("Claim Internal", function () {
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
+        const devnetGasPrice = 36000000000n;
         const newResourceBounds = {
           l2_gas: {
             max_amount: "0x0",
             max_price_per_unit: "0x0",
           },
           l1_gas: {
-            max_amount: num.toHexString(GIFT_MAX_FEE / 14587088830559n),
-            max_price_per_unit: num.toHexString(14587088830559), // Number taken from the error message
+            max_amount: num.toHexString(GIFT_MAX_FEE / devnetGasPrice + 1n), // / 14587088830559n),
+            max_price_per_unit: num.toHexString(devnetGasPrice), //14587088830559), // Number taken from the error message
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
