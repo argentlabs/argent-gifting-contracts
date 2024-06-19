@@ -11,6 +11,7 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
+// FILE TESTED SUCCESSFULLY except for "Cancel Claim wrong sender" cause uses genericAccount() which is not implemented
 describe("Cancel Claim", function () {
   it(`Cancel Claim (fee_token == gift_token)`, async function () {
     const { factory } = await setupGiftProtocol();
