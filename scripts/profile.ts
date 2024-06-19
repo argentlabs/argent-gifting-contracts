@@ -1,4 +1,12 @@
-import { claimExternal, claimInternal, defaultDepositTestSetup, deployer, manager, randomReceiver, setupGiftProtocol } from "../lib";
+import {
+  claimExternal,
+  claimInternal,
+  defaultDepositTestSetup,
+  deployer,
+  manager,
+  randomReceiver,
+  setupGiftProtocol,
+} from "../lib";
 import { newProfiler } from "../lib/gas";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
@@ -44,7 +52,7 @@ for (const { giftTokenContract, unit } of tokens) {
       },
     });
 
-    const { claim: claimExternalOj, claimPrivateKey:claimPrivateKeyExternal } = await defaultDepositTestSetup({
+    const { claim: claimExternalOj, claimPrivateKey: claimPrivateKeyExternal } = await defaultDepositTestSetup({
       factory,
       useTxV3,
       overrides: {
@@ -62,7 +70,7 @@ for (const { giftTokenContract, unit } of tokens) {
 
     await profiler.profile(
       `Claiming external ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimExternal({ claim:claimExternalOj, receiver, claimPrivateKey:claimPrivateKeyExternal }),
+      await claimExternal({ claim: claimExternalOj, receiver, claimPrivateKey: claimPrivateKeyExternal }),
     );
   }
 }
