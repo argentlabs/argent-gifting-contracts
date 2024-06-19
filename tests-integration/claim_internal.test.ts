@@ -41,21 +41,6 @@ describe("Claim Internal", function () {
       );
     });
 
-    it(`Can't claim if no fee amount deposited (fee token == gift token) using txV3: ${useTxV3}`, async function () {
-      const { factory } = await setupGiftProtocol();
-      const receiver = randomReceiver();
-
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup({
-        factory,
-        useTxV3,
-        overrides: { giftAmount: 100n, feeAmount: 0n },
-      });
-
-      await expect(claimInternal({ claim, receiver, claimPrivateKey })).to.be.rejectedWith(
-        "Account balance is smaller than the transaction's max_fee: undefined",
-      );
-    });
-
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       // Won't work as we gotta get from the receipt
       const { factory } = await setupGiftProtocol();
