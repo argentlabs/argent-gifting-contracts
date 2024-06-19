@@ -22,12 +22,14 @@ for (const { giftTokenContract, unit } of tokens) {
     const { factory } = await setupGiftProtocol();
 
     // Make a gift
-    const { response, claim, claimPrivateKey } = await defaultDepositTestSetup(
+    const { response, claim, claimPrivateKey } = await defaultDepositTestSetup({
       factory,
       useTxV3,
-      42n,
-      giftTokenContract.address,
-    );
+      overrides: {
+        claimPrivateKey: 42n,
+        giftTokenAddress: giftTokenContract.address,
+      },
+    });
 
     await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
 

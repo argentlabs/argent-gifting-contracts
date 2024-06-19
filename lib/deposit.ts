@@ -48,29 +48,40 @@ export async function deposit(depositParams: {
   };
 }
 
-export async function defaultDepositTestSetup(
-  factory: Contract,
-  useTxV3 = false,
-  giftPrivateKey?: bigint,
-  giftTokenAddress?: string,
-  giftAmount = GIFT_AMOUNT,
-  giftMaxFee = GIFT_MAX_FEE,
-): Promise<{
+export async function defaultDepositTestSetup(args: {
+  factory: Contract;
+  useTxV3?: boolean;
+  overrides?: {
+    claimPrivateKey?: bigint;
+    giftTokenAddress?: string;
+    feeTokenAddress?: string;
+    giftAmount?: bigint;
+    feeAmount?: bigint;
+  };
+}): Promise<{
   claim: Claim;
   claimPrivateKey: string;
   response: InvokeFunctionResponse;
 }> {
-  const feeTokenContract = await manager.tokens.feeTokenContract(useTxV3);
-  const claimSigner = new LegacyStarknetKeyPair(giftPrivateKey);
+  const giftAmount = args.overrides?.giftAmount ?? GIFT_AMOUNT;
+  const feeAmount = args.overrides?.feeAmount ?? GIFT_MAX_FEE;
+  const useTxV3 = args.useTxV3 || false;
+
+  const feeToken = args.overrides?.feeTokenAddress
+    ? await manager.loadContract(args.overrides.feeTokenAddress)
+    : await manager.tokens.feeTokenContract(useTxV3);
+
+  const giftTokenAddress = args.overrides?.giftTokenAddress || feeToken.address;
+  const claimSigner = new LegacyStarknetKeyPair(args.overrides?.claimPrivateKey);
   const claimPubKey = claimSigner.publicKey;
 
   const { response, claim } = await deposit({
     sender: deployer,
     giftAmount,
-    feeAmount: giftMaxFee,
-    factoryAddress: factory.address,
-    feeTokenAddress: feeTokenContract.address,
-    giftTokenAddress: giftTokenAddress || feeTokenContract.address,
+    feeAmount,
+    factoryAddress: args.factory.address,
+    feeTokenAddress: feeToken.address,
+    giftTokenAddress,
     claimSignerPubKey: claimPubKey,
   });
   await manager.waitForTransaction(response.transaction_hash);

@@ -6,14 +6,29 @@ mod ClaimAccount {
         TxInfo, account::Call, VALIDATED, syscalls::call_contract_syscall, ContractAddress, get_contract_address,
         get_caller_address, get_execution_info
     };
-    use starknet_gifting::contracts::claim_utils::calculate_claim_account_address;
-    use starknet_gifting::contracts::interface::{IAccount, IGiftAccount, ClaimData, AccountConstructorArguments};
+    use starknet_gifting::contracts::interface::{
+        IAccount, IGiftAccount, IOutsideExecution, OutsideExecution, ClaimData, AccountConstructorArguments,
+        IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait
+    };
     use starknet_gifting::contracts::utils::{
-        full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3, TX_V3_ESTIMATE, execute_multicall
+        calculate_claim_account_address, full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3,
+        TX_V3_ESTIMATE,
     };
 
+    // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
+    const SRC5_INTERFACE_ID: felt252 = 0x3f918d17e5ee77373b56385708f855659a07f75997f365cf87748628532a055;
+    // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-6.md
+    const SRC5_ACCOUNT_INTERFACE_ID: felt252 = 0x2ceccef7f994940b3962a6c67e0ba4fcd37df7d131417c604f91e03caecc1cd;
+    // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-9.md version 1
+    const ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_1: felt252 =
+        0x1d1144bb2138366ff28d8e9ab57456b1d332ac42196230c3a602003c89872;
+
+
     #[storage]
-    struct Storage {}
+    struct Storage {
+        /// Keeps track of used nonces for outside transactions (`execute_from_outside`)
+        outside_nonces: LegacyMap<felt252, bool>,
+    }
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -70,7 +85,17 @@ mod ClaimAccount {
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
-            0
+            let mut signature_span = signature.span();
+            let claim: ClaimData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-claim');
+            assert_valid_claim(claim);
+            IGiftFactoryDispatcher { contract_address: claim.factory }
+                .is_valid_account_signature(claim, hash, signature_span)
+        }
+
+        fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
+            interface_id == SRC5_INTERFACE_ID
+                || interface_id == SRC5_ACCOUNT_INTERFACE_ID
+                || interface_id == ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_1
         }
     }
 
@@ -82,6 +107,25 @@ mod ClaimAccount {
             assert_valid_claim(claim);
             assert(get_caller_address() == claim.factory, 'gift/only-factory');
             execute_multicall(calls.span())
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl OutsideExecutionImpl of IOutsideExecution<ContractState> {
+        fn execute_from_outside_v2(
+            ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
+        ) -> Array<Span<felt252>> {
+            assert(!self.outside_nonces.read(outside_execution.nonce), 'gift-acc/dup-outside-nonce');
+            self.outside_nonces.write(outside_execution.nonce, true);
+
+            let claim: ClaimData = Serde::deserialize(ref signature).expect('gift-acc/invalid-claim');
+            assert_valid_claim(claim);
+            IGiftFactoryDispatcher { contract_address: claim.factory }
+                .perform_execute_from_outside(claim, get_caller_address(), outside_execution, signature)
+        }
+
+        fn is_valid_outside_execution_nonce(self: @ContractState, nonce: felt252) -> bool {
+            !self.outside_nonces.read(nonce)
         }
     }
 
@@ -103,5 +147,34 @@ mod ClaimAccount {
                 }
             };
         max_fee + max_tip
+    }
+
+    fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {
+        let mut result = array![];
+        let mut index = 0;
+        while let Option::Some(call) = calls
+            .pop_front() {
+                match call_contract_syscall(*call.to, *call.selector, *call.calldata) {
+                    Result::Ok(retdata) => {
+                        result.append(retdata);
+                        index += 1;
+                    },
+                    Result::Err(revert_reason) => {
+                        let mut data = array!['argent/multicall-failed', index];
+                        data.append_all(revert_reason.span());
+                        panic(data);
+                    },
+                }
+            };
+        result
+    }
+
+    #[generate_trait]
+    impl ArrayExt<T, +Drop<T>, +Copy<T>> of ArrayExtTrait<T> {
+        fn append_all(ref self: Array<T>, mut value: Span<T>) {
+            while let Option::Some(item) = value.pop_front() {
+                self.append(*item);
+            };
+        }
     }
 }

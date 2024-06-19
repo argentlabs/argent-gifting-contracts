@@ -12,7 +12,7 @@ import {
 describe("Claim Account", function () {
   it(`Test only protocol can call validate`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
 
     const claimAccount = getClaimAccount(claim, claimPrivateKey);
     const claimContract = await manager.loadContract(claimAccount.address);
@@ -23,7 +23,7 @@ describe("Claim Account", function () {
 
   it(`Test claim contract cant call another contract`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
@@ -39,7 +39,7 @@ describe("Claim Account", function () {
 
   it(`Test claim contract can only call 'claim_internal'`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     const claimAccount = getClaimAccount(claim, claimPrivateKey);
@@ -52,7 +52,7 @@ describe("Claim Account", function () {
 
   it(`Test claim contract cant preform a multicall`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     const claimAccount = getClaimAccount(claim, claimPrivateKey);
@@ -66,7 +66,7 @@ describe("Claim Account", function () {
 
   it(`Test cannot call 'claim_internal' twice`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup(factory);
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     // double claim

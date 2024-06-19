@@ -36,7 +36,7 @@ function getDomain(chainId: string) {
   // WARNING! revision is encoded as a number in the StarkNetDomain type and not as shortstring
   // This is due to a bug in the Braavos implementation, and has been kept for compatibility
   return {
-    name: "GiftAccount.claim_external",
+    name: "GiftFactory.claim_external",
     version: shortString.encodeShortString("1"),
     chainId,
     revision: "1",
@@ -104,7 +104,7 @@ export async function signExternalClaim(signParams: {
 export async function claimExternal(args: {
   claim: Claim;
   receiver: string;
-  dust_receiver?: string;
+  dustReceiver?: string;
   claimPrivateKey: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
   details?: UniversalDetails;
@@ -115,12 +115,13 @@ export async function claimExternal(args: {
     receiver: args.receiver,
     claimPrivateKey: args.claimPrivateKey,
     forceClaimAddress: args.overrides?.claimAccountAddress,
+    dustReceiver: args.dustReceiver,
   });
   const response = await account.execute(
     [
       {
         contractAddress: args.overrides?.factoryAddress || args.claim.factory,
-        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dust_receiver || "0x0", signature],
+        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dustReceiver || "0x0", signature],
         entrypoint: "claim_external",
       },
     ],

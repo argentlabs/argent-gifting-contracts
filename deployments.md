@@ -1,4 +1,3 @@
 ## Sepolia
 
-classhash: 0x5908a9e0785fe551d52413f2289c5c1436a8a7086d569829d0ff10443bf790
-Escrow: 0x1748e6a718e66dd6602be9424fc206988cf8ff807d0a5922bbc2ad4253a2a2f
+// TODO Update those
