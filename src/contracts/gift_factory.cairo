@@ -67,7 +67,7 @@ mod GiftFactory {
         TimelockUpgradeEvent: TimelockUpgradeComponent::Event,
         GiftCreated: GiftCreated,
         GiftClaimed: GiftClaimed,
-        GiftCanceled: GiftCanceled,
+        GiftCancelled: GiftCancelled,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -88,11 +88,12 @@ mod GiftFactory {
     struct GiftClaimed {
         #[key]
         gift_address: ContractAddress,
+        receiver: ContractAddress,
         dust_receiver: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GiftCanceled {
+    struct GiftCancelled {
         #[key]
         gift_address: ContractAddress,
     }
@@ -225,7 +226,7 @@ mod GiftFactory {
                             .span()
                     );
             }
-            self.emit(GiftCanceled { gift_address: claim_address });
+            self.emit(GiftCancelled { gift_address: claim_address });
         }
 
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
@@ -328,7 +329,7 @@ mod GiftFactory {
             assert(gift_balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
 
             // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
-            // but will increase the complexity of the code for a small performance GiftCanceled
+            // but will increase the complexity of the code for a small performance
 
             // Transfer the gift
             let mut calls = array![
@@ -350,7 +351,7 @@ mod GiftFactory {
                 }
             }
             self.transfers_from_account(claim, gift_address, calls.span());
-            self.emit(GiftClaimed { gift_address, dust_receiver });
+            self.emit(GiftClaimed { gift_address, receiver, dust_receiver });
         }
 
         fn check_claim_and_get_account_address(self: @ContractState, claim: ClaimData) -> ContractAddress {
