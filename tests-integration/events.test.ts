@@ -52,6 +52,7 @@ describe("All events are emitted", function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
+    const dustReceiver = "0x0";
 
     const { transaction_hash } = await claimInternal({ claim, receiver, claimPrivateKey });
 
@@ -61,7 +62,7 @@ describe("All events are emitted", function () {
       from_address: factory.address,
       eventName: "GiftClaimed",
       keys: [claimAddress],
-      data: [receiver, "0x0"],
+      data: [receiver, dustReceiver],
     });
   });
 

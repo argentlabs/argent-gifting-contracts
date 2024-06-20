@@ -329,7 +329,7 @@ mod GiftFactory {
             assert(gift_balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
 
             // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
-            // but will increase the complexity of the code for a small performance GiftCancelled
+            // but will increase the complexity of the code for a small performance
 
             // Transfer the gift
             let mut calls = array![
