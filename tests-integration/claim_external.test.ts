@@ -198,7 +198,7 @@ describe("Claim External", function () {
     reentrant.connect(deployer);
     const { transaction_hash } = await reentrant.set_claim_data(claim, receiver, "0x0", claimSig);
     await manager.waitForTransaction(transaction_hash);
-    
+
     await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
       claimExternal({ claim, receiver, claimPrivateKey }),
     );

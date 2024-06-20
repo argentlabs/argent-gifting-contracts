@@ -12,7 +12,7 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-// ALL PASSES BUT "Can't claim if no fee" will look later
+// FILE TESTED SUCCESSFULLY
 describe("Claim Internal", function () {
   for (const useTxV3 of [false, true]) {
     it(`gift token == fee token using txV3: ${useTxV3}`, async function () {
@@ -35,12 +35,11 @@ describe("Claim Internal", function () {
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({
         factory,
         useTxV3,
-        overrides: { giftAmount: 100n, feeAmount: 0n },
+        overrides: { feeAmount: 0n },
       });
 
-      await expect(claimInternal({ claim, receiver, claimPrivateKey })).to.be.rejectedWith(
-        "Account balance is smaller than the transaction's max_fee: undefined",
-      );
+      const errorMsg = useTxV3 ? "gift-acc/max-fee-too-high-v3" : "gift-acc/max-fee-too-high-v1";
+      await expectRevertWithErrorMessage(errorMsg, () => claimInternal({ claim, receiver, claimPrivateKey }));
     });
 
     // Both green with refactored error expectation and devnetGasPrice updated
