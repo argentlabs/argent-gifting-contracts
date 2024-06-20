@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { num } from "starknet";
 import {
+  ETH_GIFT_AMOUNT,
+  ETH_GIFT_MAX_FEE,
   LegacyStarknetKeyPair,
-  STRK_GIFT_AMOUNT,
-  STRK_GIFT_MAX_FEE,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
@@ -18,7 +18,7 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-// First one pass, rest fails
+// get_dust to be done
 // Ownable can be ignored as uses genericAccount() which is not implemented
 describe("Test Core Factory Functions", function () {
   it(`Calculate claim address`, async function () {
@@ -76,12 +76,14 @@ describe("Test Core Factory Functions", function () {
 
     // pause / unpause
     factory.connect(deployer);
-    await factory.pause();
+    const { transaction_hash: txHash1 } = await factory.pause();
+    await manager.waitForTransaction(txHash1);
+
     await expectRevertWithErrorMessage("Pausable: paused", async () => {
       const { response } = await deposit({
         sender: deployer,
-        giftAmount: STRK_GIFT_AMOUNT,
-        feeAmount: STRK_GIFT_MAX_FEE,
+        giftAmount: ETH_GIFT_AMOUNT,
+        feeAmount: ETH_GIFT_MAX_FEE,
         factoryAddress: factory.address,
         feeTokenAddress: token.address,
         giftTokenAddress: token.address,
@@ -90,12 +92,19 @@ describe("Test Core Factory Functions", function () {
       return response;
     });
 
-    await factory.unpause();
+    const { transaction_hash: txHash2 } = await factory.unpause();
+    await manager.waitForTransaction(txHash2);
     const { claim } = await defaultDepositTestSetup({
       factory,
       overrides: { claimPrivateKey: BigInt(claimSigner.privateKey) },
     });
-    await claimInternal({ claim, receiver, claimPrivateKey: claimSigner.privateKey });
+    const { transaction_hash: txHash3 } = await claimInternal({
+      claim,
+      receiver,
+      claimPrivateKey: claimSigner.privateKey,
+    });
+    const receipt = await manager.waitForTransaction(txHash3);
+    expect(receipt.finality_status).to.be.equal("ACCEPTED_ON_L2");
   });
 
   describe("Ownable", function () {
