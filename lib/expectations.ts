@@ -34,7 +34,8 @@ export async function expectRevertWithErrorMessage(
       console.log(e);
       assert.fail(`"${errorMessage}" not detected, instead got: "${shortString.decodeShortString(match[1])}"`);
     } else {
-      assert.fail(`No error detected in: ${e.toString()}`);
+      console.log(e);
+      assert.fail(`Couldn't find the error (see just above)`);
     }
   }
   assert.fail("No error detected");
