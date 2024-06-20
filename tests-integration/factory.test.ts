@@ -18,7 +18,7 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-// get_dust to be done
+// FILE TESTED SUCCESSFULLY
 // Ownable can be ignored as uses genericAccount() which is not implemented
 describe("Test Core Factory Functions", function () {
   it(`Calculate claim address`, async function () {
@@ -60,7 +60,8 @@ describe("Test Core Factory Functions", function () {
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(0n);
 
       factory.connect(deployer);
-      await factory.get_dust(claim, dustReceiver);
+      const { transaction_hash } = await factory.get_dust(claim, dustReceiver);
+      await manager.waitForTransaction(transaction_hash);
       await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(dustBalance);
     });
