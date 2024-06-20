@@ -48,6 +48,7 @@ describe("Claim Internal", function () {
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
+        // This shouldn't be merged.
         // Number taken from the error message
         const devnetGasPrice = 19000000000000n;
         // const devnetGasPrice = 36000000000n;
@@ -79,7 +80,6 @@ describe("Claim Internal", function () {
     });
   }
 
-  // Passes
   it(`Cant call claim internal twice`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });

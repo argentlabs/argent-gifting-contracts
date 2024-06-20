@@ -57,7 +57,6 @@ describe("Claim Account", function () {
     const receiver = randomReceiver();
 
     const claimAccount = getClaimAccount(claim, claimPrivateKey);
-    // Caught as expected with reworked `expectRevertWithErrorMessage()`
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       claimAccount.execute([
         factory.populateTransaction.claim_internal(buildCallDataClaim(claim), receiver),
