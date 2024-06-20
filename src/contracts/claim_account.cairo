@@ -4,7 +4,10 @@ mod ClaimAccount {
     use core::num::traits::Zero;
     use starknet::{
         TxInfo, account::Call, VALIDATED, syscalls::call_contract_syscall, ContractAddress, get_contract_address,
-        get_caller_address, get_execution_info
+        get_caller_address, get_execution_info, ClassHash
+    };
+    use starknet_gifting::contracts::claim_account_impl::{
+        IClaimAccountImplLibraryDispatcher, IClaimAccountImplDispatcherTrait
     };
     use starknet_gifting::contracts::interface::{
         IAccount, IGiftAccount, IOutsideExecution, OutsideExecution, ClaimData, AccountConstructorArguments,
@@ -12,7 +15,7 @@ mod ClaimAccount {
     };
     use starknet_gifting::contracts::utils::{
         calculate_claim_account_address, full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3,
-        TX_V3_ESTIMATE,
+        TX_V3_ESTIMATE, execute_multicall
     };
 
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
@@ -47,7 +50,7 @@ mod ClaimAccount {
             assert(*selector == selector!("claim_internal"), 'gift-acc/invalid-call-selector');
             let (claim, _): (ClaimData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
-            assert(*to == claim.factory, 'gift-acc/invalid-call-to');
+            assert(*to == get_contract_address(), 'gift-acc/invalid-call-to');
             assert_valid_claim(claim);
 
             let tx_info = execution_info.tx_info.unbox();
@@ -80,8 +83,11 @@ mod ClaimAccount {
             let execution_info = get_execution_info().unbox();
             assert(execution_info.caller_address.is_zero(), 'gift-acc/only-protocol');
             let Call { to, selector, calldata }: @Call = calls[0];
-            call_contract_syscall(*to, *selector, *calldata).expect('gift-acc/execute-failed');
-            array![]
+            let (claim, receiver): (ClaimData, ContractAddress) = full_deserialize(*calldata)
+                .expect('gift-acc/invalid-calldata');
+            let implementation_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: claim.factory }
+                .get_account_impl_class_hash(claim.class_hash);
+            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }.claim_internal(claim, receiver)
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
@@ -107,6 +113,15 @@ mod ClaimAccount {
             assert_valid_claim(claim);
             assert(get_caller_address() == claim.factory, 'gift/only-factory');
             execute_multicall(calls.span())
+        }
+
+        fn action(self: @ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
+            let mut calldata_span = calldata.span();
+            let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
+            assert_valid_claim(claim);
+            let implementation_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: claim.factory }
+                .get_account_impl_class_hash(claim.class_hash);
+            starknet::syscalls::library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
         }
     }
 
@@ -147,34 +162,5 @@ mod ClaimAccount {
                 }
             };
         max_fee + max_tip
-    }
-
-    fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {
-        let mut result = array![];
-        let mut index = 0;
-        while let Option::Some(call) = calls
-            .pop_front() {
-                match call_contract_syscall(*call.to, *call.selector, *call.calldata) {
-                    Result::Ok(retdata) => {
-                        result.append(retdata);
-                        index += 1;
-                    },
-                    Result::Err(revert_reason) => {
-                        let mut data = array!['argent/multicall-failed', index];
-                        data.append_all(revert_reason.span());
-                        panic(data);
-                    },
-                }
-            };
-        result
-    }
-
-    #[generate_trait]
-    impl ArrayExt<T, +Drop<T>, +Copy<T>> of ArrayExtTrait<T> {
-        fn append_all(ref self: Array<T>, mut value: Span<T>) {
-            while let Option::Some(item) = value.pop_front() {
-                self.append(*item);
-            };
-        }
     }
 }

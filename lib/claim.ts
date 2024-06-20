@@ -1,10 +1,12 @@
 import {
   Account,
+  CallData,
   InvokeFunctionResponse,
   RPC,
   UniversalDetails,
   ec,
   encode,
+  hash,
   num,
   shortString,
   uint256,
@@ -106,7 +108,7 @@ export async function claimExternal(args: {
   receiver: string;
   dustReceiver?: string;
   claimPrivateKey: string;
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
+  overrides?: { claimAccountAddress?: string; account?: Account };
   details?: UniversalDetails;
 }): Promise<InvokeFunctionResponse> {
   const account = args.overrides?.account || deployer;
@@ -117,12 +119,20 @@ export async function claimExternal(args: {
     forceClaimAddress: args.overrides?.claimAccountAddress,
     dustReceiver: args.dustReceiver,
   });
+
+  const claimExternalCallData = CallData.compile([
+    buildCallDataClaim(args.claim),
+    args.receiver,
+    args.dustReceiver || "0x0",
+    signature,
+  ]);
+
   return await account.execute(
     [
       {
-        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
-        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dustReceiver || "0x0", signature],
-        entrypoint: "claim_external",
+        contractAddress: calculateClaimAddress(args.claim),
+        calldata: { selector: hash.getSelectorFromName("claim_external"), calldata: claimExternalCallData },
+        entrypoint: "action",
       },
     ],
     undefined,
@@ -142,7 +152,7 @@ export async function claimInternal(args: {
   return await claimAccount.execute(
     [
       {
-        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
+        contractAddress: claimAddress,
         calldata: [buildCallDataClaim(args.claim), args.receiver],
         entrypoint: "claim_internal",
       },

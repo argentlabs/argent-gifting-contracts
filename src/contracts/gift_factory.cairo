@@ -47,6 +47,7 @@ mod GiftFactory {
         #[substorage(v0)]
         timelock_upgrade: TimelockUpgradeComponent::Storage,
         claim_class_hash: ClassHash,
+        account_impl_class_hash: ClassHash,
     }
 
     #[derive(Drop, Copy)]
@@ -98,8 +99,11 @@ mod GiftFactory {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, claim_class_hash: ClassHash, owner: ContractAddress) {
+    fn constructor(
+        ref self: ContractState, claim_class_hash: ClassHash, account_impl_class_hash: ClassHash, owner: ContractAddress
+    ) {
         self.claim_class_hash.write(claim_class_hash);
+        self.account_impl_class_hash.write(account_impl_class_hash);
         self.ownable.initializer(owner);
     }
 
@@ -161,27 +165,6 @@ mod GiftFactory {
             }
         }
 
-        fn claim_internal(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            assert(get_caller_address() == claim_address, 'gift/only-claim-account');
-            self.proceed_with_claim(claim_address, claim, receiver, Zero::zero());
-        }
-
-        fn claim_external(
-            ref self: ContractState,
-            claim: ClaimData,
-            receiver: ContractAddress,
-            dust_receiver: ContractAddress,
-            signature: StarknetSignature
-        ) {
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            let claim_external_hash = ClaimExternal { receiver, dust_receiver }.get_message_hash_rev_1(claim_address);
-            assert(
-                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, signature.r, signature.s),
-                'gift/invalid-ext-signature'
-            );
-            self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);
-        }
 
         fn is_valid_account_signature(
             self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
@@ -239,6 +222,10 @@ mod GiftFactory {
                 let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
                 self.transfer_from_account(claim, claim_address, claim.fee_token, fee_balance, claim.sender);
             }
+        }
+
+        fn get_account_impl_class_hash(self: @ContractState, account_class_hash: ClassHash) -> ClassHash {
+            self.account_impl_class_hash.read()
         }
 
         fn get_latest_claim_class_hash(self: @ContractState) -> ClassHash {
@@ -316,43 +303,6 @@ mod GiftFactory {
 
     #[generate_trait]
     impl Private of PrivateTrait {
-        fn proceed_with_claim(
-            ref self: ContractState,
-            gift_address: ContractAddress,
-            claim: ClaimData,
-            receiver: ContractAddress,
-            dust_receiver: ContractAddress
-        ) {
-            assert(receiver.is_non_zero(), 'gift/zero-receiver');
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(gift_address);
-            assert(gift_balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
-
-            // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
-            // but will increase the complexity of the code for a small performance GiftCanceled
-
-            // Transfer the gift
-            let mut calls = array![
-                TransferFromAccount { token: claim.gift_token, amount: claim.gift_amount, receiver: receiver }
-            ];
-
-            // Transfer the dust
-            if dust_receiver.is_non_zero() {
-                let dust = if claim.gift_token == claim.fee_token {
-                    gift_balance - claim.gift_amount
-                } else {
-                    IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(gift_address)
-                };
-                if dust > 0 {
-                    calls
-                        .append(
-                            TransferFromAccount { token: claim.fee_token, amount: dust.into(), receiver: dust_receiver }
-                        );
-                }
-            }
-            self.transfers_from_account(claim, gift_address, calls.span());
-            self.emit(GiftClaimed { gift_address, dust_receiver });
-        }
-
         fn check_claim_and_get_account_address(self: @ContractState, claim: ClaimData) -> ContractAddress {
             assert(claim.factory == get_contract_address(), 'gift/invalid-factory-address');
             assert(claim.class_hash == self.claim_class_hash.read(), 'gift/invalid-class-hash');

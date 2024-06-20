@@ -112,18 +112,6 @@ describe("Claim External", function () {
     );
   });
 
-  it(`Invalid factory address`, async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
-    const receiver = randomReceiver();
-
-    claim.factory = "0x2";
-
-    await expectRevertWithErrorMessage("gift/invalid-factory-address", () =>
-      claimExternal({ claim, receiver, claimPrivateKey, overrides: { factoryAddress: factory.address } }),
-    );
-  });
-
   it(`gift/invalid-class-hash`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });

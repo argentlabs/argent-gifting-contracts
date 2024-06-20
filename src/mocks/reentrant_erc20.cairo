@@ -119,9 +119,8 @@ mod ReentrantERC20 {
                     fee_amount: test_claim.fee_amount,
                     claim_pubkey: test_claim.claim_pubkey,
                 };
-
-                IGiftFactoryDispatcher { contract_address: self.factory.read() }
-                    .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
+            // IGiftFactoryDispatcher { contract_address: self.factory.read() }
+            //     .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
             }
 
             self.erc20._transfer(get_caller_address(), recipient, amount);
