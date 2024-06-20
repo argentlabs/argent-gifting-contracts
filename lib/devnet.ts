@@ -25,7 +25,7 @@ export const WithDevnet = <T extends Constructor<RpcProvider>>(Base: T) =>
     }
 
     async setTime(timeInSeconds: number | bigint) {
-      await this.handlePost("set_time", { time: Number(timeInSeconds), generate_block: true });
+      await this.handlePost("set_time", { time: Number(timeInSeconds), generate_block: false });
     }
 
     async restart() {

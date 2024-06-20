@@ -104,8 +104,8 @@ export async function signExternalClaim(signParams: {
 export async function claimExternal(args: {
   claim: Claim;
   receiver: string;
-  dustReceiver?: string;
   claimPrivateKey: string;
+  dustReceiver?: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
   details?: UniversalDetails;
 }): Promise<InvokeFunctionResponse> {

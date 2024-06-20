@@ -37,3 +37,5 @@ export async function setupGiftProtocol(): Promise<{
   cache["GiftFactory"] = factory;
   return { factory, claimAccountClassHash };
 }
+
+export async function upgradeFactory(factory: Contract, owner = deployer) {}
