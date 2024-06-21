@@ -78,7 +78,7 @@ function convertToEvent(eventWithName: EventWithName): RPC.Event {
   const selector = hash.getSelectorFromName(eventWithName.eventName);
   return {
     from_address: eventWithName.from_address,
-    keys: [selector].concat(eventWithName.additionalKeys ?? []),
+    keys: [selector].concat(eventWithName.keys ?? []),
     data: eventWithName.data ?? [],
   };
 }
@@ -110,6 +110,6 @@ export async function waitForTransaction({
 export interface EventWithName {
   from_address: string;
   eventName: string;
-  additionalKeys?: Array<string>;
+  keys?: Array<string>;
   data?: Array<string>;
 }
