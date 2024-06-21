@@ -47,7 +47,7 @@ describe("Claim Internal", function () {
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
-        // If you run this test on testnet, it'll fail 
+        // If you run this test on testnet, it'll fail
         // You can then take the value from the error message and replace 1n (given some extra iff the price rises)
         const gasPrice = manager.isDevnet ? 36000000000n : 1n;
         const newResourceBounds = {
