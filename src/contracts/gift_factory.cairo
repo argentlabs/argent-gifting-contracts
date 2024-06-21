@@ -293,7 +293,7 @@ mod GiftFactory {
         }
     }
 
-
+    #[abi(embed_v0)]
     impl TimelockUpgradeCallbackImpl of ITimelockUpgradeCallback<ContractState> {
         fn perform_upgrade(ref self: ContractState, new_implementation: ClassHash, data: Span<felt252>) {
             // This should do some sanity checks 

@@ -7,7 +7,7 @@ pub trait ITimelockUpgrade<TContractState> {
     /// @dev After the 7-day waiting period, the upgrade can be performed within a 7-day window
     /// @dev If there is an ongoing upgrade, the previous proposition will be overwritten
     /// @param new_implementation The class hash of the new implementation
-    fn propose_upgrade(ref self: TContractState, new_implementation: ClassHash);
+    fn propose_upgrade(ref self: TContractState, new_implementation: ClassHash, calldata: Array<felt252>);
 
     /// @notice Cancel the upgrade proposition
     /// @dev Will fail if there is no ongoing upgrade
@@ -38,6 +38,7 @@ pub trait ITimelockUpgradeCallback<TContractState> {
 pub mod TimelockUpgradeComponent {
     use core::num::traits::Zero;
     use openzeppelin::access::ownable::{OwnableComponent, OwnableComponent::InternalTrait};
+    use core::poseidon::poseidon_hash_span;
     use starknet::{get_block_timestamp, ClassHash};
     use super::{
         ITimelockUpgrade, ITimelockUpgradeCallback, ITimelockUpgradeCallbackLibraryDispatcher,
@@ -53,6 +54,7 @@ pub mod TimelockUpgradeComponent {
     pub struct Storage {
         pending_implementation: ClassHash,
         ready_at: u64,
+        calldata_hash: felt252,
     }
 
     #[event]
@@ -66,7 +68,8 @@ pub mod TimelockUpgradeComponent {
     #[derive(Drop, starknet::Event)]
     struct UpgradeProposed {
         new_implementation: ClassHash,
-        ready_at: u64
+        ready_at: u64,
+        calldata_hash: felt252
     }
 
     #[derive(Drop, starknet::Event)]
@@ -86,7 +89,7 @@ pub mod TimelockUpgradeComponent {
         impl Ownable: OwnableComponent::HasComponent<TContractState>,
         +ITimelockUpgradeCallback<TContractState>,
     > of ITimelockUpgrade<ComponentState<TContractState>> {
-        fn propose_upgrade(ref self: ComponentState<TContractState>, new_implementation: ClassHash) {
+        fn propose_upgrade(ref self: ComponentState<TContractState>, new_implementation: ClassHash, calldata: Array<felt252>) {
             self.assert_only_owner();
             assert(new_implementation.is_non_zero(), 'upgrade/new-implementation-null');
 
@@ -98,7 +101,9 @@ pub mod TimelockUpgradeComponent {
             self.pending_implementation.write(new_implementation);
             let ready_at = get_block_timestamp() + MIN_SECURITY_PERIOD;
             self.ready_at.write(ready_at);
-            self.emit(UpgradeProposed { new_implementation, ready_at });
+            let calldata_hash = poseidon_hash_span(calldata.span());
+            self.calldata_hash.write(calldata_hash);
+            self.emit(UpgradeProposed { new_implementation, ready_at, calldata_hash });
         }
 
         fn cancel_upgrade(ref self: ComponentState<TContractState>) {
@@ -115,6 +120,8 @@ pub mod TimelockUpgradeComponent {
             let new_implementation = self.pending_implementation.read();
             let ready_at = self.ready_at.read();
             let block_timestamp = get_block_timestamp();
+            let call_data_hash = poseidon_hash_span(calldata.span());
+            assert(call_data_hash == self.calldata_hash.read(), 'upgrade/invalid-calldata');
             assert(new_implementation.is_non_zero(), 'upgrade/no-pending-upgrade');
             assert(block_timestamp >= ready_at, 'upgrade/too-early');
             assert(block_timestamp < ready_at + VALID_WINDOW_PERIOD, 'upgrade/upgrade-too-late');
