@@ -45,9 +45,9 @@ pub mod TimelockUpgradeComponent {
     };
 
     /// Time before the upgrade can be performed
-    const MIN_SECURITY_PERIOD: u64 = 172800; // 7 * 24 * 60 * 60;  // 7 days
+    const MIN_SECURITY_PERIOD: u64 = consteval_int!(7 * 24 * 60 * 60); // 7 days
     ///  Time window during which the upgrade can be performed
-    const VALID_WINDOW_PERIOD: u64 = 604800; // 7 * 24 * 60 * 60;  // 7 days
+    const VALID_WINDOW_PERIOD: u64 = consteval_int!(7 * 24 * 60 * 60); // 7 days
 
     #[storage]
     pub struct Storage {

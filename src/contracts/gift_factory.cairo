@@ -68,7 +68,7 @@ mod GiftFactory {
         TimelockUpgradeEvent: TimelockUpgradeComponent::Event,
         GiftCreated: GiftCreated,
         GiftClaimed: GiftClaimed,
-        GiftCanceled: GiftCanceled,
+        GiftCancelled: GiftCancelled,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -89,11 +89,12 @@ mod GiftFactory {
     struct GiftClaimed {
         #[key]
         gift_address: ContractAddress,
+        receiver: ContractAddress,
         dust_receiver: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GiftCanceled {
+    struct GiftCancelled {
         #[key]
         gift_address: ContractAddress,
     }
@@ -208,7 +209,7 @@ mod GiftFactory {
                             .span()
                     );
             }
-            self.emit(GiftCanceled { gift_address: claim_address });
+            self.emit(GiftCancelled { gift_address: claim_address });
         }
 
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {

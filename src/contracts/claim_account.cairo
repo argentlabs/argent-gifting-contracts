@@ -82,6 +82,14 @@ mod ClaimAccount {
         fn __execute__(ref self: ContractState, calls: Array<Call>) -> Array<Span<felt252>> {
             let execution_info = get_execution_info().unbox();
             assert(execution_info.caller_address.is_zero(), 'gift-acc/only-protocol');
+            let tx_version = execution_info.tx_info.unbox().version;
+            assert(
+                tx_version == TX_V3
+                    || tx_version == TX_V1
+                    || tx_version == TX_V3_ESTIMATE
+                    || tx_version == TX_V1_ESTIMATE,
+                'gift-acc/invalid-tx-version'
+            );
             let Call { to, selector, calldata }: @Call = calls[0];
             let (claim, receiver): (ClaimData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
