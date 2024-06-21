@@ -23,6 +23,9 @@ pub trait ITimelockUpgrade<TContractState> {
 
     /// @notice Gets the timestamp when the upgrade is ready to be performed, 0 if no upgrade ongoing
     fn get_upgrade_ready_at(self: @TContractState) -> u64;
+
+    /// @notice Gets the hash of the calldata used for the upgrade. 0 if no upgrade ongoing
+    fn get_calldata_hash(self: @TContractState) -> felt252;
 }
 
 #[starknet::interface]
@@ -120,8 +123,8 @@ pub mod TimelockUpgradeComponent {
             let new_implementation = self.pending_implementation.read();
             let ready_at = self.ready_at.read();
             let block_timestamp = get_block_timestamp();
-            let call_data_hash = poseidon_hash_span(calldata.span());
-            assert(call_data_hash == self.calldata_hash.read(), 'upgrade/invalid-calldata');
+            let calldata_hash = poseidon_hash_span(calldata.span());
+            assert(calldata_hash == self.calldata_hash.read(), 'upgrade/invalid-calldata');
             assert(new_implementation.is_non_zero(), 'upgrade/no-pending-upgrade');
             assert(block_timestamp >= ready_at, 'upgrade/too-early');
             assert(block_timestamp < ready_at + VALID_WINDOW_PERIOD, 'upgrade/upgrade-too-late');
@@ -137,6 +140,10 @@ pub mod TimelockUpgradeComponent {
         fn get_upgrade_ready_at(self: @ComponentState<TContractState>) -> u64 {
             self.ready_at.read()
         }
+
+        fn get_calldata_hash(self: @ComponentState<TContractState>) -> felt252 {
+            self.calldata_hash.read()
+        }
     }
     #[generate_trait]
     impl PrivateImpl<
@@ -149,6 +156,7 @@ pub mod TimelockUpgradeComponent {
         fn reset_storage(ref self: ComponentState<TContractState>) {
             self.pending_implementation.write(Zero::zero());
             self.ready_at.write(0);
+            self.calldata_hash.write(0);
         }
     }
 }

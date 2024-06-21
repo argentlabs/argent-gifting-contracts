@@ -19,20 +19,23 @@ describe("Test Factory Upgrade", function () {
   it.only("Upgrade", async function () {
     const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
+    const calldata: any[] = [];
 
     await manager.setTime(CURRENT_TIME);
     factory.connect(deployer);
-    await factory.propose_upgrade(newFactoryClassHash, []);
+    await factory.propose_upgrade(newFactoryClassHash, calldata);
 
     await factory.get_upgrade_ready_at().should.eventually.equal(BigInt(CURRENT_TIME + MIN_SECURITY_PERIOD));
     await factory.get_proposed_implementation().should.eventually.equal(BigInt(newFactoryClassHash));
+    await factory.get_calldata_hash().should.eventually.equal(BigInt(hash.computePoseidonHashOnElements(calldata)));
 
     await manager.increaseTime(MIN_SECURITY_PERIOD + 1);
-    await factory.upgrade([]);
+    await factory.upgrade(calldata);
 
     // reset storage
     await factory.get_proposed_implementation().should.eventually.equal(0n);
     await factory.get_upgrade_ready_at().should.eventually.equal(0n);
+    await factory.get_calldata_hash().should.eventually.equal(0n);
 
     await manager.getClassHashAt(factory.address).should.eventually.equal(newFactoryClassHash);
 
@@ -40,7 +43,70 @@ describe("Test Factory Upgrade", function () {
     await newFactory.get_num().should.eventually.equal(1n);
   });
 
-  it.only("Propose Upgrade: implementation-null", async function () {
+  it("Upgrade: only-owner", async function () {
+    const { factory } = await setupGiftProtocol();
+    const newFactoryClassHash = "0x1";
+
+    await manager.setTime(CURRENT_TIME);
+    factory.connect(deployer);
+    await factory.propose_upgrade(newFactoryClassHash, []);
+
+    await manager.increaseTime(MIN_SECURITY_PERIOD + 1);
+    factory.connect(genericAccount);
+    expectRevertWithErrorMessage("Caller is not the owner", () => factory.upgrade([]));
+  });
+
+  it("Upgrade: Invalid Calldata", async function () {
+    const { factory } = await setupGiftProtocol();
+    const newFactoryClassHash = "0x1";
+    const calldata = [1, 2, 3];
+
+    await manager.setTime(CURRENT_TIME);
+    factory.connect(deployer);
+    await factory.propose_upgrade(newFactoryClassHash, calldata);
+
+    await manager.increaseTime(MIN_SECURITY_PERIOD + 1);
+    const newCalldata = [4, 5, 6];
+    expectRevertWithErrorMessage("upgrade/invalid-calldata", () => factory.upgrade(newCalldata));
+  });
+
+  it("Upgrade: No pending upgrade", async function () {
+    const { factory } = await setupGiftProtocol();
+
+    factory.connect(deployer);
+    expectRevertWithErrorMessage("upgrade/no-pending-upgrade", () => factory.upgrade([]));
+  });
+
+  it("Upgrade: Too Early", async function () {
+    const { factory } = await setupGiftProtocol();
+    const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
+
+    await manager.setTime(CURRENT_TIME);
+    factory.connect(deployer);
+    await factory.propose_upgrade(newFactoryClassHash, []);
+
+    await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD - 1);
+    expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
+
+    await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD);
+    expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
+  });
+
+  it("Upgrade: Too Late", async function () {
+    const { factory } = await setupGiftProtocol();
+    const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
+
+    await manager.setTime(CURRENT_TIME);
+    factory.connect(deployer);
+    await factory.propose_upgrade(newFactoryClassHash, []);
+
+    const readyAt = await factory.get_upgrade_ready_at();
+
+    await manager.increaseTime(Number(readyAt) + VALID_WINDOW_PERIOD + 1);
+    expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
+  });
+
+  it("Propose Upgrade: implementation-null", async function () {
     const { factory } = await setupGiftProtocol();
     const zeroClassHash = "0x0";
 
@@ -48,7 +114,7 @@ describe("Test Factory Upgrade", function () {
     expectRevertWithErrorMessage("upgrade/new-implementation-null", () => factory.propose_upgrade(zeroClassHash, []));
   });
 
-  it.only("Propose Upgrade: only-owner", async function () {
+  it("Propose Upgrade: only-owner", async function () {
     const { factory } = await setupGiftProtocol();
     const zeroClassHash = "0x0";
 
@@ -56,7 +122,7 @@ describe("Test Factory Upgrade", function () {
     expectRevertWithErrorMessage("Caller is not the owner", () => factory.propose_upgrade(zeroClassHash, []));
   });
 
-  it.only("Propose Upgrade: replace pending implementation /w events", async function () {
+  it("Propose Upgrade: replace pending implementation /w events", async function () {
     const { factory } = await setupGiftProtocol();
     const newClassHash = 12345n;
     const replacementClassHash = 54321n;
@@ -86,7 +152,7 @@ describe("Test Factory Upgrade", function () {
     });
   });
 
-  it.only("Cancel Upgrade /w events", async function () {
+  it("Cancel Upgrade /w events", async function () {
     const { factory } = await setupGiftProtocol();
     const newClassHash = 12345n;
     const calldata: any[] = [];
@@ -99,6 +165,7 @@ describe("Test Factory Upgrade", function () {
 
     await factory.get_proposed_implementation().should.eventually.equal(0n);
     await factory.get_upgrade_ready_at().should.eventually.equal(0n);
+    await factory.get_calldata_hash().should.eventually.equal(0n);
 
     await expectEvent(transaction_hash, {
       from_address: factory.address,
@@ -107,28 +174,17 @@ describe("Test Factory Upgrade", function () {
     });
   });
 
-  it.only("Cancel Upgrade: No new implementation", async function () {
+  it("Cancel Upgrade: No new implementation", async function () {
     const { factory } = await setupGiftProtocol();
 
     factory.connect(deployer);
     expectRevertWithErrorMessage("upgrade/no-new-implementation", () => factory.cancel_upgrade());
   });
 
-  // it.only("Cancel Upgrade /w events", async function () {
-  //   const { factory } = await setupGiftProtocol();
-  //   const newClassHash = 12345n;
-  //   const calldata: any[] = [];
+  it("Cancel Upgrade: Only Owner", async function () {
+    const { factory } = await setupGiftProtocol();
 
-  //   await manager.setTime(CURRENT_TIME);
-  //   factory.connect(deployer);
-  //   await factory.propose_upgrade(newClassHash, calldata);
-
-  //   const { transaction_hash } = await factory.cancel_upgrade();
-
-  //   await expectEvent(transaction_hash, {
-  //     from_address: factory.address,
-  //     eventName: "UpgradeCancelled",
-  //     data: [newClassHash.toString()],
-  //   });
-  // });
+    factory.connect(genericAccount);
+    expectRevertWithErrorMessage("Caller is not the owner", () => factory.cancel_upgrade());
+  });
 });
