@@ -10,8 +10,8 @@ import {
   ETH_GIFT_AMOUNT,
   ETH_GIFT_MAX_FEE,
   expectRevertWithErrorMessage,
+  getGiftAmount,
   getMaxFee,
-  getMaxGift,
   LegacyStarknetKeyPair,
   manager,
   randomReceiver,
@@ -52,7 +52,7 @@ describe("Test Core Factory Functions", function () {
       // Final check
       const dustBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
       const maxFee = getMaxFee(useTxV3);
-      const giftAmount = getMaxGift(useTxV3);
+      const giftAmount = getGiftAmount(useTxV3);
       expect(dustBalance < maxFee).to.be.true;
       await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(giftAmount);
 

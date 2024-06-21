@@ -10,7 +10,7 @@ export function getMaxFee(useTxV3: boolean): bigint {
   return useTxV3 ? STRK_GIFT_MAX_FEE : ETH_GIFT_MAX_FEE;
 }
 
-export function getMaxGift(useTxV3: boolean): bigint {
+export function getGiftAmount(useTxV3: boolean): bigint {
   return useTxV3 ? STRK_GIFT_AMOUNT : ETH_GIFT_AMOUNT;
 }
 
@@ -72,7 +72,7 @@ export async function defaultDepositTestSetup(args: {
   txReceipt: TransactionReceipt;
 }> {
   const useTxV3 = args.useTxV3 || false;
-  const giftAmount = args.overrides?.giftAmount ?? getMaxGift(useTxV3);
+  const giftAmount = args.overrides?.giftAmount ?? getGiftAmount(useTxV3);
   const feeAmount = args.overrides?.feeAmount ?? getMaxFee(useTxV3);
 
   const feeToken = args.overrides?.feeTokenAddress
