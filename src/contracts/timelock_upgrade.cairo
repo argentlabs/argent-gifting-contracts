@@ -74,7 +74,7 @@ pub mod TimelockUpgradeComponent {
 
     #[derive(Drop, starknet::Event)]
     struct UpgradeCancelled {
-        new_implementation: ClassHash
+        cancelled_implementation: ClassHash
     }
 
     #[derive(Drop, starknet::Event)]
@@ -95,7 +95,7 @@ pub mod TimelockUpgradeComponent {
 
             let pending_implementation = self.pending_implementation.read();
             if pending_implementation.is_non_zero() {
-                self.emit(UpgradeCancelled { new_implementation: pending_implementation })
+                self.emit(UpgradeCancelled { cancelled_implementation: pending_implementation })
             }
 
             self.pending_implementation.write(new_implementation);
@@ -108,10 +108,10 @@ pub mod TimelockUpgradeComponent {
 
         fn cancel_upgrade(ref self: ComponentState<TContractState>) {
             self.assert_only_owner();
-            let new_implementation = self.pending_implementation.read();
-            assert(new_implementation.is_non_zero(), 'upgrade/no-new-implementation');
+            let proposed_implementation = self.pending_implementation.read();
+            assert(proposed_implementation.is_non_zero(), 'upgrade/no-new-implementation');
             assert(self.ready_at.read() != 0, 'upgrade/not-ready');
-            self.emit(UpgradeCancelled { new_implementation });
+            self.emit(UpgradeCancelled { cancelled_implementation: proposed_implementation });
             self.reset_storage();
         }
 
