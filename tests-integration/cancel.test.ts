@@ -5,13 +5,13 @@ import {
   deployMockERC20,
   deployer,
   expectRevertWithErrorMessage,
-  genericAccount,
+  devnetAccount,
   manager,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
 
-// FILE TESTED SUCCESSFULLY except for "Cancel Claim wrong sender" cause uses genericAccount() which is not implemented
+// FILE TESTED SUCCESSFULLY except for "Cancel Claim wrong sender" cause uses devnetAccount() which is not implemented
 describe("Cancel Claim", function () {
   it(`Cancel Claim (fee_token == gift_token)`, async function () {
     const { factory } = await setupGiftProtocol();
@@ -73,7 +73,7 @@ describe("Cancel Claim", function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup({ factory });
 
-    factory.connect(genericAccount());
+    factory.connect(devnetAccount());
     await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
   });
 

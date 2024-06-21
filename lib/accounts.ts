@@ -16,7 +16,7 @@ export const deployer = (() => {
   throw new Error("Missing deployer address or private key, please set ADDRESS and PRIVATE_KEY env variables.");
 })();
 
-export function genericAccount() {
+export function devnetAccount() {
   if (manager.isDevnet) {
     const devnetAddress = "0x78662e7352d062084b0010068b99288486c2d8b914f6e2a55ce945f8792c8b1";
     const devnetPrivateKey = "0xe1406455b7d66b1690803be066cbe5e";
