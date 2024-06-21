@@ -106,7 +106,7 @@ mod ClaimAccountImpl {
         fn claim_internal(
             ref self: ContractState, claim: ClaimData, receiver: ContractAddress
         ) -> Array<Span<felt252>> {
-            self.proceed_with_claim(get_contract_address(), claim, receiver, Zero::zero());
+            self.proceed_with_claim(claim, receiver, Zero::zero());
             array![]
         }
 
@@ -117,14 +117,13 @@ mod ClaimAccountImpl {
             dust_receiver: ContractAddress,
             signature: StarknetSignature
         ) {
-            let contract_address = get_contract_address();
             let claim_external_hash = ClaimExternal { receiver, dust_receiver }
-                .get_message_hash_rev_1(contract_address);
+                .get_message_hash_rev_1(get_contract_address());
             assert(
                 check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, signature.r, signature.s),
                 'gift/invalid-ext-signature'
             );
-            self.proceed_with_claim(contract_address, claim, receiver, dust_receiver);
+            self.proceed_with_claim(claim, receiver, dust_receiver);
         }
 
         fn cancel(ref self: ContractState, claim: ClaimData) {
@@ -168,24 +167,68 @@ mod ClaimAccountImpl {
         fn execute_from_outside_v2(
             ref self: ContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            // assert(!self.outside_nonces.read(outside_execution.nonce), 'gift-acc/dup-outside-nonce');
-            // self.outside_nonces.write(outside_execution.nonce, true);
-            panic_with_felt252('outside-execution-not-allowed');
+            panic_with_felt252('not-allowed-yet');
             array![]
+        // assert(!self.outside_nonces.read(outside_execution.nonce), 'gift-acc/dup-outside-nonce');
+        // self.outside_nonces.write(outside_execution.nonce, true);
+
+        // // TODO hashing
+        // let claim_external_hash = 0x1236;
+        // // let hash = outside_execution.get_message_hash_rev_1(claim_address);
+
+        // let (r, s): (felt252, felt252) = full_deserialize(signature).expect('gift-fact/invalid-signature');
+        // assert(
+        //     check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, r, s), 'gift-fact/invalid-out-signature'
+        // );
+
+        // if outside_execution.caller.into() != 'ANY_CALLER' {
+        //     assert(get_caller_address() == outside_execution.caller, 'argent/invalid-caller');
+        // }
+
+        // let block_timestamp = get_block_timestamp();
+        // assert(
+        //     outside_execution.execute_after < block_timestamp && block_timestamp < outside_execution.execute_before,
+        //     'argent/invalid-timestamp'
+        // );
+
+        // assert(outside_execution.calls.len() == 2, 'gift-fact/call-len');
+        // // validate 1st call
+        // let refund_call = outside_execution.calls.at(0);
+        // assert(*refund_call.selector == selector!("transfer"), 'gift-fact/refcall-selector');
+        // assert(*refund_call.to == claim.fee_token, 'gift-fact/refcall-to');
+        // let (refund_receiver, refund_amount): (ContractAddress, u256) = full_deserialize(*refund_call.calldata)
+        //     .expect('gift-fact/invalid-ref-calldata');
+        // assert(refund_receiver.is_non_zero(), 'gift-fact/refcall-receiver');
+        // assert(refund_amount <= claim.fee_amount.into(), 'gift-fact/refcall-amount');
+        // // validate 2nd call
+        // let claim_call = outside_execution.calls.at(1);
+        // assert(*claim_call.to == claim.factory, 'gift-fact/claimcall-to');
+        // // TODO ideally the function claim_from_outside actually exists in the factory to help with the gas estimation
+        // assert(*claim_call.selector == selector!("claim_from_outside"), 'gift-fact/claimcall-to');
+        // let (claim_receiver, dust_receiver): (ContractAddress, ContractAddress) = full_deserialize(
+        //     *refund_call.calldata
+        // )
+        //     .expect('gift-fact/claimcall-calldata');
+
+        // // Proceed with the calls
+        // // We could optimize and make only one call to `execute_factory_calls`
+        // self.transfer_from_account(claim.fee_token, refund_amount, refund_receiver);
+        // self.proceed_with_claim(claim_receiver, dust_receiver);
+        // array![
+        //     serialize(@(true)).span(), // simulated return from the transfer call
+        //     array![].span() // return from the claim call
+        // ]
         }
     }
 
     #[generate_trait]
     impl Private of PrivateTrait {
         fn proceed_with_claim(
-            ref self: ContractState,
-            gift_address: ContractAddress,
-            claim: ClaimData,
-            receiver: ContractAddress,
-            dust_receiver: ContractAddress
+            ref self: ContractState, claim: ClaimData, receiver: ContractAddress, dust_receiver: ContractAddress
         ) {
             assert(receiver.is_non_zero(), 'gift/zero-receiver');
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(gift_address);
+            let contract_address = get_contract_address();
+            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(contract_address);
             assert(gift_balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
 
             // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
@@ -199,15 +242,14 @@ mod ClaimAccountImpl {
                 let dust = if claim.gift_token == claim.fee_token {
                     gift_balance - claim.gift_amount
                 } else {
-                    IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(gift_address)
+                    IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(contract_address)
                 };
                 if dust > 0 {
                     self.transfer_from_account(claim.fee_token, dust, dust_receiver);
                 }
             }
-            self.emit(GiftClaimed { gift_address, receiver, dust_receiver });
+            self.emit(GiftClaimed { gift_address: contract_address, receiver, dust_receiver });
         }
-
 
         fn transfer_from_account(
             self: @ContractState, token: ContractAddress, amount: u256, receiver: ContractAddress,
