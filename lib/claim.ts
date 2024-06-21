@@ -1,14 +1,4 @@
-import {
-  Account,
-  RPC,
-  TransactionReceipt,
-  UniversalDetails,
-  ec,
-  encode,
-  num,
-  shortString,
-  uint256,
-} from "starknet";
+import { Account, RPC, TransactionReceipt, UniversalDetails, ec, encode, num, shortString, uint256 } from "starknet";
 import {
   LegacyStarknetKeyPair,
   StarknetSignature,

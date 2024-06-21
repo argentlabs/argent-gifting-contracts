@@ -110,7 +110,7 @@ describe("Cancel Claim", function () {
     const receiver = randomReceiver();
 
     await claimInternal({ claim, receiver, claimPrivateKey });
-  
+
     factory.connect(deployer);
     await expectRevertWithErrorMessage("gift/already-claimed", () => factory.cancel(claim));
   });

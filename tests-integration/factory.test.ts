@@ -99,13 +99,12 @@ describe("Test Core Factory Functions", function () {
       factory,
       overrides: { claimPrivateKey: BigInt(claimSigner.privateKey) },
     });
-    const { transaction_hash: txHash3 } = await claimInternal({
+    const { execution_status } = await claimInternal({
       claim,
       receiver,
       claimPrivateKey: claimSigner.privateKey,
     });
-    const receipt = await manager.waitForTransaction(txHash3);
-    expect(receipt.execution_status).to.be.equal(RPC.ETransactionExecutionStatus.SUCCEEDED);
+    expect(execution_status).to.be.equal(RPC.ETransactionExecutionStatus.SUCCEEDED);
   });
 
   describe("Ownable", function () {
