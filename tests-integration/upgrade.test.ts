@@ -93,10 +93,19 @@ describe("Test Factory Upgrade", function () {
     factory.connect(deployer);
     await factory.propose_upgrade(newFactoryClassHash, []);
 
-    await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD - 1n);
+    await manager.increaseTime(MIN_SECURITY_PERIOD - 1n);
     await expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
+  });
 
-    await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD);
+  it("Upgrade: Too Early", async function () {
+    const { factory } = await setupGiftProtocol();
+    const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
+
+    await manager.setTime(CURRENT_TIME);
+    factory.connect(deployer);
+    await factory.propose_upgrade(newFactoryClassHash, []);
+
+    await manager.increaseTime(MIN_SECURITY_PERIOD);
     expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
   });
 

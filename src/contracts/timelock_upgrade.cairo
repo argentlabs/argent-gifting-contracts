@@ -7,6 +7,7 @@ pub trait ITimelockUpgrade<TContractState> {
     /// @dev After the 7-day waiting period, the upgrade can be performed within a 7-day window
     /// @dev If there is an ongoing upgrade, the previous proposition will be overwritten
     /// @param new_implementation The class hash of the new implementation
+    /// @param calldata The calldata to be used for the upgrade
     fn propose_upgrade(ref self: TContractState, new_implementation: ClassHash, calldata: Array<felt252>);
 
     /// @notice Cancel the upgrade proposition
