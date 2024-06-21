@@ -91,12 +91,12 @@ describe("Deposit", function () {
       const { factory } = await setupGiftProtocol();
 
       await expectRevertWithErrorMessage("gift-fac/fee-too-high", async () => {
-        const { response } = await defaultDepositTestSetup({
+        const { txReceipt } = await defaultDepositTestSetup({
           factory,
           useTxV3,
           overrides: { giftAmount: 100n, feeAmount: 101n },
         });
-        return response;
+        return txReceipt;
       });
     });
   }
@@ -108,11 +108,11 @@ describe("Deposit", function () {
     const { factory } = await setupGiftProtocol();
 
     await expectRevertWithErrorMessage("gift-fac/transfer-gift-failed", async () => {
-      const { response } = await defaultDepositTestSetup({
+      const { txReceipt } = await defaultDepositTestSetup({
         factory,
         overrides: { giftTokenAddress: brokenERC20.address },
       });
-      return response;
+      return txReceipt;
     });
   });
 });

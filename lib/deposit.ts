@@ -1,4 +1,4 @@
-import { Account, Call, CallData, Contract, InvokeFunctionResponse, hash, uint256 } from "starknet";
+import { Account, Call, CallData, Contract, InvokeFunctionResponse, TransactionReceipt, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
 export const STRK_GIFT_MAX_FEE = 200000000000000000n; // 0.2 STRK
@@ -69,7 +69,7 @@ export async function defaultDepositTestSetup(args: {
 }): Promise<{
   claim: Claim;
   claimPrivateKey: string;
-  response: InvokeFunctionResponse;
+  txReceipt: TransactionReceipt;
 }> {
   const useTxV3 = args.useTxV3 || false;
   const giftAmount = args.overrides?.giftAmount ?? getMaxGift(useTxV3);
@@ -92,8 +92,8 @@ export async function defaultDepositTestSetup(args: {
     giftTokenAddress,
     claimSignerPubKey: claimPubKey,
   });
-  await manager.waitForTransaction(response.transaction_hash);
-  return { claim, claimPrivateKey: claimSigner.privateKey, response };
+  const txReceipt = await manager.waitForTransaction(response.transaction_hash);
+  return { claim, claimPrivateKey: claimSigner.privateKey, txReceipt };
 }
 
 export function calculateClaimAddress(claim: Claim): string {

@@ -1,7 +1,7 @@
 import {
   Account,
-  InvokeFunctionResponse,
   RPC,
+  TransactionReceipt,
   UniversalDetails,
   ec,
   encode,
@@ -108,7 +108,7 @@ export async function claimExternal(args: {
   claimPrivateKey: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
   details?: UniversalDetails;
-}): Promise<InvokeFunctionResponse> {
+}): Promise<TransactionReceipt> {
   const account = args.overrides?.account || deployer;
   const signature = await signExternalClaim({
     claim: args.claim,
@@ -130,8 +130,7 @@ export async function claimExternal(args: {
     { ...args.details },
   );
 
-  await manager.waitForTransaction(response.transaction_hash);
-  return response;
+  return manager.waitForTransaction(response.transaction_hash);
 }
 
 export async function claimInternal(args: {
@@ -140,7 +139,7 @@ export async function claimInternal(args: {
   claimPrivateKey: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string };
   details?: UniversalDetails;
-}): Promise<InvokeFunctionResponse> {
+}): Promise<TransactionReceipt> {
   const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
   const claimAccount = getClaimAccount(args.claim, args.claimPrivateKey, claimAddress);
   const response = await claimAccount.execute(
@@ -154,8 +153,7 @@ export async function claimInternal(args: {
     undefined,
     { ...args.details },
   );
-  await manager.waitForTransaction(response.transaction_hash);
-  return response;
+  return manager.waitForTransaction(response.transaction_hash);
 }
 
 function useTxv3(tokenAddress: string): boolean {
