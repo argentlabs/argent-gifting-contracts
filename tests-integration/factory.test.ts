@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { num } from "starknet";
+import { num, RPC } from "starknet";
 import {
   ETH_GIFT_AMOUNT,
   ETH_GIFT_MAX_FEE,
@@ -105,7 +105,7 @@ describe("Test Core Factory Functions", function () {
       claimPrivateKey: claimSigner.privateKey,
     });
     const receipt = await manager.waitForTransaction(txHash3);
-    expect(receipt.finality_status).to.be.equal("ACCEPTED_ON_L2");
+    expect(receipt.execution_status).to.be.equal(RPC.ETransactionExecutionStatus.SUCCEEDED);
   });
 
   describe("Ownable", function () {
