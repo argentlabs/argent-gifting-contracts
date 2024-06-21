@@ -82,7 +82,7 @@ export function buildCallDataClaim(claim: Claim) {
 export async function signExternalClaim(signParams: {
   claim: Claim;
   receiver: string;
-  claimPrivateKey: string | bigint;
+  claimPrivateKey: string;
   dustReceiver?: string;
   forceClaimAddress?: string;
 }): Promise<StarknetSignature> {
@@ -105,7 +105,7 @@ export async function claimExternal(args: {
   claim: Claim;
   receiver: string;
   dustReceiver?: string;
-  claimPrivateKey: string | bigint;
+  claimPrivateKey: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
   details?: UniversalDetails;
 }): Promise<InvokeFunctionResponse> {

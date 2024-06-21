@@ -176,7 +176,6 @@ describe("Claim External", function () {
   it(`Not possible to claim more via reentrancy`, async function () {
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
-    const claimPrivateKey = BigInt(randomReceiver());
 
     const reentrant = await manager.deployContract("ReentrantERC20", {
       unique: true,
@@ -188,9 +187,9 @@ describe("Claim External", function () {
         factory.address,
       ],
     });
-    const { claim } = await defaultDepositTestSetup({
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({
       factory,
-      overrides: { claimPrivateKey, giftTokenAddress: reentrant.address },
+      overrides: { giftTokenAddress: reentrant.address },
     });
 
     const claimSig = await signExternalClaim({ claim, receiver, claimPrivateKey });

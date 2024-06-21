@@ -1,18 +1,18 @@
 import { expect } from "chai";
 import { num, RPC } from "starknet";
 import {
-  ETH_GIFT_AMOUNT,
-  ETH_GIFT_MAX_FEE,
-  LegacyStarknetKeyPair,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
   deployer,
   deposit,
   devnetAccount,
+  ETH_GIFT_AMOUNT,
+  ETH_GIFT_MAX_FEE,
   expectRevertWithErrorMessage,
   getMaxFee,
   getMaxGift,
+  LegacyStarknetKeyPair,
   manager,
   randomReceiver,
   setupGiftProtocol,
