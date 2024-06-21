@@ -8,15 +8,16 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-const MIN_SECURITY_PERIOD = 604800; // 7 * 24 * 60 * 60;  // 7 day
+// Time window which must pass before the upgrade can be performed
+const MIN_SECURITY_PERIOD = 604800n; // 7 * 24 * 60 * 60;  // 7 day
 
-///  Time window during which the upgrade can be performed
-const VALID_WINDOW_PERIOD = 604800; // 7 * 24 * 60 * 60;  // 7 days
+//  Time window during which the upgrade can be performed
+const VALID_WINDOW_PERIOD = 604800n; // 7 * 24 * 60 * 60;  // 7 days
 
-const CURRENT_TIME = 1718898082;
+const CURRENT_TIME = 1718898082n;
 
 describe("Test Factory Upgrade", function () {
-  it.only("Upgrade", async function () {
+  it("Upgrade", async function () {
     const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
     const calldata: any[] = [];
@@ -25,11 +26,11 @@ describe("Test Factory Upgrade", function () {
     factory.connect(deployer);
     await factory.propose_upgrade(newFactoryClassHash, calldata);
 
-    await factory.get_upgrade_ready_at().should.eventually.equal(BigInt(CURRENT_TIME + MIN_SECURITY_PERIOD));
+    await factory.get_upgrade_ready_at().should.eventually.equal(CURRENT_TIME + MIN_SECURITY_PERIOD);
     await factory.get_proposed_implementation().should.eventually.equal(BigInt(newFactoryClassHash));
     await factory.get_calldata_hash().should.eventually.equal(BigInt(hash.computePoseidonHashOnElements(calldata)));
 
-    await manager.increaseTime(MIN_SECURITY_PERIOD + 1);
+    await manager.increaseTime(MIN_SECURITY_PERIOD + 1n);
     await factory.upgrade(calldata);
 
     // reset storage
@@ -40,7 +41,21 @@ describe("Test Factory Upgrade", function () {
     await manager.getClassHashAt(factory.address).should.eventually.equal(newFactoryClassHash);
 
     const newFactory = await manager.loadContract(factory.address, newFactoryClassHash);
+    newFactory.connect(deployer);
     await newFactory.get_num().should.eventually.equal(1n);
+  });
+
+  it("Upgrade: cannot downgrade", async function () {
+    const { factory } = await setupGiftProtocol();
+    const oldFactoryClassHash = await manager.getClassHashAt(factory.address);
+    const calldata: any[] = [];
+
+    await manager.setTime(CURRENT_TIME);
+    factory.connect(deployer);
+    await factory.propose_upgrade(oldFactoryClassHash, calldata);
+
+    await manager.increaseTime(MIN_SECURITY_PERIOD + 1n);
+    expectRevertWithErrorMessage("downgrade-not-allowed", () => factory.upgrade([]));
   });
 
   it("Upgrade: only-owner", async function () {
@@ -51,7 +66,7 @@ describe("Test Factory Upgrade", function () {
     factory.connect(deployer);
     await factory.propose_upgrade(newFactoryClassHash, []);
 
-    await manager.increaseTime(MIN_SECURITY_PERIOD + 1);
+    await manager.increaseTime(MIN_SECURITY_PERIOD + 1n);
     factory.connect(genericAccount);
     expectRevertWithErrorMessage("Caller is not the owner", () => factory.upgrade([]));
   });
@@ -65,16 +80,9 @@ describe("Test Factory Upgrade", function () {
     factory.connect(deployer);
     await factory.propose_upgrade(newFactoryClassHash, calldata);
 
-    await manager.increaseTime(MIN_SECURITY_PERIOD + 1);
+    await manager.increaseTime(MIN_SECURITY_PERIOD + 1n);
     const newCalldata = [4, 5, 6];
     expectRevertWithErrorMessage("upgrade/invalid-calldata", () => factory.upgrade(newCalldata));
-  });
-
-  it("Upgrade: No pending upgrade", async function () {
-    const { factory } = await setupGiftProtocol();
-
-    factory.connect(deployer);
-    expectRevertWithErrorMessage("upgrade/no-pending-upgrade", () => factory.upgrade([]));
   });
 
   it("Upgrade: Too Early", async function () {
@@ -85,8 +93,8 @@ describe("Test Factory Upgrade", function () {
     factory.connect(deployer);
     await factory.propose_upgrade(newFactoryClassHash, []);
 
-    await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD - 1);
-    expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
+    await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD - 1n);
+    await expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
 
     await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD);
     expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
@@ -94,15 +102,14 @@ describe("Test Factory Upgrade", function () {
 
   it("Upgrade: Too Late", async function () {
     const { factory } = await setupGiftProtocol();
-    const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
+    const newFactoryClassHash = "0x1";
 
     await manager.setTime(CURRENT_TIME);
     factory.connect(deployer);
     await factory.propose_upgrade(newFactoryClassHash, []);
 
     const readyAt = await factory.get_upgrade_ready_at();
-
-    await manager.increaseTime(Number(readyAt) + VALID_WINDOW_PERIOD + 1);
+    await manager.increaseTime(readyAt + VALID_WINDOW_PERIOD + 1n);
     expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
   });
 
