@@ -10,6 +10,7 @@ import {
   deposit,
   expectRevertWithErrorMessage,
   genericAccount,
+  getDust,
   manager,
   randomReceiver,
   setupGiftProtocol,
@@ -51,9 +52,7 @@ describe("Test Core Factory Functions", function () {
 
       // Test dust
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(0n);
-
-      factory.connect(deployer);
-      await factory.get_dust(claim, dustReceiver);
+      await getDust({ claim, receiver: dustReceiver });
       await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(dustBalance);
     });
@@ -116,7 +115,8 @@ describe("Test Core Factory Functions", function () {
     const { claim } = await defaultDepositTestSetup({ factory });
     const dustReceiver = randomReceiver();
 
-    factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.get_dust(claim, dustReceiver));
+    await expectRevertWithErrorMessage("Caller is not the owner", () =>
+      getDust({ claim, receiver: dustReceiver, factoryOwner: genericAccount }),
+    );
   });
 });

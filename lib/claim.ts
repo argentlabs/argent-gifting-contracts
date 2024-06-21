@@ -1,6 +1,8 @@
 import {
   Account,
+  Call,
   CallData,
+  Calldata,
   InvokeFunctionResponse,
   RPC,
   UniversalDetails,
@@ -126,18 +128,19 @@ export async function claimExternal(args: {
     args.dustReceiver || "0x0",
     signature,
   ]);
-
   return await account.execute(
-    [
-      {
-        contractAddress: calculateClaimAddress(args.claim),
-        calldata: { selector: hash.getSelectorFromName("claim_external"), calldata: claimExternalCallData },
-        entrypoint: "action",
-      },
-    ],
+    externalActionOnAccount("claim_external", calculateClaimAddress(args.claim), claimExternalCallData),
     undefined,
     { ...args.details },
   );
+}
+
+function externalActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
+  return {
+    contractAddress: accountAddress,
+    calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
+    entrypoint: "action",
+  };
 }
 
 export async function claimInternal(args: {
@@ -160,6 +163,22 @@ export async function claimInternal(args: {
     undefined,
     { ...args.details },
   );
+}
+
+export async function cancelGift(args: { claim: Claim; senderAccount?: Account }): Promise<InvokeFunctionResponse> {
+  const cancelCallData = CallData.compile([buildCallDataClaim(args.claim)]);
+  const account = args.senderAccount || deployer;
+  return await account.execute(externalActionOnAccount("cancel", calculateClaimAddress(args.claim), cancelCallData));
+}
+
+export async function getDust(args: {
+  claim: Claim;
+  receiver: string;
+  factoryOwner?: Account;
+}): Promise<InvokeFunctionResponse> {
+  const getDustCallData = CallData.compile([buildCallDataClaim(args.claim), args.receiver]);
+  const account = args.factoryOwner || deployer;
+  return await account.execute(externalActionOnAccount("get_dust", calculateClaimAddress(args.claim), getDustCallData));
 }
 
 function useTxv3(tokenAddress: string): boolean {

@@ -32,30 +32,6 @@ pub trait IGiftFactory<TContractState> {
         claim_pubkey: felt252
     );
 
-    fn is_valid_account_signature(
-        self: @TContractState, claim: ClaimData, hash: felt252, remaining_signature: Span<felt252>
-    ) -> felt252;
-
-    fn perform_execute_from_outside(
-        ref self: TContractState,
-        claim: ClaimData,
-        original_caller: ContractAddress,
-        outside_execution: OutsideExecution,
-        remaining_signature: Span<felt252>
-    ) -> Array<Span<felt252>>;
-
-
-    /// @notice Allows the sender of a gift to cancel their gift
-    /// @dev Will refund both the gift and the fee
-    /// @param claim The claim data of the gift to cancel
-    fn cancel(ref self: TContractState, claim: ClaimData);
-
-    /// @notice Allows the owner of the factory to claim the dust (leftovers) of a claim
-    /// @dev Only allowed if the gift has been claimed
-    /// @param claim The claim data 
-    /// @param receiver The address of the receiver
-    fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
-
     /// @notice Retrieve the current class_hash used for creating a gift account
     fn get_latest_claim_class_hash(self: @TContractState) -> ClassHash;
 
@@ -79,20 +55,11 @@ pub trait IGiftFactory<TContractState> {
         fee_amount: u128,
         claim_pubkey: felt252
     ) -> ContractAddress;
-
-    /// @notice Get the status of a claim
-    /// @param claim The claim data 
-    fn get_gift_status(self: @TContractState, claim: ClaimData) -> GiftStatus;
 }
 
 
 #[starknet::interface]
 pub trait IGiftAccount<TContractState> {
-    /// @notice Allows the factory to perform an array of calls on the account
-    /// @dev Can only be called by the factory
-    /// @param claim The claim data
-    /// @param calls The array of calls to be executed by the account
-    fn execute_factory_calls(ref self: TContractState, claim: ClaimData, calls: Array<Call>) -> Array<Span<felt252>>;
     /// @notice delegates an action to the account implementation
     fn action(self: @TContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252>;
 }
@@ -165,13 +132,4 @@ pub struct AccountConstructorArguments {
     pub fee_token: ContractAddress,
     pub fee_amount: u128,
     pub claim_pubkey: felt252
-}
-
-/// @notice Enum representing the status of a gift
-/// @dev ReadyExternalOnly should only happen if there is no fee_amount or if the account reverted during claim_internal
-#[derive(Serde, Drop, Copy)]
-pub enum GiftStatus {
-    ClaimedOrCancelled,
-    Ready,
-    ReadyExternalOnly
 }

@@ -14,8 +14,8 @@ mod ClaimAccount {
         IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait
     };
     use starknet_gifting::contracts::utils::{
-        calculate_claim_account_address, full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3,
-        TX_V3_ESTIMATE, execute_multicall
+        calculate_claim_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
+        TX_V3, TX_V3_ESTIMATE, execute_multicall
     };
 
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
@@ -101,8 +101,7 @@ mod ClaimAccount {
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
             let mut signature_span = signature.span();
             let claim: ClaimData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-claim');
-            assert_valid_claim(claim);
-            IGiftFactoryDispatcher { contract_address: claim.factory }
+            IClaimAccountImplLibraryDispatcher { class_hash: get_validated_impl(claim) }
                 .is_valid_account_signature(claim, hash, signature_span)
         }
 
@@ -115,20 +114,10 @@ mod ClaimAccount {
 
     #[abi(embed_v0)]
     impl GiftAccountImpl of IGiftAccount<ContractState> {
-        fn execute_factory_calls(
-            ref self: ContractState, claim: ClaimData, mut calls: Array<Call>
-        ) -> Array<Span<felt252>> {
-            assert_valid_claim(claim);
-            assert(get_caller_address() == claim.factory, 'gift/only-factory');
-            execute_multicall(calls.span())
-        }
-
         fn action(self: @ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
-            assert_valid_claim(claim);
-            let implementation_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: claim.factory }
-                .get_account_impl_class_hash(claim.class_hash);
+            let implementation_class_hash = get_validated_impl(claim);
             starknet::syscalls::library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
         }
     }
@@ -138,18 +127,20 @@ mod ClaimAccount {
         fn execute_from_outside_v2(
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            assert(!self.outside_nonces.read(outside_execution.nonce), 'gift-acc/dup-outside-nonce');
-            self.outside_nonces.write(outside_execution.nonce, true);
-
             let claim: ClaimData = Serde::deserialize(ref signature).expect('gift-acc/invalid-claim');
-            assert_valid_claim(claim);
-            IGiftFactoryDispatcher { contract_address: claim.factory }
-                .perform_execute_from_outside(claim, get_caller_address(), outside_execution, signature)
+            let implementation_class_hash = get_validated_impl(claim);
+            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
+                .execute_from_outside_v2(claim, outside_execution, signature)
         }
 
         fn is_valid_outside_execution_nonce(self: @ContractState, nonce: felt252) -> bool {
             !self.outside_nonces.read(nonce)
         }
+    }
+
+    fn get_validated_impl(claim: ClaimData) -> ClassHash {
+        assert_valid_claim(claim);
+        IGiftFactoryDispatcher { contract_address: claim.factory }.get_account_impl_class_hash(claim.class_hash)
     }
 
     fn assert_valid_claim(claim: ClaimData) {
