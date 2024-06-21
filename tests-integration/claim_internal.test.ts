@@ -42,24 +42,22 @@ describe("Claim Internal", function () {
       await expectRevertWithErrorMessage(errorMsg, () => claimInternal({ claim, receiver, claimPrivateKey }));
     });
 
-    // Both green with refactored error expectation and devnetGasPrice updated
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
-        // This shouldn't be merged.
-        // Number taken from the error message
-        const devnetGasPrice = 19000000000000n;
-        // const devnetGasPrice = 36000000000n;
+        // If you run this test on testnet, it'll fail 
+        // You can then take the value from the error message and replace 1n (given some extra iff the price rises)
+        const gasPrice = manager.isDevnet ? 36000000000n : 1n;
         const newResourceBounds = {
           l2_gas: {
             max_amount: "0x0",
             max_price_per_unit: "0x0",
           },
           l1_gas: {
-            max_amount: num.toHexString(STRK_GIFT_MAX_FEE / devnetGasPrice + 1n),
-            max_price_per_unit: num.toHexString(devnetGasPrice), //14587088830559),
+            max_amount: num.toHexString(STRK_GIFT_MAX_FEE / gasPrice + 1n),
+            max_price_per_unit: num.toHexString(gasPrice),
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
