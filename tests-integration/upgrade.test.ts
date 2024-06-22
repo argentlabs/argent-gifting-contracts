@@ -115,7 +115,9 @@ describe.only("Test Factory Upgrade", function () {
     const zeroClassHash = "0x0";
 
     factory.connect(deployer);
-    await expectRevertWithErrorMessage("upgrade/new-implementation-null", () => factory.propose_upgrade(zeroClassHash, []));
+    await expectRevertWithErrorMessage("upgrade/new-implementation-null", () =>
+      factory.propose_upgrade(zeroClassHash, []),
+    );
   });
 
   it("Propose Upgrade: only-owner", async function () {

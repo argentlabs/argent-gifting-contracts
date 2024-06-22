@@ -41,8 +41,8 @@ pub trait ITimelockUpgradeCallback<TContractState> {
 #[starknet::component]
 pub mod TimelockUpgradeComponent {
     use core::num::traits::Zero;
-    use openzeppelin::access::ownable::{OwnableComponent, OwnableComponent::InternalTrait};
     use core::poseidon::poseidon_hash_span;
+    use openzeppelin::access::ownable::{OwnableComponent, OwnableComponent::InternalTrait};
     use starknet::{get_block_timestamp, ClassHash};
     use super::{
         ITimelockUpgrade, ITimelockUpgradeCallback, ITimelockUpgradeCallbackLibraryDispatcher,
@@ -93,7 +93,9 @@ pub mod TimelockUpgradeComponent {
         impl Ownable: OwnableComponent::HasComponent<TContractState>,
         +ITimelockUpgradeCallback<TContractState>,
     > of ITimelockUpgrade<ComponentState<TContractState>> {
-        fn propose_upgrade(ref self: ComponentState<TContractState>, new_implementation: ClassHash, calldata: Array<felt252>) {
+        fn propose_upgrade(
+            ref self: ComponentState<TContractState>, new_implementation: ClassHash, calldata: Array<felt252>
+        ) {
             self.assert_only_owner();
             assert(new_implementation.is_non_zero(), 'upgrade/new-implementation-null');
 
