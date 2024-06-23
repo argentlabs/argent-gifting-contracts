@@ -16,9 +16,9 @@ const VALID_WINDOW_PERIOD = 604800n; // 7 * 24 * 60 * 60;  // 7 days
 
 const CURRENT_TIME = 1718898082n;
 
-describe.only("Test Factory Upgrade", function () {
+describe("Test Factory Upgrade", function () {
   it("Upgrade", async function () {
-    const { factory } = await setupGiftProtocol();
+    const { factory } = await setupGiftProtocol(false);
     const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
     const calldata: any[] = [];
 
@@ -107,6 +107,9 @@ describe.only("Test Factory Upgrade", function () {
 
     const readyAt = await factory.get_upgrade_ready_at();
     await manager.increaseTime(readyAt + VALID_WINDOW_PERIOD + 1n);
+    await expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
+
+    await manager.setTime(CURRENT_TIME + readyAt + VALID_WINDOW_PERIOD);
     await expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
   });
 
