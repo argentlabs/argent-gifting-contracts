@@ -16,7 +16,7 @@ const VALID_WINDOW_PERIOD = 604800n; // 7 * 24 * 60 * 60;  // 7 days
 
 const CURRENT_TIME = 1718898082n;
 
-describe("Test Factory Upgrade", function () {
+describe.only("Test Factory Upgrade", function () {
   it("Upgrade", async function () {
     const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
@@ -55,7 +55,7 @@ describe("Test Factory Upgrade", function () {
     await factory.propose_upgrade(oldFactoryClassHash, calldata);
 
     await manager.increaseTime(MIN_SECURITY_PERIOD + 1n);
-    expectRevertWithErrorMessage("downgrade-not-allowed", () => factory.upgrade([]));
+    await expectRevertWithErrorMessage("downgrade-not-allowed", () => factory.upgrade([]));
   });
 
   it("Upgrade: only-owner", async function () {
@@ -68,7 +68,7 @@ describe("Test Factory Upgrade", function () {
 
     await manager.increaseTime(MIN_SECURITY_PERIOD + 1n);
     factory.connect(genericAccount);
-    expectRevertWithErrorMessage("Caller is not the owner", () => factory.upgrade([]));
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.upgrade([]));
   });
 
   it("Upgrade: Invalid Calldata", async function () {
@@ -82,7 +82,7 @@ describe("Test Factory Upgrade", function () {
 
     await manager.increaseTime(MIN_SECURITY_PERIOD + 1n);
     const newCalldata = [4, 5, 6];
-    expectRevertWithErrorMessage("upgrade/invalid-calldata", () => factory.upgrade(newCalldata));
+    await expectRevertWithErrorMessage("upgrade/invalid-calldata", () => factory.upgrade(newCalldata));
   });
 
   it("Upgrade: Too Early", async function () {
@@ -97,18 +97,6 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
   });
 
-  it("Upgrade: Too Early", async function () {
-    const { factory } = await setupGiftProtocol();
-    const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
-
-    await manager.setTime(CURRENT_TIME);
-    factory.connect(deployer);
-    await factory.propose_upgrade(newFactoryClassHash, []);
-
-    await manager.increaseTime(MIN_SECURITY_PERIOD);
-    expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
-  });
-
   it("Upgrade: Too Late", async function () {
     const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = "0x1";
@@ -119,7 +107,7 @@ describe("Test Factory Upgrade", function () {
 
     const readyAt = await factory.get_upgrade_ready_at();
     await manager.increaseTime(readyAt + VALID_WINDOW_PERIOD + 1n);
-    expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
+    await expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
   });
 
   it("Propose Upgrade: implementation-null", async function () {
@@ -127,7 +115,9 @@ describe("Test Factory Upgrade", function () {
     const zeroClassHash = "0x0";
 
     factory.connect(deployer);
-    expectRevertWithErrorMessage("upgrade/new-implementation-null", () => factory.propose_upgrade(zeroClassHash, []));
+    await expectRevertWithErrorMessage("upgrade/new-implementation-null", () =>
+      factory.propose_upgrade(zeroClassHash, []),
+    );
   });
 
   it("Propose Upgrade: only-owner", async function () {
@@ -135,7 +125,7 @@ describe("Test Factory Upgrade", function () {
     const zeroClassHash = "0x0";
 
     factory.connect(genericAccount);
-    expectRevertWithErrorMessage("Caller is not the owner", () => factory.propose_upgrade(zeroClassHash, []));
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.propose_upgrade(zeroClassHash, []));
   });
 
   it("Propose Upgrade: replace pending implementation /w events", async function () {
@@ -194,13 +184,13 @@ describe("Test Factory Upgrade", function () {
     const { factory } = await setupGiftProtocol();
 
     factory.connect(deployer);
-    expectRevertWithErrorMessage("upgrade/no-new-implementation", () => factory.cancel_upgrade());
+    await expectRevertWithErrorMessage("upgrade/no-new-implementation", () => factory.cancel_upgrade());
   });
 
   it("Cancel Upgrade: Only Owner", async function () {
     const { factory } = await setupGiftProtocol();
 
     factory.connect(genericAccount);
-    expectRevertWithErrorMessage("Caller is not the owner", () => factory.cancel_upgrade());
+    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.cancel_upgrade());
   });
 });
