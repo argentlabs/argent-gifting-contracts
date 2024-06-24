@@ -108,10 +108,10 @@ export async function claimExternal(args: {
   dustReceiver?: string;
   claimPrivateKey: string;
   useTxV3?: boolean;
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string;};
+  overrides?: { claimAccountAddress?: string; factoryAddress?: string };
   details?: UniversalDetails;
 }): Promise<InvokeFunctionResponse> {
-  let account =  deployer;
+  let account = deployer;
   if (args.useTxV3) {
     account = setDefaultTransactionVersionV3(deployer);
   }

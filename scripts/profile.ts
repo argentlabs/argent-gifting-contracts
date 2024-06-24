@@ -77,7 +77,7 @@ for (const { giftTokenContract, unit } of tokens) {
     );
 
     // Profiling getting the dust
-    const account = useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer; 
+    const account = useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer;
     factory.connect(account);
     await profiler.profile(
       `Get dust ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
