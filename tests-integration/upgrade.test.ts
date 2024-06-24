@@ -5,6 +5,7 @@ import {
   expectRevertWithErrorMessage,
   genericAccount,
   manager,
+  protocolCache,
   setupGiftProtocol,
 } from "../lib";
 
@@ -18,7 +19,7 @@ const CURRENT_TIME = 1718898082n;
 
 describe("Test Factory Upgrade", function () {
   it("Upgrade", async function () {
-    const { factory } = await setupGiftProtocol(false);
+    const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
     const calldata: any[] = [];
 
@@ -43,9 +44,12 @@ describe("Test Factory Upgrade", function () {
     const newFactory = await manager.loadContract(factory.address, newFactoryClassHash);
     newFactory.connect(deployer);
     await newFactory.get_num().should.eventually.equal(1n);
+
+    // clear deployment cache
+    delete protocolCache["GiftFactory"];
   });
 
-  it("Upgrade: cannot downgrade", async function () {
+  it("cannot downgrade", async function () {
     const { factory } = await setupGiftProtocol();
     const oldFactoryClassHash = await manager.getClassHashAt(factory.address);
     const calldata: any[] = [];
@@ -58,7 +62,7 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("downgrade-not-allowed", () => factory.upgrade([]));
   });
 
-  it("Upgrade: only-owner", async function () {
+  it("only-owner", async function () {
     const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = "0x1";
 
@@ -71,7 +75,7 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("Caller is not the owner", () => factory.upgrade([]));
   });
 
-  it("Upgrade: Invalid Calldata", async function () {
+  it("Invalid Calldata", async function () {
     const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = "0x1";
     const calldata = [1, 2, 3];
@@ -85,9 +89,9 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("upgrade/invalid-calldata", () => factory.upgrade(newCalldata));
   });
 
-  it("Upgrade: Too Early", async function () {
+  it("Too Early", async function () {
     const { factory } = await setupGiftProtocol();
-    const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
+    const newFactoryClassHash = "0x1";
 
     await manager.setTime(CURRENT_TIME);
     factory.connect(deployer);
@@ -97,7 +101,7 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("upgrade/too-early", () => factory.upgrade([]));
   });
 
-  it("Upgrade: Too Late", async function () {
+  it("Too Late", async function () {
     const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = "0x1";
 
@@ -113,7 +117,7 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
   });
 
-  it("Propose Upgrade: implementation-null", async function () {
+  it("Propose implementation-null", async function () {
     const { factory } = await setupGiftProtocol();
     const zeroClassHash = "0x0";
 
@@ -123,7 +127,7 @@ describe("Test Factory Upgrade", function () {
     );
   });
 
-  it("Propose Upgrade: only-owner", async function () {
+  it("Propose only-owner", async function () {
     const { factory } = await setupGiftProtocol();
     const zeroClassHash = "0x0";
 
@@ -131,7 +135,7 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("Caller is not the owner", () => factory.propose_upgrade(zeroClassHash, []));
   });
 
-  it("Propose Upgrade: replace pending implementation /w events", async function () {
+  it("Propose replace pending implementation /w events", async function () {
     const { factory } = await setupGiftProtocol();
     const newClassHash = 12345n;
     const replacementClassHash = 54321n;
@@ -183,14 +187,14 @@ describe("Test Factory Upgrade", function () {
     });
   });
 
-  it("Cancel Upgrade: No new implementation", async function () {
+  it("No new implementation", async function () {
     const { factory } = await setupGiftProtocol();
 
     factory.connect(deployer);
     await expectRevertWithErrorMessage("upgrade/no-new-implementation", () => factory.cancel_upgrade());
   });
 
-  it("Cancel Upgrade: Only Owner", async function () {
+  it("Cancel Only Owner", async function () {
     const { factory } = await setupGiftProtocol();
 
     factory.connect(genericAccount);
