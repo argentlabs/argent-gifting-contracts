@@ -43,3 +43,5 @@ target
 
 .env
 dist
+
+.DS_STORE
