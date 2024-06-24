@@ -6,6 +6,7 @@ export const GIFT_MAX_FEE = 50000000000000n;
 
 export async function deposit(depositParams: {
   sender: Account;
+  claimAccountClassHash: string;
   giftAmount: bigint;
   feeAmount: bigint;
   factoryAddress: string;
@@ -13,8 +14,16 @@ export async function deposit(depositParams: {
   giftTokenAddress: string;
   claimSignerPubKey: bigint;
 }): Promise<{ response: InvokeFunctionResponse; claim: Claim }> {
-  const { sender, giftAmount, feeAmount, factoryAddress, feeTokenAddress, giftTokenAddress, claimSignerPubKey } =
-    depositParams;
+  const {
+    sender,
+    claimAccountClassHash,
+    giftAmount,
+    feeAmount,
+    factoryAddress,
+    feeTokenAddress,
+    giftTokenAddress,
+    claimSignerPubKey,
+  } = depositParams;
   const factory = await manager.loadContract(factoryAddress);
   const feeToken = await manager.loadContract(feeTokenAddress);
   const giftToken = await manager.loadContract(giftTokenAddress);
@@ -38,7 +47,14 @@ export async function deposit(depositParams: {
     calls.push(giftToken.populateTransaction.approve(factory.address, giftAmount));
   }
   calls.push(
-    factory.populateTransaction.deposit(giftTokenAddress, giftAmount, feeTokenAddress, feeAmount, claimSignerPubKey),
+    factory.populateTransaction.deposit(
+      claimAccountClassHash,
+      giftTokenAddress,
+      giftAmount,
+      feeTokenAddress,
+      feeAmount,
+      claimSignerPubKey,
+    ),
   );
   return {
     response: await sender.execute(calls),
@@ -48,6 +64,7 @@ export async function deposit(depositParams: {
 
 export async function defaultDepositTestSetup(args: {
   factory: Contract;
+  claimAccountClassHash: string;
   useTxV3?: boolean;
   overrides?: {
     claimPrivateKey?: bigint;
@@ -75,6 +92,7 @@ export async function defaultDepositTestSetup(args: {
 
   const { response, claim } = await deposit({
     sender: deployer,
+    claimAccountClassHash: args.claimAccountClassHash,
     giftAmount,
     feeAmount,
     factoryAddress: args.factory.address,

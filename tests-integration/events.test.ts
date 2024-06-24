@@ -13,7 +13,7 @@ import {
 describe("All events are emitted", function () {
   it("Deposit", async function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claim, response } = await defaultDepositTestSetup({ factory });
+    const { claim, response } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
 
     const claimAddress = calculateClaimAddress(claim);
 
@@ -33,8 +33,8 @@ describe("All events are emitted", function () {
   });
 
   it("Cancelled", async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup({ factory });
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claim } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
 
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
@@ -49,8 +49,8 @@ describe("All events are emitted", function () {
   });
 
   it("Claimed Internal", async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
     const receiver = randomReceiver();
     const dustReceiver = "0x0";
 
@@ -67,8 +67,8 @@ describe("All events are emitted", function () {
   });
 
   it("Claimed External", async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
+    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
     const receiver = randomReceiver();
     const dustReceiver = randomReceiver();
 
