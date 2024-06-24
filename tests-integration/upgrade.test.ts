@@ -117,7 +117,7 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
   });
 
-  it("Propose implementation-null", async function () {
+  it("Propose: implementation-null", async function () {
     const { factory } = await setupGiftProtocol();
     const zeroClassHash = "0x0";
 
@@ -127,15 +127,17 @@ describe("Test Factory Upgrade", function () {
     );
   });
 
-  it("Propose only-owner", async function () {
+  it("Propose: only-owner", async function () {
     const { factory } = await setupGiftProtocol();
-    const zeroClassHash = "0x0";
+    const newFactoryClassHash = "0x1";
 
     factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.propose_upgrade(zeroClassHash, []));
+    await expectRevertWithErrorMessage("Caller is not the owner", () =>
+      factory.propose_upgrade(newFactoryClassHash, []),
+    );
   });
 
-  it("Propose replace pending implementation /w events", async function () {
+  it("Propose: replace pending implementation /w events", async function () {
     const { factory } = await setupGiftProtocol();
     const newClassHash = 12345n;
     const replacementClassHash = 54321n;
@@ -187,14 +189,14 @@ describe("Test Factory Upgrade", function () {
     });
   });
 
-  it("No new implementation", async function () {
+  it("Cancel: No new implementation", async function () {
     const { factory } = await setupGiftProtocol();
 
     factory.connect(deployer);
     await expectRevertWithErrorMessage("upgrade/no-new-implementation", () => factory.cancel_upgrade());
   });
 
-  it("Cancel Only Owner", async function () {
+  it("Cancel: Only Owner", async function () {
     const { factory } = await setupGiftProtocol();
 
     factory.connect(genericAccount);
