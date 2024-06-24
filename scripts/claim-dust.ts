@@ -28,7 +28,7 @@ if (!dustReceiver) {
   throw new Error("Dust receiver address is not set. Please set it in the script file.");
 }
 
-for (let key in claim) {
+for (const key in claim) {
   if (!claim[key] && key !== "fee_amount" && key !== "gift_amount") {
     throw new Error(`The property ${key} is empty in the claim object.`);
   }
