@@ -7,15 +7,19 @@ Summary:
 │      Gifting WEI (FeeToken: WEI)      │ '1.548.000.000.288' │ 0.0061  │ 1548000000000  │       43       │       37        │     5     │      2       │           'steps'            │       3       │  288   │ 'BLOB'  │
 │     Claiming WEI (FeeToken: WEI)      │ '1.368.000.000.192' │ 0.0054  │ 1368000000000  │       38       │       35        │     2     │      2       │           'steps'            │       3       │  192   │ 'BLOB'  │
 │ Claiming external WEI (FeeToken: WEI) │ '1.512.000.000.256' │  0.006  │ 1512000000000  │       42       │       39        │     2     │      2       │           'steps'            │       4       │  256   │ 'BLOB'  │
+│     Get dust WEI (FeeToken: WEI)      │ '1.440.000.000.192' │ 0.0057  │ 1440000000000  │       40       │       37        │     2     │      2       │           'steps'            │       3       │  192   │ 'BLOB'  │
 │      Gifting WEI (FeeToken: FRI)      │ '2.196.000.000.480' │ 0.0087  │ 2196000000000  │       61       │       52        │     7     │      3       │           'steps'            │       5       │  480   │ 'BLOB'  │
 │     Claiming WEI (FeeToken: FRI)      │ '1.368.000.000.320' │    0    │ 1368000000000  │       38       │       35        │     2     │      2       │           'steps'            │       4       │  320   │ 'BLOB'  │
 │ Claiming external WEI (FeeToken: FRI) │ '1.512.000.000.320' │    0    │ 1512000000000  │       42       │       39        │     2     │      2       │           'steps'            │       4       │  320   │ 'BLOB'  │
+│     Get dust WEI (FeeToken: FRI)      │ '1.548.000.000.320' │ 0.0061  │ 1548000000000  │       43       │       40        │     2     │      2       │           'steps'            │       4       │  320   │ 'BLOB'  │
 │      Gifting FRI (FeeToken: WEI)      │ '2.196.000.000.480' │ 0.0087  │ 2196000000000  │       61       │       52        │     7     │      3       │           'steps'            │       5       │  480   │ 'BLOB'  │
 │     Claiming FRI (FeeToken: WEI)      │ '1.368.000.000.320' │ 0.0054  │ 1368000000000  │       38       │       35        │     2     │      2       │           'steps'            │       4       │  320   │ 'BLOB'  │
 │ Claiming external FRI (FeeToken: WEI) │ '1.512.000.000.320' │  0.006  │ 1512000000000  │       42       │       39        │     2     │      2       │           'steps'            │       4       │  320   │ 'BLOB'  │
+│     Get dust FRI (FeeToken: WEI)      │ '1.548.000.000.192' │ 0.0061  │ 1548000000000  │       43       │       40        │     2     │      2       │           'steps'            │       3       │  192   │ 'BLOB'  │
 │      Gifting FRI (FeeToken: FRI)      │ '1.548.000.000.416' │ 0.0061  │ 1548000000000  │       43       │       37        │     5     │      2       │           'steps'            │       4       │  416   │ 'BLOB'  │
 │     Claiming FRI (FeeToken: FRI)      │ '1.368.000.000.192' │    0    │ 1368000000000  │       38       │       35        │     2     │      2       │           'steps'            │       3       │  192   │ 'BLOB'  │
 │ Claiming external FRI (FeeToken: FRI) │ '1.512.000.000.256' │    0    │ 1512000000000  │       42       │       39        │     2     │      2       │           'steps'            │       4       │  256   │ 'BLOB'  │
+│     Get dust FRI (FeeToken: FRI)      │ '1.440.000.000.320' │ 0.0057  │ 1440000000000  │       40       │       37        │     2     │      2       │           'steps'            │       4       │  320   │ 'BLOB'  │
 └───────────────────────────────────────┴─────────────────────┴─────────┴────────────────┴────────────────┴─────────────────┴───────────┴──────────────┴──────────────────────────────┴───────────────┴────────┴─────────┘
 Resources:
 ┌───────────────────────────────────────┬─────────┬───────┬───────┬────────┬──────────┬──────────┬─────────────┬───────┐
@@ -26,13 +30,17 @@ Resources:
 │      Gifting WEI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    47    │    0     │     334     │ 14506 │
 │     Claiming WEI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    75    │    0     │     475     │ 13663 │
 │ Claiming external WEI (FeeToken: WEI) │    0    │   6   │   0   │   0    │    64    │    4     │     451     │ 15317 │
+│     Get dust WEI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    61    │    0     │     436     │ 14637 │
 │      Gifting WEI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    63    │    0     │     460     │ 20478 │
 │     Claiming WEI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    75    │    0     │     509     │ 13861 │
 │ Claiming external WEI (FeeToken: FRI) │    0    │   6   │   0   │   0    │    64    │    4     │     451     │ 15317 │
+│     Get dust WEI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    62    │    0     │     470     │ 15852 │
 │      Gifting FRI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    63    │    0     │     460     │ 20477 │
 │     Claiming FRI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    75    │    0     │     475     │ 13663 │
 │ Claiming external FRI (FeeToken: WEI) │    0    │   6   │   0   │   0    │    64    │    4     │     451     │ 15317 │
+│     Get dust FRI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    62    │    0     │     470     │ 15852 │
 │      Gifting FRI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    47    │    0     │     334     │ 14507 │
 │     Claiming FRI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    75    │    0     │     509     │ 13861 │
 │ Claiming external FRI (FeeToken: FRI) │    0    │   6   │   0   │   0    │    64    │    4     │     451     │ 15317 │
+│     Get dust FRI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    61    │    0     │     436     │ 14637 │
 └───────────────────────────────────────┴─────────┴───────┴───────┴────────┴──────────┴──────────┴─────────────┴───────┘

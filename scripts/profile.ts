@@ -1,5 +1,5 @@
 import {
-  calculateClaimAddress,
+  buildCallDataClaim,
   claimExternal,
   claimInternal,
   defaultDepositTestSetup,
@@ -7,6 +7,7 @@ import {
   manager,
   randomReceiver,
   setupGiftProtocol,
+  
 } from "../lib";
 import { newProfiler } from "../lib/gas";
 
@@ -42,7 +43,7 @@ for (const { giftTokenContract, unit } of tokens) {
     const receiver = "0x42";
     const { factory } = await setupGiftProtocol();
 
-    // Make a gift
+    // Profiling deposit
     const { response, claim, claimPrivateKey } = await defaultDepositTestSetup({
       factory,
       useTxV3,
@@ -63,26 +64,25 @@ for (const { giftTokenContract, unit } of tokens) {
 
     await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
 
+    // Profiling claim internal
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
       await claimInternal({ claim, receiver, claimPrivateKey }),
     );
 
+    // Profiling claim external
     await profiler.profile(
       `Claiming external ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
       await claimExternal({ claim: claimExternalOj, receiver, useTxV3, claimPrivateKey: claimPrivateKeyExternal }),
     );
 
-    // await profiler.profile(
-    //   `Claiming dust ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-    //   await claimExternal({ claim: claimExternalOj, receiver, claimPrivateKey: claimPrivateKeyExternal }),
-    // );
-
-    const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
-    const claimAddress = calculateClaimAddress(claim);
-    const balance = await tokenContract.balance_of(claimAddress);
-    console.log(balance);
-    console.log("Claimed");
+    // Profiling getting the dust
+    factory.connect(deployer);
+    // TODO useTxV3 not used...
+    await profiler.profile(
+      `Get dust ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
+      await factory.get_dust(buildCallDataClaim(claim), deployer.address),
+    );
   }
 }
 
