@@ -112,7 +112,6 @@ export async function claimExternal(args: {
   details?: UniversalDetails;
 }): Promise<InvokeFunctionResponse> {
   let account =  deployer;
-  // Ugly tmp fix
   if (args.useTxV3) {
     account = setDefaultTransactionVersionV3(deployer);
   }

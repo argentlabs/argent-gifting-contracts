@@ -6,6 +6,7 @@ import {
   deployer,
   manager,
   randomReceiver,
+  setDefaultTransactionVersionV3,
   setupGiftProtocol,
 } from "../lib";
 import { newProfiler } from "../lib/gas";
@@ -76,8 +77,8 @@ for (const { giftTokenContract, unit } of tokens) {
     );
 
     // Profiling getting the dust
-    factory.connect(deployer);
-    // TODO useTxV3 not used...
+    const account = useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer; 
+    factory.connect(account);
     await profiler.profile(
       `Get dust ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
       await factory.get_dust(buildCallDataClaim(claim), deployer.address),
