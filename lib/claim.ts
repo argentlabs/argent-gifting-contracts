@@ -109,7 +109,6 @@ export async function claimExternal(args: {
   claimPrivateKey: string;
   useTxV3?: boolean;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string };
-  details?: UniversalDetails;
 }): Promise<InvokeFunctionResponse> {
   let account = deployer;
   if (args.useTxV3) {
@@ -122,17 +121,13 @@ export async function claimExternal(args: {
     forceClaimAddress: args.overrides?.claimAccountAddress,
     dustReceiver: args.dustReceiver,
   });
-  return await account.execute(
-    [
-      {
-        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
-        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dustReceiver || "0x0", signature],
-        entrypoint: "claim_external",
-      },
-    ],
-    undefined,
-    { ...args.details },
-  );
+  return await account.execute([
+    {
+      contractAddress: args.overrides?.factoryAddress || args.claim.factory,
+      calldata: [buildCallDataClaim(args.claim), args.receiver, args.dustReceiver || "0x0", signature],
+      entrypoint: "claim_external",
+    },
+  ]);
 }
 
 export async function claimInternal(args: {
