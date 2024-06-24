@@ -110,10 +110,8 @@ export async function claimExternal(args: {
   useTxV3?: boolean;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string };
 }): Promise<InvokeFunctionResponse> {
-  let account = deployer;
-  if (args.useTxV3) {
-    account = setDefaultTransactionVersionV3(deployer);
-  }
+  const account = args.useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer;
+
   const signature = await signExternalClaim({
     claim: args.claim,
     receiver: args.receiver,
