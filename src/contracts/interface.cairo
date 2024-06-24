@@ -18,6 +18,7 @@ pub struct StarknetSignature {
 pub trait IGiftFactory<TContractState> {
     /// @notice Creates a new claim
     /// @dev This function can be paused by the owner of the factory and prevent any further deposits
+    /// @param claim_class_hash The class hash of the claim account
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
     /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift through claim_internal
@@ -25,6 +26,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param claim_pubkey The public key associated with the gift
     fn deposit(
         ref self: TContractState,
+        claim_class_hash: ClassHash,
         gift_token: ContractAddress,
         gift_amount: u256,
         fee_token: ContractAddress,
