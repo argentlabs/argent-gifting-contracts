@@ -22,7 +22,7 @@ describe("Claim External", function () {
       const receiver = randomReceiver();
       const claimAddress = calculateClaimAddress(claim);
 
-      await claimExternal({ claim, receiver, claimPrivateKey });
+      await claimExternal({ claim, receiver, useTxV3, claimPrivateKey });
 
       const finalBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
       expect(finalBalance).to.equal(claim.fee_amount);
@@ -39,7 +39,7 @@ describe("Claim External", function () {
       const claimAddress = calculateClaimAddress(claim);
 
       const balanceBefore = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      await claimExternal({ claim, receiver, claimPrivateKey, dustReceiver });
+      await claimExternal({ claim, receiver, claimPrivateKey, useTxV3, dustReceiver });
 
       await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
       await manager.tokens

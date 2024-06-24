@@ -68,11 +68,9 @@ for (const { giftTokenContract, unit } of tokens) {
       await claimInternal({ claim, receiver, claimPrivateKey }),
     );
 
-    // TODO Claim external doesn't align on using txv3
-
     await profiler.profile(
       `Claiming external ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimExternal({ claim: claimExternalOj, receiver, claimPrivateKey: claimPrivateKeyExternal }),
+      await claimExternal({ claim: claimExternalOj, receiver, useTxV3, claimPrivateKey: claimPrivateKeyExternal }),
     );
 
     // await profiler.profile(
