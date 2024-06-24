@@ -107,15 +107,14 @@ export async function claimExternal(args: {
   dustReceiver?: string;
   claimPrivateKey: string;
   useTxV3?: boolean;
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
+  overrides?: { claimAccountAddress?: string; factoryAddress?: string;};
   details?: UniversalDetails;
 }): Promise<InvokeFunctionResponse> {
-  let account = args.overrides?.account || deployer;
+  let account =  deployer;
   // Ugly tmp fix
   if (args.useTxV3) {
-    const devnetAddress = "0x64b48806902a367c8598f4f95c305e8c1a1acba5f082d294a43793113115691";
     const devnetPrivateKey = "0x71d7bb07b9a64f6f78ac4c816aff4da9";
-    account = new Account(manager, devnetAddress, devnetPrivateKey, undefined, RPC.ETransactionVersion.V3);
+    account = new Account(manager, account.address, devnetPrivateKey, undefined, RPC.ETransactionVersion.V3);
   }
   const signature = await signExternalClaim({
     claim: args.claim,
