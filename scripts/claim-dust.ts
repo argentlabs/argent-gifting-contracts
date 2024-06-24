@@ -8,7 +8,7 @@ import { logTransactionJson } from "./jsonTxBuilder";
 /// - claim: the claim object
 
 const factoryAddress = "";
-const dustReceiver = "0";
+const dustReceiver = "";
 const claim: Claim = {
   factory: factoryAddress,
   class_hash: "",
@@ -29,7 +29,7 @@ if (!dustReceiver) {
 }
 
 for (const key in claim) {
-  if (!claim[key] && key !== "fee_amount" && key !== "gift_amount") {
+  if (key in claim && !claim[key as keyof typeof claim] && key !== "fee_amount" && key !== "gift_amount") {
     throw new Error(`The property ${key} is empty in the claim object.`);
   }
 }

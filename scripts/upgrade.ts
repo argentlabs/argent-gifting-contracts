@@ -7,7 +7,7 @@ import { logTransactionJson } from "./jsonTxBuilder";
 
 const factoryAddress = "";
 
-const callData = [];
+const callData: any[] = [];
 
 if (!factoryAddress) {
   throw new Error("Factory contract address is not set. Please set it in the script file.");
