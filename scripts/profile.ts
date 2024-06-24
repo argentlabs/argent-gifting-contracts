@@ -1,4 +1,5 @@
 import {
+  calculateClaimAddress,
   claimExternal,
   claimInternal,
   defaultDepositTestSetup,
@@ -67,10 +68,23 @@ for (const { giftTokenContract, unit } of tokens) {
       await claimInternal({ claim, receiver, claimPrivateKey }),
     );
 
+    // TODO Claim external doesn't align on using txv3
+
     await profiler.profile(
       `Claiming external ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
       await claimExternal({ claim: claimExternalOj, receiver, claimPrivateKey: claimPrivateKeyExternal }),
     );
+
+    // await profiler.profile(
+    //   `Claiming dust ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
+    //   await claimExternal({ claim: claimExternalOj, receiver, claimPrivateKey: claimPrivateKeyExternal }),
+    // );
+
+    const tokenContract = await manager.tokens.feeTokenContract(useTxV3);
+    const claimAddress = calculateClaimAddress(claim);
+    const balance = await tokenContract.balance_of(claimAddress);
+    console.log(balance);
+    console.log("Claimed");
   }
 }
 

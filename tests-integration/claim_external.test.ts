@@ -15,6 +15,7 @@ import {
 
 describe("Claim External", function () {
   for (const useTxV3 of [false, true]) {
+    // TODO DUH we don't use useTxV3 in the test correctly :ROFL:
     it(`gift_token == fee_token flow using txV3: ${useTxV3} (no dust receiver)`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
@@ -29,6 +30,7 @@ describe("Claim External", function () {
       await manager.tokens.tokenBalance(claimAddress, claim.fee_token).should.eventually.equal(claim.fee_amount);
     });
 
+    // TODO DUH we don't use useTxV3 in the test correctly :ROFL:
     it(`gift_token == fee_token flow using txV3: ${useTxV3}  (w/ dust receiver)`, async function () {
       const { factory } = await setupGiftProtocol();
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
