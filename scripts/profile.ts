@@ -7,7 +7,6 @@ import {
   manager,
   randomReceiver,
   setupGiftProtocol,
-  
 } from "../lib";
 import { newProfiler } from "../lib/gas";
 
