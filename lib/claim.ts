@@ -16,6 +16,7 @@ import {
   deployer,
   ethAddress,
   manager,
+  setDefaultTransactionVersionV3,
   strkAddress,
 } from ".";
 
@@ -113,8 +114,7 @@ export async function claimExternal(args: {
   let account =  deployer;
   // Ugly tmp fix
   if (args.useTxV3) {
-    const devnetPrivateKey = "0x71d7bb07b9a64f6f78ac4c816aff4da9";
-    account = new Account(manager, account.address, devnetPrivateKey, undefined, RPC.ETransactionVersion.V3);
+    account = setDefaultTransactionVersionV3(deployer);
   }
   const signature = await signExternalClaim({
     claim: args.claim,
