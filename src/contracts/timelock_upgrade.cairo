@@ -25,7 +25,7 @@ pub trait ITimelockUpgrade<TContractState> {
     /// @notice Gets the timestamp when the upgrade is ready to be performed, 0 if no upgrade ongoing
     fn get_upgrade_ready_at(self: @TContractState) -> u64;
 
-    /// @notice Gets the hash of the calldata used for the upgrade. 0 if no upgrade ongoing
+    /// @notice Gets the hash of the calldata used for the upgrade, 0 if no upgrade ongoing
     fn get_calldata_hash(self: @TContractState) -> felt252;
 }
 
