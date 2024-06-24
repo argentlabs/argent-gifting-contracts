@@ -18,8 +18,6 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-// FILE TESTED SUCCESSFULLY
-// Ownable can be ignored as uses devnetAccount() which is not implemented
 describe("Test Core Factory Functions", function () {
   it(`Calculate claim address`, async function () {
     const { factory } = await setupGiftProtocol();

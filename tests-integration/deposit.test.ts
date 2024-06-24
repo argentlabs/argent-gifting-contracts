@@ -9,7 +9,6 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-// FILE TESTED SUCCESSFULLY
 describe("Deposit", function () {
   it(`Double deposit`, async function () {
     const { factory } = await setupGiftProtocol();

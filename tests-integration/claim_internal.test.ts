@@ -12,7 +12,6 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-// FILE TESTED SUCCESSFULLY
 describe("Claim Internal", function () {
   for (const useTxV3 of [false, true]) {
     it(`gift token == fee token using txV3: ${useTxV3}`, async function () {

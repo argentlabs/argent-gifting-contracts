@@ -9,7 +9,6 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-// FILE TESTED SUCCESSFULLY
 describe("Claim Account", function () {
   it(`Test only protocol can call validate`, async function () {
     const { factory } = await setupGiftProtocol();
