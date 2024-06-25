@@ -17,7 +17,7 @@ const VALID_WINDOW_PERIOD = 604800n; // 7 * 24 * 60 * 60;  // 7 days
 
 const CURRENT_TIME = 1718898082n;
 
-describe.only("Test Factory Upgrade", function () {
+describe("Test Factory Upgrade", function () {
   it("Upgrade", async function () {
     const { factory } = await setupGiftProtocol();
     const newFactoryClassHash = await manager.declareFixtureContract("GiftFactoryUpgrade");
