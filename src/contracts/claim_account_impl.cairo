@@ -5,6 +5,20 @@ use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, Starkn
 #[starknet::interface]
 pub trait IClaimAccountImpl<TContractState> {
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress) -> Array<Span<felt252>>;
+
+    fn execute_action(ref self: TContractState, calldata: Array<felt252>) -> Span<felt252>;
+
+    fn is_valid_account_signature(
+        self: @TContractState, claim: ClaimData, hash: felt252, remaining_signature: Span<felt252>
+    ) -> felt252;
+
+    fn execute_from_outside_v2(
+        ref self: TContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
+    ) -> Array<Span<felt252>>;
+}
+
+#[starknet::interface]
+pub trait ILama<TContractState> {
     fn claim_external(
         ref self: TContractState,
         claim: ClaimData,
@@ -23,24 +37,18 @@ pub trait IClaimAccountImpl<TContractState> {
     /// @param claim The claim data 
     /// @param receiver The address of the receiver
     fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
-
-    fn is_valid_account_signature(
-        self: @TContractState, claim: ClaimData, hash: felt252, remaining_signature: Span<felt252>
-    ) -> felt252;
-
-    fn execute_from_outside_v2(
-        ref self: TContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
-    ) -> Array<Span<felt252>>;
 }
 
 #[starknet::contract]
 mod ClaimAccountImpl {
+    use core::array::ArrayTrait;
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address,};
+    use starknet_gifting::contracts::claim_account_impl::ILama;
 
 
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
@@ -87,7 +95,7 @@ mod ClaimAccountImpl {
     }
 
     #[abi(embed_v0)]
-    impl Impl of super::IClaimAccountImpl<ContractState> {
+    impl ClaimAccountImpl of super::IClaimAccountImpl<ContractState> {
         fn claim_internal(
             ref self: ContractState, claim: ClaimData, receiver: ContractAddress
         ) -> Array<Span<felt252>> {
@@ -95,6 +103,44 @@ mod ClaimAccountImpl {
             array![]
         }
 
+        fn execute_action(ref self: ContractState, mut calldata: Array<felt252>) -> Span<felt252> {
+            let selector = calldata.pop_front().unwrap();
+            let mut leftovers = calldata.span();
+            if selector == selector!("claim_external") {
+                let claimData: ClaimData = Serde::deserialize(ref leftovers).unwrap();
+                let receiver: ContractAddress = Serde::deserialize(ref leftovers).unwrap();
+                let dust_receiver: ContractAddress = Serde::deserialize(ref leftovers).unwrap();
+                let signature: StarknetSignature = Serde::deserialize(ref leftovers).unwrap();
+                self.claim_external(claimData, receiver, dust_receiver, signature);
+            } else if selector == selector!("cancel") {
+                let claimData: ClaimData = Serde::deserialize(ref leftovers).unwrap();
+                self.cancel(claimData);
+            } else if selector == selector!("get_dust") {
+                let claimData: ClaimData = Serde::deserialize(ref leftovers).unwrap();
+                let receiver: ContractAddress = Serde::deserialize(ref leftovers).unwrap();
+                self.get_dust(claimData, receiver);
+            } else {
+                panic_with_felt252('gift/invalid-selector');
+            }
+            array![].span()
+        }
+
+        fn is_valid_account_signature(
+            self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
+        ) -> felt252 {
+            0 // Accounts don't support offchain signatures now, but it could
+        }
+
+        fn execute_from_outside_v2(
+            ref self: ContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
+        ) -> Array<Span<felt252>> {
+            panic_with_felt252('not-allowed-yet');
+            array![]
+        }
+    }
+
+    // Never embed this trait.
+    impl LamaImpl of super::ILama<ContractState> {
         fn claim_external(
             ref self: ContractState,
             claim: ClaimData,
@@ -142,21 +188,7 @@ mod ClaimAccountImpl {
                 self.transfer_from_account(claim.fee_token, fee_balance, claim.sender);
             }
         }
-
-        fn is_valid_account_signature(
-            self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
-        ) -> felt252 {
-            0 // Accounts don't support offchain signatures now, but it could
-        }
-
-        fn execute_from_outside_v2(
-            ref self: ContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
-        ) -> Array<Span<felt252>> {
-            panic_with_felt252('not-allowed-yet');
-            array![]
-        }
     }
-
     #[generate_trait]
     impl Private of PrivateTrait {
         fn proceed_with_claim(

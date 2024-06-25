@@ -119,7 +119,18 @@ mod ClaimAccount {
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
             // TODO consider delegating to a fixed selector to we can have a whitelist of selectors in the implementation
-            library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
+            let mut new_calldata = array![selector];
+            new_calldata.append_all(calldata.span());
+            library_call_syscall(implementation_class_hash, selector!("execute_action"), new_calldata.span()).unwrap()
+        }
+    }
+
+    #[generate_trait]
+    impl ArrayExt<T, +Drop<T>, +Copy<T>> of ArrayExtTrait<T> {
+        fn append_all(ref self: Array<T>, mut value: Span<T>) {
+            while let Option::Some(item) = value.pop_front() {
+                self.append(*item);
+            };
         }
     }
 
