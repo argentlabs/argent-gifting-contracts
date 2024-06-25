@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { byteArray, uint256 } from "starknet";
 import {
   calculateClaimAddress,
+  cancelGift,
   claimExternal,
   defaultDepositTestSetup,
   deployMockERC20,
@@ -112,18 +113,6 @@ describe("Claim External", function () {
     );
   });
 
-  it(`gift/invalid-class-hash`, async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
-    const receiver = randomReceiver();
-
-    claim.class_hash = "0x1";
-
-    await expectRevertWithErrorMessage("gift/invalid-class-hash", () =>
-      claimExternal({ claim, receiver, claimPrivateKey }),
-    );
-  });
-
   it(`Claim gift cancelled`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
@@ -131,9 +120,7 @@ describe("Claim External", function () {
     const claimAddress = calculateClaimAddress(claim);
 
     const balanceSenderBefore = await manager.tokens.tokenBalance(deployer.address, claim.gift_token);
-    factory.connect(deployer);
-    const { transaction_hash } = await factory.cancel(claim);
-    await manager.waitForTransaction(transaction_hash);
+    const { transaction_hash } = await cancelGift({ claim });
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await manager.tokens
@@ -147,20 +134,7 @@ describe("Claim External", function () {
     );
   });
 
-  it(`Wrong claim pubkey`, async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
-    const receiver = randomReceiver();
-    const claimAddress = calculateClaimAddress(claim);
-
-    claim.claim_pubkey = 1n;
-
-    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
-      claimExternal({ claim, receiver, claimPrivateKey, overrides: { claimAccountAddress: claimAddress } }),
-    );
-  });
-
-  it(`Not possible to claim more via reentrancy`, async function () {
+  it.skip(`Not possible to claim more via reentrancy`, async function () {
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
 

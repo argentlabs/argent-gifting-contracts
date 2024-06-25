@@ -1,6 +1,7 @@
 import { CallData, uint256 } from "starknet";
 import {
   calculateClaimAddress,
+  cancelGift,
   claimExternal,
   claimInternal,
   defaultDepositTestSetup,
@@ -36,8 +37,7 @@ describe("All events are emitted", function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup({ factory });
 
-    factory.connect(deployer);
-    const { transaction_hash } = await factory.cancel(claim);
+    const { transaction_hash } = await cancelGift({ claim });
 
     const claimAddress = calculateClaimAddress(claim);
 

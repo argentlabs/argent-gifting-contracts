@@ -125,7 +125,7 @@ mod ClaimAccountImpl {
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
             let contract_address = get_contract_address();
             let factory_owner = IOwnableDispatcher { contract_address: claim.factory }.owner();
-            assert(factory_owner == get_caller_address(), 'gift/openzeppelin');
+            assert(factory_owner == get_caller_address(), 'gift/only-factory-owner');
             let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(contract_address);
             assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
             if claim.gift_token == claim.fee_token {

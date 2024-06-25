@@ -111,7 +111,7 @@ export async function claimExternal(args: {
   receiver: string;
   dustReceiver?: string;
   claimPrivateKey: string;
-  overrides?: { claimAccountAddress?: string; account?: Account };
+  overrides?: { account?: Account };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
   const account = args.overrides?.account || deployer;
@@ -119,7 +119,6 @@ export async function claimExternal(args: {
     claim: args.claim,
     receiver: args.receiver,
     claimPrivateKey: args.claimPrivateKey,
-    forceClaimAddress: args.overrides?.claimAccountAddress,
     dustReceiver: args.dustReceiver,
   });
 
@@ -149,7 +148,7 @@ export async function claimInternal(args: {
   claim: Claim;
   receiver: string;
   claimPrivateKey: string;
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string };
+  overrides?: { claimAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
   const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
@@ -157,7 +156,7 @@ export async function claimInternal(args: {
   const response = await claimAccount.execute(
     [
       {
-        contractAddress: claimAddress,
+        contractAddress: args.overrides?.callToAddress ?? claimAddress,
         calldata: [buildCallDataClaim(args.claim), args.receiver],
         entrypoint: "claim_internal",
       },
