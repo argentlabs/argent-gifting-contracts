@@ -1,4 +1,4 @@
-use starknet::{ContractAddress};
+use starknet::{ContractAddress, ClassHash};
 use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
 
 
@@ -31,6 +31,10 @@ pub trait IClaimAccountImpl<TContractState> {
     fn execute_from_outside_v2(
         ref self: TContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
     ) -> Array<Span<felt252>>;
+
+    fn execute_action(
+        ref self: TContractState, this_class_hash: ClassHash, selector: felt252, args: Array<felt252>
+    ) -> Span<felt252>;
 }
 
 #[starknet::contract]
@@ -40,9 +44,9 @@ mod ClaimAccountImpl {
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
-    use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address,};
-
-
+    use starknet::{
+        ClassHash, ContractAddress, get_caller_address, get_contract_address, syscalls::library_call_syscall
+    };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
 
@@ -86,6 +90,16 @@ mod ClaimAccountImpl {
         ) -> Array<Span<felt252>> {
             self.proceed_with_claim(claim, receiver, Zero::zero());
             array![]
+        }
+
+        fn execute_action(
+            ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Array<felt252>
+        ) -> Span<felt252> {
+            let whitelisted = selector == selector!("claim_external")
+                || selector == selector!("get_dust")
+                || selector == selector!("cancel");
+            assert(whitelisted, 'gift/invalid-selector');
+            library_call_syscall(this_class_hash, selector, args.span()).unwrap()
         }
 
         fn claim_external(

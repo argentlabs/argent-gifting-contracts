@@ -63,7 +63,7 @@ pub trait IGiftFactory<TContractState> {
 #[starknet::interface]
 pub trait IGiftAccount<TContractState> {
     /// @notice delegates an action to the account implementation
-    fn execute_action(ref self: TContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252>;
+    fn execute_action(ref self: TContractState, selector: felt252, args: Array<felt252>) -> Span<felt252>;
 }
 
 /// @notice As defined in SNIP-9 https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-9.md

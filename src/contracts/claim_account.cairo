@@ -3,8 +3,7 @@ mod ClaimAccount {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
     use starknet::{
-        TxInfo, account::Call, VALIDATED, syscalls::library_call_syscall, ContractAddress, get_contract_address,
-        get_execution_info, ClassHash
+        TxInfo, account::Call, VALIDATED, ContractAddress, get_contract_address, get_execution_info, ClassHash
     };
     use starknet_gifting::contracts::claim_account_impl::{
         IClaimAccountImplLibraryDispatcher, IClaimAccountImplDispatcherTrait
@@ -114,12 +113,12 @@ mod ClaimAccount {
 
     #[abi(embed_v0)]
     impl GiftAccountImpl of IGiftAccount<ContractState> {
-        fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
-            let mut calldata_span = calldata.span();
-            let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
+        fn execute_action(ref self: ContractState, selector: felt252, args: Array<felt252>) -> Span<felt252> {
+            let mut args_copy = args.span();
+            let claim: ClaimData = Serde::deserialize(ref args_copy).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
-            // TODO consider delegating to a fixed selector to we can have a whitelist of selectors in the implementation
-            library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
+            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
+                .execute_action(implementation_class_hash, selector, args)
         }
     }
 
