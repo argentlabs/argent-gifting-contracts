@@ -10,7 +10,7 @@ import {
 } from "../lib";
 
 // Time window which must pass before the upgrade can be performed
-const MIN_SECURITY_PERIOD = 604800n; // 7 * 24 * 60 * 60;  // 7 day
+const MIN_SECURITY_PERIOD = 7n * 24n * 60n * 60n;  // 7 day
 
 //  Time window during which the upgrade can be performed
 const VALID_WINDOW_PERIOD = 604800n; // 7 * 24 * 60 * 60;  // 7 days
