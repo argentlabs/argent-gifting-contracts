@@ -141,7 +141,7 @@ function executeActionOnAccount(functionName: string, accountAddress: string, ar
   return {
     contractAddress: accountAddress,
     entrypoint: "execute_action",
-    calldata: CallData.compile([[hash.getSelectorFromName(functionName), ...args]]),
+    calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
   };
 }
 

@@ -7,7 +7,7 @@ pub trait IClaimAccountImpl<TContractState> {
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress) -> Array<Span<felt252>>;
 
     fn execute_action(
-        ref self: TContractState, this_class_hash: ClassHash, selector: felt252, claim: ClaimData, args: Span<felt252>
+        ref self: TContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
     ) -> Span<felt252>;
 
     fn is_valid_account_signature(
@@ -92,11 +92,7 @@ mod ClaimAccountImpl {
         }
 
         fn execute_action(
-            ref self: ContractState,
-            this_class_hash: ClassHash,
-            selector: felt252,
-            claim: ClaimData,
-            args: Span<felt252>
+            ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
         ) -> Span<felt252> {
             let is_whitelisted = selector == selector!("claim_external")
                 || selector == selector!("get_dust")
