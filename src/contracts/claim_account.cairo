@@ -3,8 +3,8 @@ mod ClaimAccount {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
     use starknet::{
-        TxInfo, account::Call, VALIDATED, syscalls::call_contract_syscall, ContractAddress, get_contract_address,
-        get_caller_address, get_execution_info, ClassHash
+        TxInfo, account::Call, VALIDATED, syscalls::library_call_syscall, ContractAddress, get_contract_address,
+         get_execution_info, ClassHash
     };
     use starknet_gifting::contracts::claim_account_impl::{
         IClaimAccountImplLibraryDispatcher, IClaimAccountImplDispatcherTrait
@@ -120,7 +120,7 @@ mod ClaimAccount {
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
             // TODO consider delegating to a fixed selector to we can have a whitelist of selectors in the implementation
-            starknet::syscalls::library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
+            library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
         }
     }
 

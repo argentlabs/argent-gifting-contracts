@@ -40,27 +40,14 @@ mod ClaimAccountImpl {
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
-    use starknet::{
-        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
-        get_block_timestamp
-    };
+    use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address,};
 
 
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::interface::{
-        IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        OutsideExecution, StarknetSignature
-    };
-    use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
-    use starknet_gifting::contracts::utils::{
-        calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
-    };
+    use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
 
     #[storage]
-    struct Storage {
-        /// Keeps track of used nonces for outside transactions (`execute_from_outside`)
-        outside_nonces: LegacyMap<felt252, bool>,
-    }
+    struct Storage {}
 
     #[derive(Drop, Copy)]
     struct TransferFromAccount {
@@ -78,6 +65,7 @@ mod ClaimAccountImpl {
 
     #[derive(Drop, starknet::Event)]
     struct GiftClaimed {
+        // TODO remove gift address as it's redundant
         #[key]
         gift_address: ContractAddress,
         receiver: ContractAddress,
@@ -86,12 +74,15 @@ mod ClaimAccountImpl {
 
     #[derive(Drop, starknet::Event)]
     struct GiftCancelled {
+        // TODO remove gift address as it's redundant
         #[key]
         gift_address: ContractAddress,
     }
 
     #[constructor]
     fn constructor(ref self: ContractState) {
+        // This prevents creating instances of this classhash by mistakes, as it's not needed. But it's still possible to create it replacing classhashes.
+        // This is not recommended and this contract is intended to be used through library calls only.
         panic_with_felt252('not-allowed');
     }
 
@@ -163,55 +154,6 @@ mod ClaimAccountImpl {
         ) -> Array<Span<felt252>> {
             panic_with_felt252('not-allowed-yet');
             array![]
-        // assert(!self.outside_nonces.read(outside_execution.nonce), 'gift-acc/dup-outside-nonce');
-        // self.outside_nonces.write(outside_execution.nonce, true);
-
-        // // TODO hashing
-        // let claim_external_hash = 0x1236;
-        // // let hash = outside_execution.get_message_hash_rev_1(claim_address);
-
-        // let (r, s): (felt252, felt252) = full_deserialize(signature).expect('gift-fact/invalid-signature');
-        // assert(
-        //     check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, r, s), 'gift-fact/invalid-out-signature'
-        // );
-
-        // if outside_execution.caller.into() != 'ANY_CALLER' {
-        //     assert(get_caller_address() == outside_execution.caller, 'argent/invalid-caller');
-        // }
-
-        // let block_timestamp = get_block_timestamp();
-        // assert(
-        //     outside_execution.execute_after < block_timestamp && block_timestamp < outside_execution.execute_before,
-        //     'argent/invalid-timestamp'
-        // );
-
-        // assert(outside_execution.calls.len() == 2, 'gift-fact/call-len');
-        // // validate 1st call
-        // let refund_call = outside_execution.calls.at(0);
-        // assert(*refund_call.selector == selector!("transfer"), 'gift-fact/refcall-selector');
-        // assert(*refund_call.to == claim.fee_token, 'gift-fact/refcall-to');
-        // let (refund_receiver, refund_amount): (ContractAddress, u256) = full_deserialize(*refund_call.calldata)
-        //     .expect('gift-fact/invalid-ref-calldata');
-        // assert(refund_receiver.is_non_zero(), 'gift-fact/refcall-receiver');
-        // assert(refund_amount <= claim.fee_amount.into(), 'gift-fact/refcall-amount');
-        // // validate 2nd call
-        // let claim_call = outside_execution.calls.at(1);
-        // assert(*claim_call.to == claim.factory, 'gift-fact/claimcall-to');
-        // // TODO ideally the function claim_from_outside actually exists in the factory to help with the gas estimation
-        // assert(*claim_call.selector == selector!("claim_from_outside"), 'gift-fact/claimcall-to');
-        // let (claim_receiver, dust_receiver): (ContractAddress, ContractAddress) = full_deserialize(
-        //     *refund_call.calldata
-        // )
-        //     .expect('gift-fact/claimcall-calldata');
-
-        // // Proceed with the calls
-        // // We could optimize and make only one call to `execute_factory_calls`
-        // self.transfer_from_account(claim.fee_token, refund_amount, refund_receiver);
-        // self.proceed_with_claim(claim_receiver, dust_receiver);
-        // array![
-        //     serialize(@(true)).span(), // simulated return from the transfer call
-        //     array![].span() // return from the claim call
-        // ]
         }
     }
 
