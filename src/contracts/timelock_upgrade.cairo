@@ -73,7 +73,7 @@ pub mod TimelockUpgradeComponent {
     struct UpgradeProposed {
         new_implementation: ClassHash,
         ready_at: u64,
-        calldata_hash: felt252
+        calldata: Array<felt252>
     }
 
     #[derive(Drop, starknet::Event)]
@@ -109,7 +109,7 @@ pub mod TimelockUpgradeComponent {
             self.ready_at.write(ready_at);
             let calldata_hash = poseidon_hash_span(calldata.span());
             self.calldata_hash.write(calldata_hash);
-            self.emit(UpgradeProposed { new_implementation, ready_at, calldata_hash });
+            self.emit(UpgradeProposed { new_implementation, ready_at, calldata });
         }
 
         fn cancel_upgrade(ref self: ComponentState<TContractState>) {
