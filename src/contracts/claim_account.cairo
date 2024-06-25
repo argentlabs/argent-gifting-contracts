@@ -3,16 +3,19 @@ mod ClaimAccount {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
     use starknet::{
-        TxInfo, account::Call, VALIDATED, syscalls::call_contract_syscall, ContractAddress, get_contract_address,
-        get_caller_address, get_execution_info
+        TxInfo, account::Call, VALIDATED, syscalls::library_call_syscall, ContractAddress, get_contract_address,
+        get_execution_info, ClassHash
+    };
+    use starknet_gifting::contracts::claim_account_impl::{
+        IClaimAccountImplLibraryDispatcher, IClaimAccountImplDispatcherTrait
     };
     use starknet_gifting::contracts::interface::{
         IAccount, IGiftAccount, IOutsideExecution, OutsideExecution, ClaimData, AccountConstructorArguments,
         IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait
     };
     use starknet_gifting::contracts::utils::{
-        calculate_claim_account_address, full_deserialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1, TX_V3,
-        TX_V3_ESTIMATE,
+        calculate_claim_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
+        TX_V3, TX_V3_ESTIMATE
     };
 
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
@@ -44,10 +47,10 @@ mod ClaimAccount {
             assert(execution_info.caller_address.is_zero(), 'gift-acc/only-protocol');
             assert(calls.len() == 1, 'gift-acc/invalid-call-len');
             let Call { to, selector, calldata } = calls.at(0);
+            assert(*to == get_contract_address(), 'gift-acc/invalid-call-to');
             assert(*selector == selector!("claim_internal"), 'gift-acc/invalid-call-selector');
             let (claim, _): (ClaimData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
-            assert(*to == claim.factory, 'gift-acc/invalid-call-to');
             assert_valid_claim(claim);
 
             let tx_info = execution_info.tx_info.unbox();
@@ -87,16 +90,18 @@ mod ClaimAccount {
                     || tx_version == TX_V1_ESTIMATE,
                 'gift-acc/invalid-tx-version'
             );
-            let Call { to, selector, calldata }: @Call = calls[0];
-            call_contract_syscall(*to, *selector, *calldata).expect('gift-acc/execute-failed');
-            array![]
+            let Call { .., calldata }: @Call = calls[0];
+            let (claim, receiver): (ClaimData, ContractAddress) = full_deserialize(*calldata)
+                .expect('gift-acc/invalid-calldata');
+            let implementation_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: claim.factory }
+                .get_account_impl_class_hash(claim.class_hash);
+            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }.claim_internal(claim, receiver)
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
             let mut signature_span = signature.span();
             let claim: ClaimData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-claim');
-            assert_valid_claim(claim);
-            IGiftFactoryDispatcher { contract_address: claim.factory }
+            IClaimAccountImplLibraryDispatcher { class_hash: get_validated_impl(claim) }
                 .is_valid_account_signature(claim, hash, signature_span)
         }
 
@@ -109,12 +114,12 @@ mod ClaimAccount {
 
     #[abi(embed_v0)]
     impl GiftAccountImpl of IGiftAccount<ContractState> {
-        fn execute_factory_calls(
-            ref self: ContractState, claim: ClaimData, mut calls: Array<Call>
-        ) -> Array<Span<felt252>> {
-            assert_valid_claim(claim);
-            assert(get_caller_address() == claim.factory, 'gift/only-factory');
-            execute_multicall(calls.span())
+        fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
+            let mut calldata_span = calldata.span();
+            let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
+            let implementation_class_hash = get_validated_impl(claim);
+            // TODO consider delegating to a fixed selector to we can have a whitelist of selectors in the implementation
+            library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
         }
     }
 
@@ -123,18 +128,20 @@ mod ClaimAccount {
         fn execute_from_outside_v2(
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            assert(!self.outside_nonces.read(outside_execution.nonce), 'gift-acc/dup-outside-nonce');
-            self.outside_nonces.write(outside_execution.nonce, true);
-
             let claim: ClaimData = Serde::deserialize(ref signature).expect('gift-acc/invalid-claim');
-            assert_valid_claim(claim);
-            IGiftFactoryDispatcher { contract_address: claim.factory }
-                .perform_execute_from_outside(claim, get_caller_address(), outside_execution, signature)
+            let implementation_class_hash = get_validated_impl(claim);
+            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
+                .execute_from_outside_v2(claim, outside_execution, signature)
         }
 
         fn is_valid_outside_execution_nonce(self: @ContractState, nonce: felt252) -> bool {
             !self.outside_nonces.read(nonce)
         }
+    }
+
+    fn get_validated_impl(claim: ClaimData) -> ClassHash {
+        assert_valid_claim(claim);
+        IGiftFactoryDispatcher { contract_address: claim.factory }.get_account_impl_class_hash(claim.class_hash)
     }
 
     fn assert_valid_claim(claim: ClaimData) {
@@ -155,34 +162,5 @@ mod ClaimAccount {
                 }
             };
         max_fee + max_tip
-    }
-
-    fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {
-        let mut result = array![];
-        let mut index = 0;
-        while let Option::Some(call) = calls
-            .pop_front() {
-                match call_contract_syscall(*call.to, *call.selector, *call.calldata) {
-                    Result::Ok(retdata) => {
-                        result.append(retdata);
-                        index += 1;
-                    },
-                    Result::Err(revert_reason) => {
-                        let mut data = array!['argent/multicall-failed', index];
-                        data.append_all(revert_reason.span());
-                        panic(data);
-                    },
-                }
-            };
-        result
-    }
-
-    #[generate_trait]
-    impl ArrayExt<T, +Drop<T>, +Copy<T>> of ArrayExtTrait<T> {
-        fn append_all(ref self: Array<T>, mut value: Span<T>) {
-            while let Option::Some(item) = value.pop_front() {
-                self.append(*item);
-            };
-        }
     }
 }

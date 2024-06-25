@@ -10,6 +10,7 @@ import {
   ETH_GIFT_AMOUNT,
   ETH_GIFT_MAX_FEE,
   expectRevertWithErrorMessage,
+  getDust,
   getGiftAmount,
   getMaxFee,
   LegacyStarknetKeyPair,
@@ -57,9 +58,8 @@ describe("Test Core Factory Functions", function () {
       // Test dust
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(0n);
 
-      factory.connect(deployer);
-      const { transaction_hash } = await factory.get_dust(claim, dustReceiver);
-      await manager.waitForTransaction(transaction_hash);
+      await getDust({ claim, receiver: dustReceiver });
+
       await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(dustBalance);
     });
@@ -132,8 +132,9 @@ describe("Test Core Factory Functions", function () {
       const { claim } = await defaultDepositTestSetup({ factory });
       const dustReceiver = randomReceiver();
 
-      factory.connect(devnetAccount());
-      await expectRevertWithErrorMessage("Caller is not the owner", () => factory.get_dust(claim, dustReceiver));
+      await expectRevertWithErrorMessage("gift/only-factory-owner", () =>
+        getDust({ claim, receiver: dustReceiver, factoryOwner: devnetAccount() }),
+      );
     });
   });
 });

@@ -34,52 +34,10 @@ pub trait IGiftFactory<TContractState> {
         claim_pubkey: felt252
     );
 
-    /// @notice Allows a claim account contract to claim the gift
-    /// @dev Can only be called by the claim account contract corresponding to the claim
-    /// @param claim The claim data
-    /// @param receiver The address of the receiver
-    fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
-
-    /// @notice Allows a contract to claim the gift given a valid SNIP-12 signature
-    /// @dev Will claim the balance of the gift. The fee will be left if it is a different token than the gift
-    /// @param claim The claim data
-    /// @param receiver The address of the receiver
-    /// @param dust_receiver The address of the person that should receive the dust (leftovers)
-    /// @param signature The SNIP-12 compliant Starknet signature of the claimer of the ClaimExternal { receiver, dust_receiver }
-    fn claim_external(
-        ref self: TContractState,
-        claim: ClaimData,
-        receiver: ContractAddress,
-        dust_receiver: ContractAddress,
-        signature: StarknetSignature
-    );
-
-    fn is_valid_account_signature(
-        self: @TContractState, claim: ClaimData, hash: felt252, remaining_signature: Span<felt252>
-    ) -> felt252;
-
-    fn perform_execute_from_outside(
-        ref self: TContractState,
-        claim: ClaimData,
-        original_caller: ContractAddress,
-        outside_execution: OutsideExecution,
-        remaining_signature: Span<felt252>
-    ) -> Array<Span<felt252>>;
-
-
-    /// @notice Allows the sender of a gift to cancel their gift
-    /// @dev Will refund both the gift and the fee
-    /// @param claim The claim data of the gift to cancel
-    fn cancel(ref self: TContractState, claim: ClaimData);
-
-    /// @notice Allows the owner of the factory to claim the dust (leftovers) of a claim
-    /// @dev Only allowed if the gift has been claimed
-    /// @param claim The claim data 
-    /// @param receiver The address of the receiver
-    fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
-
     /// @notice Retrieve the current class_hash used for creating a gift account
     fn get_latest_claim_class_hash(self: @TContractState) -> ClassHash;
+
+    fn get_account_impl_class_hash(self: @TContractState, account_class_hash: ClassHash) -> ClassHash;
 
     /// @notice Get the address of the claim account contract given all parameters
     /// @param class_hash The class hash
@@ -104,11 +62,8 @@ pub trait IGiftFactory<TContractState> {
 
 #[starknet::interface]
 pub trait IGiftAccount<TContractState> {
-    /// @notice Allows the factory to perform an array of calls on the account
-    /// @dev Can only be called by the factory
-    /// @param claim The claim data
-    /// @param calls The array of calls to be executed by the account
-    fn execute_factory_calls(ref self: TContractState, claim: ClaimData, calls: Array<Call>) -> Array<Span<felt252>>;
+    /// @notice delegates an action to the account implementation
+    fn execute_action(ref self: TContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252>;
 }
 
 /// @notice As defined in SNIP-9 https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-9.md

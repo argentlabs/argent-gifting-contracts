@@ -1,10 +1,10 @@
 import {
-  buildCallDataClaim,
+  calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
+  deployer,
   expectRevertWithErrorMessage,
   getClaimAccount,
-  manager,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
@@ -12,13 +12,22 @@ import {
 describe("Claim Account", function () {
   it(`Test only protocol can call validate`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
+    const { claim } = await defaultDepositTestSetup({ factory });
+    const claimAddress = calculateClaimAddress(claim);
 
-    const claimAccount = getClaimAccount(claim, claimPrivateKey);
-    const claimContract = await manager.loadContract(claimAccount.address);
+    await expectRevertWithErrorMessage("gift-acc/only-protocol", () =>
+      deployer.execute([{ contractAddress: claimAddress, calldata: [0x0], entrypoint: "__validate__" }]),
+    );
+  });
 
-    claimContract.connect(claimAccount);
-    await expectRevertWithErrorMessage("gift-acc/only-protocol", () => claimContract.__validate__([]));
+  it(`Test only protocol can call execute`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { claim } = await defaultDepositTestSetup({ factory });
+    const claimAddress = calculateClaimAddress(claim);
+
+    await expectRevertWithErrorMessage("gift-acc/only-protocol", () =>
+      deployer.execute([{ contractAddress: claimAddress, calldata: [0x0], entrypoint: "__execute__" }]),
+    );
   });
 
   it(`Test claim contract cant call another contract`, async function () {
@@ -32,7 +41,7 @@ describe("Claim Account", function () {
         receiver,
         claimPrivateKey,
         details: { skipValidate: false },
-        overrides: { factoryAddress: "0x2" },
+        overrides: { callToAddress: "0x2" },
       }),
     );
   });
@@ -40,27 +49,31 @@ describe("Claim Account", function () {
   it(`Test claim contract can only call 'claim_internal'`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
-    const receiver = randomReceiver();
 
     const claimAccount = getClaimAccount(claim, claimPrivateKey);
 
-    factory.connect(claimAccount);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
-      claimAccount.execute(factory.populateTransaction.get_dust(claim, receiver), undefined, { skipValidate: false }),
+      claimAccount.execute(
+        [{ contractAddress: claimAccount.address, calldata: [], entrypoint: "execute_action" }],
+        undefined,
+        { skipValidate: false },
+      ),
     );
   });
 
-  it(`Test claim contract cant preform a multicall`, async function () {
+  it(`Test claim contract cant perform a multicall`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
-    const receiver = randomReceiver();
-
     const claimAccount = getClaimAccount(claim, claimPrivateKey);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
-      claimAccount.execute([
-        factory.populateTransaction.claim_internal(buildCallDataClaim(claim), receiver),
-        factory.populateTransaction.claim_internal(buildCallDataClaim(claim), receiver),
-      ]),
+      claimAccount.execute(
+        [
+          { contractAddress: claimAccount.address, calldata: [], entrypoint: "execute_action" },
+          { contractAddress: claimAccount.address, calldata: [], entrypoint: "execute_action" },
+        ],
+        undefined,
+        { skipValidate: false },
+      ),
     );
   });
 

@@ -1,4 +1,19 @@
-import { Account, RPC, TransactionReceipt, UniversalDetails, ec, encode, num, shortString, uint256 } from "starknet";
+import {
+  Account,
+  Call,
+  CallData,
+  Calldata,
+  RPC,
+  TransactionReceipt,
+  UniversalDetails,
+  ec,
+  encode,
+  hash,
+  num,
+  shortString,
+  uint256,
+} from "starknet";
+
 import {
   LegacyStarknetKeyPair,
   StarknetSignature,
@@ -96,7 +111,7 @@ export async function claimExternal(args: {
   receiver: string;
   claimPrivateKey: string;
   dustReceiver?: string;
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
+  overrides?: { account?: Account };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
   const account = args.overrides?.account || deployer;
@@ -104,30 +119,36 @@ export async function claimExternal(args: {
     claim: args.claim,
     receiver: args.receiver,
     claimPrivateKey: args.claimPrivateKey,
-    forceClaimAddress: args.overrides?.claimAccountAddress,
     dustReceiver: args.dustReceiver,
   });
 
+  const claimExternalCallData = CallData.compile([
+    buildCallDataClaim(args.claim),
+    args.receiver,
+    args.dustReceiver || "0x0",
+    signature,
+  ]);
   const response = await account.execute(
-    [
-      {
-        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
-        calldata: [buildCallDataClaim(args.claim), args.receiver, args.dustReceiver || "0x0", signature],
-        entrypoint: "claim_external",
-      },
-    ],
+    executeActionOnAccount("claim_external", calculateClaimAddress(args.claim), claimExternalCallData),
     undefined,
     { ...args.details },
   );
-
   return manager.waitForTransaction(response.transaction_hash);
+}
+
+function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
+  return {
+    contractAddress: accountAddress,
+    calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
+    entrypoint: "execute_action",
+  };
 }
 
 export async function claimInternal(args: {
   claim: Claim;
   receiver: string;
   claimPrivateKey: string;
-  overrides?: { claimAccountAddress?: string; factoryAddress?: string };
+  overrides?: { claimAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
   const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
@@ -135,13 +156,35 @@ export async function claimInternal(args: {
   const response = await claimAccount.execute(
     [
       {
-        contractAddress: args.overrides?.factoryAddress || args.claim.factory,
+        contractAddress: args.overrides?.callToAddress ?? claimAddress,
         calldata: [buildCallDataClaim(args.claim), args.receiver],
         entrypoint: "claim_internal",
       },
     ],
     undefined,
     { ...args.details },
+  );
+  return manager.waitForTransaction(response.transaction_hash);
+}
+
+export async function cancelGift(args: { claim: Claim; senderAccount?: Account }): Promise<TransactionReceipt> {
+  const cancelCallData = CallData.compile([buildCallDataClaim(args.claim)]);
+  const account = args.senderAccount || deployer;
+  const response = await account.execute(
+    executeActionOnAccount("cancel", calculateClaimAddress(args.claim), cancelCallData),
+  );
+  return manager.waitForTransaction(response.transaction_hash);
+}
+
+export async function getDust(args: {
+  claim: Claim;
+  receiver: string;
+  factoryOwner?: Account;
+}): Promise<TransactionReceipt> {
+  const getDustCallData = CallData.compile([buildCallDataClaim(args.claim), args.receiver]);
+  const account = args.factoryOwner || deployer;
+  const response = await account.execute(
+    executeActionOnAccount("get_dust", calculateClaimAddress(args.claim), getDustCallData),
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
