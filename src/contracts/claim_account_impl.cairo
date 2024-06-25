@@ -116,8 +116,7 @@ mod ClaimAccountImpl {
                 let claimData: ClaimData = Serde::deserialize(ref leftovers).unwrap();
                 self.cancel(claimData);
             } else if selector == selector!("get_dust") {
-                let claimData: ClaimData = Serde::deserialize(ref leftovers).unwrap();
-                let receiver: ContractAddress = Serde::deserialize(ref leftovers).unwrap();
+                let (claimData, receiver): (ClaimData, ContractAddress) = Serde::deserialize(ref leftovers).unwrap();
                 self.get_dust(claimData, receiver);
             } else {
                 panic_with_felt252('gift/invalid-selector');
