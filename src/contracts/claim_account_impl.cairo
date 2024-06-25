@@ -1,6 +1,7 @@
 use starknet::{ContractAddress};
-use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
-
+use starknet_gifting::contracts::claim_data::{ClaimData};
+use starknet_gifting::contracts::outside_execution::{OutsideExecution};
+use starknet_gifting::contracts::utils::{StarknetSignature};
 
 #[starknet::interface]
 pub trait IClaimAccountImpl<TContractState> {
@@ -41,10 +42,10 @@ mod ClaimAccountImpl {
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address,};
-
-
+    use starknet_gifting::contracts::claim_data::{ClaimData};
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
+    use starknet_gifting::contracts::outside_execution::{OutsideExecution};
+    use starknet_gifting::contracts::utils::{StarknetSignature};
 
     #[storage]
     struct Storage {}

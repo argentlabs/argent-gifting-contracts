@@ -1,3 +1,51 @@
+use starknet::{ContractAddress, ClassHash};
+
+#[starknet::interface]
+pub trait IGiftFactory<TContractState> {
+    /// @notice Creates a new claim
+    /// @dev This function can be paused by the owner of the factory and prevent any further deposits
+    /// @param claim_class_hash The class hash of the claim account (needed in FE to have an optimistic UI)
+    /// @param gift_token The ERC-20 token address of the gift
+    /// @param gift_amount The amount of the gift
+    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift through claim_internal
+    /// @param fee_amount The amount of the fee
+    /// @param claim_pubkey The public key associated with the gift
+    fn deposit(
+        ref self: TContractState,
+        claim_class_hash: ClassHash,
+        gift_token: ContractAddress,
+        gift_amount: u256,
+        fee_token: ContractAddress,
+        fee_amount: u128,
+        claim_pubkey: felt252
+    );
+
+    /// @notice Retrieve the current class_hash used for creating a gift account
+    fn get_latest_claim_class_hash(self: @TContractState) -> ClassHash;
+
+    fn get_account_impl_class_hash(self: @TContractState, account_class_hash: ClassHash) -> ClassHash;
+
+    /// @notice Get the address of the claim account contract given all parameters
+    /// @param class_hash The class hash
+    /// @param sender The address of the sender
+    /// @param gift_token The ERC-20 token address of the gift
+    /// @param gift_amount The amount of the gift
+    /// @param fee_token The ERC-20 token address of the fee
+    /// @param fee_amount The amount of the fee
+    /// @param claim_pubkey The public key associated with the gift
+    fn get_claim_address(
+        self: @TContractState,
+        class_hash: ClassHash,
+        sender: ContractAddress,
+        gift_token: ContractAddress,
+        gift_amount: u256,
+        fee_token: ContractAddress,
+        fee_amount: u128,
+        claim_pubkey: felt252
+    ) -> ContractAddress;
+}
+
+
 #[starknet::contract]
 mod GiftFactory {
     use core::ecdsa::check_ecdsa_signature;
@@ -10,11 +58,10 @@ mod GiftFactory {
         ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
         get_block_timestamp
     };
+    use starknet_gifting::contracts::claim_account::{IGiftAccount, IGiftAccountDispatcher, AccountConstructorArguments};
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::interface::{
-        IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        OutsideExecution, StarknetSignature
-    };
+    use starknet_gifting::contracts::gift_factory::IGiftFactory;
+    use starknet_gifting::contracts::claim_data::{ClaimData};
     use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
     use starknet_gifting::contracts::utils::{
         calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
