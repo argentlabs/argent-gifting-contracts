@@ -1,5 +1,6 @@
 import {
   Account,
+  Call,
   CallData,
   Calldata,
   RPC,
@@ -11,7 +12,6 @@ import {
   num,
   shortString,
   uint256,
-  Call,
 } from "starknet";
 
 import {
