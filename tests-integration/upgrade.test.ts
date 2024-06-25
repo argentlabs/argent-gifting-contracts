@@ -114,88 +114,92 @@ describe("Test Factory Upgrade", function () {
     await expectRevertWithErrorMessage("upgrade/upgrade-too-late", () => factory.upgrade([]));
   });
 
-  it("Propose: implementation-null", async function () {
-    const { factory } = await setupGiftProtocol();
-    const zeroClassHash = "0x0";
+  describe("Propose Upgrade", function () {
+    it("implementation-null", async function () {
+      const { factory } = await setupGiftProtocol();
+      const zeroClassHash = "0x0";
 
-    factory.connect(deployer);
-    await expectRevertWithErrorMessage("upgrade/new-implementation-null", () =>
-      factory.propose_upgrade(zeroClassHash, []),
-    );
-  });
-
-  it("Propose: only-owner", async function () {
-    const { factory } = await setupGiftProtocol();
-    const newFactoryClassHash = "0x1";
-
-    factory.connect(devnetAccount());
-    await expectRevertWithErrorMessage("Caller is not the owner", () =>
-      factory.propose_upgrade(newFactoryClassHash, []),
-    );
-  });
-
-  it("Propose: replace pending implementation /w events", async function () {
-    const { factory } = await setupGiftProtocol();
-    const newClassHash = 12345n;
-    const replacementClassHash = 54321n;
-    const calldata: any[] = [123n];
-
-    await manager.setTime(CURRENT_TIME);
-    factory.connect(deployer);
-    const { transaction_hash: tx1 } = await factory.propose_upgrade(newClassHash, calldata);
-    await factory.get_proposed_implementation().should.eventually.equal(newClassHash);
-
-    const readyAt = await factory.get_upgrade_ready_at();
-
-    await expectEvent(tx1, {
-      from_address: factory.address,
-      eventName: "UpgradeProposed",
-      data: CallData.compile([newClassHash.toString(), readyAt.toString(), calldata]),
+      factory.connect(deployer);
+      await expectRevertWithErrorMessage("upgrade/new-implementation-null", () =>
+        factory.propose_upgrade(zeroClassHash, []),
+      );
     });
 
-    const { transaction_hash: tx2 } = await factory.propose_upgrade(replacementClassHash, calldata);
-    await factory.get_proposed_implementation().should.eventually.equal(replacementClassHash);
+    it("only-owner", async function () {
+      const { factory } = await setupGiftProtocol();
+      const newFactoryClassHash = "0x1";
 
-    await expectEvent(tx2, {
-      from_address: factory.address,
-      eventName: "UpgradeCancelled",
-      data: [newClassHash.toString()],
+      factory.connect(devnetAccount());
+      await expectRevertWithErrorMessage("Caller is not the owner", () =>
+        factory.propose_upgrade(newFactoryClassHash, []),
+      );
     });
-  });
 
-  it("Cancel Upgrade /w events", async function () {
-    const { factory } = await setupGiftProtocol();
-    const newClassHash = 12345n;
-    const calldata: any[] = [];
+    it("replace pending implementation /w events", async function () {
+      const { factory } = await setupGiftProtocol();
+      const newClassHash = 12345n;
+      const replacementClassHash = 54321n;
+      const calldata: any[] = [123n];
 
-    await manager.setTime(CURRENT_TIME);
-    factory.connect(deployer);
-    await factory.propose_upgrade(newClassHash, calldata);
+      await manager.setTime(CURRENT_TIME);
+      factory.connect(deployer);
+      const { transaction_hash: tx1 } = await factory.propose_upgrade(newClassHash, calldata);
+      await factory.get_proposed_implementation().should.eventually.equal(newClassHash);
 
-    const { transaction_hash } = await factory.cancel_upgrade();
+      const readyAt = await factory.get_upgrade_ready_at();
 
-    await factory.get_proposed_implementation().should.eventually.equal(0n);
-    await factory.get_upgrade_ready_at().should.eventually.equal(0n);
-    await factory.get_calldata_hash().should.eventually.equal(0n);
+      await expectEvent(tx1, {
+        from_address: factory.address,
+        eventName: "UpgradeProposed",
+        data: CallData.compile([newClassHash.toString(), readyAt.toString(), calldata]),
+      });
 
-    await expectEvent(transaction_hash, {
-      from_address: factory.address,
-      eventName: "UpgradeCancelled",
-      data: [newClassHash.toString()],
+      const { transaction_hash: tx2 } = await factory.propose_upgrade(replacementClassHash, calldata);
+      await factory.get_proposed_implementation().should.eventually.equal(replacementClassHash);
+
+      await expectEvent(tx2, {
+        from_address: factory.address,
+        eventName: "UpgradeCancelled",
+        data: [newClassHash.toString()],
+      });
     });
   });
 
-  it("Cancel: No new implementation", async function () {
-    const { factory } = await setupGiftProtocol();
+  describe("Cancel Upgrade", function () {
+    it("Normal flow /w events", async function () {
+      const { factory } = await setupGiftProtocol();
+      const newClassHash = 12345n;
+      const calldata: any[] = [];
 
-    factory.connect(deployer);
-    await expectRevertWithErrorMessage("upgrade/no-new-implementation", () => factory.cancel_upgrade());
-  });
+      await manager.setTime(CURRENT_TIME);
+      factory.connect(deployer);
+      await factory.propose_upgrade(newClassHash, calldata);
 
-  it("Cancel: Only Owner", async function () {
-    const { factory } = await setupGiftProtocol();
+      const { transaction_hash } = await factory.cancel_upgrade();
 
-    factory.connect(devnetAccount());
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.cancel_upgrade());
+      await factory.get_proposed_implementation().should.eventually.equal(0n);
+      await factory.get_upgrade_ready_at().should.eventually.equal(0n);
+      await factory.get_calldata_hash().should.eventually.equal(0n);
+
+      await expectEvent(transaction_hash, {
+        from_address: factory.address,
+        eventName: "UpgradeCancelled",
+        data: [newClassHash.toString()],
+      });
+    });
+
+    it("No new implementation", async function () {
+      const { factory } = await setupGiftProtocol();
+
+      factory.connect(deployer);
+      await expectRevertWithErrorMessage("upgrade/no-new-implementation", () => factory.cancel_upgrade());
+    });
+
+    it("Only Owner", async function () {
+      const { factory } = await setupGiftProtocol();
+
+      factory.connect(devnetAccount());
+      await expectRevertWithErrorMessage("Caller is not the owner", () => factory.cancel_upgrade());
+    });
   });
 });
