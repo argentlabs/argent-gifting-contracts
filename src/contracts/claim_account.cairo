@@ -114,8 +114,7 @@ mod ClaimAccount {
 
     #[abi(embed_v0)]
     impl GiftAccountImpl of IGiftAccount<ContractState> {
-        // TODO rename
-        fn action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
+        fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);

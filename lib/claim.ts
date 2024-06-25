@@ -11,6 +11,7 @@ import {
   num,
   shortString,
   uint256,
+  Call,
 } from "starknet";
 
 import {
@@ -129,18 +130,18 @@ export async function claimExternal(args: {
     signature,
   ]);
   const response = await account.execute(
-    externalActionOnAccount("claim_external", calculateClaimAddress(args.claim), claimExternalCallData),
+    executeActionOnAccount("claim_external", calculateClaimAddress(args.claim), claimExternalCallData),
     undefined,
     { ...args.details },
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
 
-function externalActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
+function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
   return {
     contractAddress: accountAddress,
     calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
-    entrypoint: "action",
+    entrypoint: "execute_action",
   };
 }
 
@@ -171,7 +172,7 @@ export async function cancelGift(args: { claim: Claim; senderAccount?: Account }
   const cancelCallData = CallData.compile([buildCallDataClaim(args.claim)]);
   const account = args.senderAccount || deployer;
   const response = await account.execute(
-    externalActionOnAccount("cancel", calculateClaimAddress(args.claim), cancelCallData),
+    executeActionOnAccount("cancel", calculateClaimAddress(args.claim), cancelCallData),
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
@@ -184,7 +185,7 @@ export async function getDust(args: {
   const getDustCallData = CallData.compile([buildCallDataClaim(args.claim), args.receiver]);
   const account = args.factoryOwner || deployer;
   const response = await account.execute(
-    externalActionOnAccount("get_dust", calculateClaimAddress(args.claim), getDustCallData),
+    executeActionOnAccount("get_dust", calculateClaimAddress(args.claim), getDustCallData),
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
