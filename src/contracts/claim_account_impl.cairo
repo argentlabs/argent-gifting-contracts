@@ -40,14 +40,16 @@ mod ClaimAccountImpl {
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
-    use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address,};
-
-
+    use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address, get_block_timestamp};
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
+    use starknet_gifting::contracts::utils::{serialize, full_deserialize};
 
     #[storage]
-    struct Storage {}
+    struct Storage {
+        /// Keeps track of used nonces for outside transactions (`execute_from_outside`)
+        outside_nonces: LegacyMap<felt252, bool>,
+    }
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -139,7 +141,57 @@ mod ClaimAccountImpl {
         fn execute_from_outside_v2(
             ref self: ContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            panic_with_felt252('not-allowed-yet')
+            assert(!self.outside_nonces.read(outside_execution.nonce), 'gift-acc/dup-outside-nonce');
+            self.outside_nonces.write(outside_execution.nonce, true);
+
+            // TODO hashing
+            let claim_external_hash = 0x1236;
+            // let hash = outside_execution.get_message_hash_rev_1(claim_address);
+
+            let (r, s): (felt252, felt252) = full_deserialize(signature).expect('gift-fact/invalid-signature');
+            assert(
+                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, r, s), 'gift-fact/invalid-out-signature'
+            );
+
+            if outside_execution.caller.into() != 'ANY_CALLER' {
+                assert(get_caller_address() == outside_execution.caller, 'argent/invalid-caller');
+            }
+
+            let block_timestamp = get_block_timestamp();
+            assert(
+                outside_execution.execute_after < block_timestamp && block_timestamp < outside_execution.execute_before,
+                'argent/invalid-timestamp'
+            );
+
+            assert(outside_execution.calls.len() == 2, 'gift-fact/call-len');
+
+            // validate 1st call
+            let refund_call = outside_execution.calls.at(0);
+            assert(*refund_call.selector == selector!("transfer"), 'gift-fact/refcall-selector');
+            assert(*refund_call.to == claim.fee_token, 'gift-fact/refcall-to');
+            let (refund_receiver, refund_amount): (ContractAddress, u256) = full_deserialize(*refund_call.calldata)
+                .expect('gift-fact/invalid-ref-calldata');
+            assert(refund_receiver.is_non_zero(), 'gift-fact/refcall-receiver');
+            assert(refund_amount <= claim.fee_amount.into(), 'gift-fact/refcall-amount');
+
+            // validate 2nd call
+            let claim_call = outside_execution.calls.at(1);
+            assert(*claim_call.to == claim.factory, 'gift-fact/claimcall-to');
+            // TODO ideally the function claim_from_outside actually exists in the factory to help with the gas estimation
+            assert(*claim_call.selector == selector!("claim_from_outside"), 'gift-fact/claimcall-to');
+            let (claim_receiver, dust_receiver): (ContractAddress, ContractAddress) = full_deserialize(
+                *refund_call.calldata
+            )
+                .expect('gift-fact/claimcall-calldata');
+
+            // Proceed with the calls
+            // We could optimize and make only one call to `execute_factory_calls`
+            transfer_from_account(claim.fee_token, refund_receiver, refund_amount);
+            self.proceed_with_claim(claim, claim_receiver, dust_receiver);
+            array![
+                serialize(@(true)).span(), // return from the transfer call
+                array![].span() // return from the claim call
+            ]
         }
     }
 
