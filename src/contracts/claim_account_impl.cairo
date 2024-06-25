@@ -18,7 +18,7 @@ pub trait IClaimAccountImpl<TContractState> {
 }
 
 #[starknet::interface]
-pub trait ILama<TContractState> {
+pub trait IExecutableAction<TContractState> {
     fn claim_external(
         ref self: TContractState,
         claim: ClaimData,
@@ -139,7 +139,7 @@ mod ClaimAccountImpl {
     }
 
     // Never embed this trait.
-    impl LamaImpl of super::ILama<ContractState> {
+    impl ExecutableActionImpl of super::IExecutableAction<ContractState> {
         fn claim_external(
             ref self: ContractState,
             claim: ClaimData,
