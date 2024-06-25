@@ -1,10 +1,9 @@
 import {
   Account,
-  Call,
   CallData,
   Calldata,
-  InvokeFunctionResponse,
   RPC,
+  TransactionReceipt,
   UniversalDetails,
   ec,
   encode,
@@ -13,6 +12,7 @@ import {
   shortString,
   uint256,
 } from "starknet";
+
 import {
   LegacyStarknetKeyPair,
   StarknetSignature,
@@ -112,7 +112,7 @@ export async function claimExternal(args: {
   claimPrivateKey: string;
   overrides?: { claimAccountAddress?: string; account?: Account };
   details?: UniversalDetails;
-}): Promise<InvokeFunctionResponse> {
+}): Promise<TransactionReceipt> {
   const account = args.overrides?.account || deployer;
   const signature = await signExternalClaim({
     claim: args.claim,
@@ -128,11 +128,12 @@ export async function claimExternal(args: {
     args.dustReceiver || "0x0",
     signature,
   ]);
-  return await account.execute(
+  const response = await account.execute(
     externalActionOnAccount("claim_external", calculateClaimAddress(args.claim), claimExternalCallData),
     undefined,
     { ...args.details },
   );
+  return manager.waitForTransaction(response.transaction_hash);
 }
 
 function externalActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
@@ -149,10 +150,10 @@ export async function claimInternal(args: {
   claimPrivateKey: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string };
   details?: UniversalDetails;
-}): Promise<InvokeFunctionResponse> {
+}): Promise<TransactionReceipt> {
   const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
   const claimAccount = getClaimAccount(args.claim, args.claimPrivateKey, claimAddress);
-  return await claimAccount.execute(
+  const response = await claimAccount.execute(
     [
       {
         contractAddress: claimAddress,
@@ -163,22 +164,29 @@ export async function claimInternal(args: {
     undefined,
     { ...args.details },
   );
+  return manager.waitForTransaction(response.transaction_hash);
 }
 
-export async function cancelGift(args: { claim: Claim; senderAccount?: Account }): Promise<InvokeFunctionResponse> {
+export async function cancelGift(args: { claim: Claim; senderAccount?: Account }): Promise<TransactionReceipt> {
   const cancelCallData = CallData.compile([buildCallDataClaim(args.claim)]);
   const account = args.senderAccount || deployer;
-  return await account.execute(externalActionOnAccount("cancel", calculateClaimAddress(args.claim), cancelCallData));
+  const response = await account.execute(
+    externalActionOnAccount("cancel", calculateClaimAddress(args.claim), cancelCallData),
+  );
+  return manager.waitForTransaction(response.transaction_hash);
 }
 
 export async function getDust(args: {
   claim: Claim;
   receiver: string;
   factoryOwner?: Account;
-}): Promise<InvokeFunctionResponse> {
+}): Promise<TransactionReceipt> {
   const getDustCallData = CallData.compile([buildCallDataClaim(args.claim), args.receiver]);
   const account = args.factoryOwner || deployer;
-  return await account.execute(externalActionOnAccount("get_dust", calculateClaimAddress(args.claim), getDustCallData));
+  const response = await account.execute(
+    externalActionOnAccount("get_dust", calculateClaimAddress(args.claim), getDustCallData),
+  );
+  return manager.waitForTransaction(response.transaction_hash);
 }
 
 function useTxv3(tokenAddress: string): boolean {

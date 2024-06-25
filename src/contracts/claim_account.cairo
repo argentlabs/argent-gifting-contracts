@@ -4,7 +4,7 @@ mod ClaimAccount {
     use core::num::traits::Zero;
     use starknet::{
         TxInfo, account::Call, VALIDATED, syscalls::library_call_syscall, ContractAddress, get_contract_address,
-         get_execution_info, ClassHash
+        get_execution_info, ClassHash
     };
     use starknet_gifting::contracts::claim_account_impl::{
         IClaimAccountImplLibraryDispatcher, IClaimAccountImplDispatcherTrait

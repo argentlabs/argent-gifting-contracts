@@ -1,8 +1,18 @@
-import { Account, Call, CallData, Contract, InvokeFunctionResponse, hash, uint256 } from "starknet";
+import { Account, Call, CallData, Contract, InvokeFunctionResponse, TransactionReceipt, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
-export const GIFT_AMOUNT = 1000000000000000n;
-export const GIFT_MAX_FEE = 50000000000000n;
+export const STRK_GIFT_MAX_FEE = 200000000000000000n; // 0.2 STRK
+export const STRK_GIFT_AMOUNT = STRK_GIFT_MAX_FEE + 1n;
+export const ETH_GIFT_MAX_FEE = 200000000000000n; // 0.0002 ETH
+export const ETH_GIFT_AMOUNT = ETH_GIFT_MAX_FEE + 1n;
+
+export function getMaxFee(useTxV3: boolean): bigint {
+  return useTxV3 ? STRK_GIFT_MAX_FEE : ETH_GIFT_MAX_FEE;
+}
+
+export function getGiftAmount(useTxV3: boolean): bigint {
+  return useTxV3 ? STRK_GIFT_AMOUNT : ETH_GIFT_AMOUNT;
+}
 
 export async function deposit(depositParams: {
   sender: Account;
@@ -59,11 +69,11 @@ export async function defaultDepositTestSetup(args: {
 }): Promise<{
   claim: Claim;
   claimPrivateKey: string;
-  response: InvokeFunctionResponse;
+  txReceipt: TransactionReceipt;
 }> {
-  const giftAmount = args.overrides?.giftAmount ?? GIFT_AMOUNT;
-  const feeAmount = args.overrides?.feeAmount ?? GIFT_MAX_FEE;
   const useTxV3 = args.useTxV3 || false;
+  const giftAmount = args.overrides?.giftAmount ?? getGiftAmount(useTxV3);
+  const feeAmount = args.overrides?.feeAmount ?? getMaxFee(useTxV3);
 
   const feeToken = args.overrides?.feeTokenAddress
     ? await manager.loadContract(args.overrides.feeTokenAddress)
@@ -82,8 +92,8 @@ export async function defaultDepositTestSetup(args: {
     giftTokenAddress,
     claimSignerPubKey: claimPubKey,
   });
-
-  return { claim, claimPrivateKey: claimSigner.privateKey, response };
+  const txReceipt = await manager.waitForTransaction(response.transaction_hash);
+  return { claim, claimPrivateKey: claimSigner.privateKey, txReceipt };
 }
 
 export function calculateClaimAddress(claim: Claim): string {
