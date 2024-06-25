@@ -1,7 +1,5 @@
 use openzeppelin::utils::deployments::calculate_contract_address_from_deploy_syscall;
-use starknet::{
-    ContractAddress, account::Call, contract_address::contract_address_const, syscalls::call_contract_syscall
-};
+use starknet::{ContractAddress, account::Call, contract_address::contract_address_const};
 use starknet_gifting::contracts::interface::{ClaimData, AccountConstructorArguments};
 
 pub const TX_V1: felt252 = 1; // INVOKE

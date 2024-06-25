@@ -49,13 +49,6 @@ mod ClaimAccountImpl {
     #[storage]
     struct Storage {}
 
-    #[derive(Drop, Copy)]
-    struct TransferFromAccount {
-        token: ContractAddress,
-        amount: u256,
-        receiver: ContractAddress,
-    }
-
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
@@ -76,7 +69,7 @@ mod ClaimAccountImpl {
     fn constructor(ref self: ContractState) {
         // This prevents creating instances of this classhash by mistakes, as it's not needed. But it's still possible to create it replacing classhashes.
         // This is not recommended and this contract is intended to be used through library calls only.
-        panic_with_felt252('not-allowed');
+        panic_with_felt252('not-allowed')
     }
 
     #[abi(embed_v0)]
@@ -145,8 +138,7 @@ mod ClaimAccountImpl {
         fn execute_from_outside_v2(
             ref self: ContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            panic_with_felt252('not-allowed-yet');
-            array![]
+            panic_with_felt252('not-allowed-yet')
         }
     }
 
