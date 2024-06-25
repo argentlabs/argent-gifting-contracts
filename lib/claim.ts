@@ -137,7 +137,6 @@ export async function claimExternal(args: {
 }
 
 function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
-  // TODO WE NEED THE CLASS HASH
   return {
     contractAddress: accountAddress,
     entrypoint: "execute_action",
