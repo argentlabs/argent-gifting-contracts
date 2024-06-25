@@ -116,10 +116,12 @@ mod ClaimAccount {
     impl GiftAccountImpl of IGiftAccount<ContractState> {
         fn execute_action(ref self: ContractState, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
-            let _selector = calldata_span.pop_front(); // Skip the selector
+            let selector = *calldata_span.pop_front().expect('gift-acc/missing-selector');
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
-            library_call_syscall(implementation_class_hash, selector!("execute_action"), calldata.span()).unwrap()
+
+            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
+                .execute_action(selector, claim, calldata_span)
         }
     }
 

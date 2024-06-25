@@ -7,7 +7,7 @@ pub trait IClaimAccountImpl<TContractState> {
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress) -> Array<Span<felt252>>;
 
     fn execute_action(
-        ref self: TContractState, selector: felt252, claim: ClaimData, calldata: Array<felt252>
+        ref self: TContractState, selector: felt252, claim: ClaimData, calldata: Span<felt252>
     ) -> Span<felt252>;
 
     fn is_valid_account_signature(
@@ -96,13 +96,12 @@ mod ClaimAccountImpl {
         }
 
         fn execute_action(
-            ref self: ContractState, selector: felt252, claim: ClaimData, calldata: Array<felt252>
+            ref self: ContractState, selector: felt252, claim: ClaimData, calldata: Span<felt252>
         ) -> Span<felt252> {
-            let mut leftovers = calldata.span();
             if selector == selector!("claim_external") {
                 let (receiver, dust_receiver, signature): (ContractAddress, ContractAddress, StarknetSignature) =
                     full_deserialize(
-                    leftovers
+                    calldata
                 )
                     .unwrap();
                 self.claim_external(claim, receiver, dust_receiver, signature);
@@ -110,7 +109,7 @@ mod ClaimAccountImpl {
                 assert(calldata.is_empty(), 'gift/invalid-calldata');
                 self.cancel(claim);
             } else if selector == selector!("get_dust") {
-                let receiver: ContractAddress = full_deserialize(leftovers).unwrap();
+                let receiver: ContractAddress = full_deserialize(calldata).unwrap();
                 self.get_dust(claim, receiver);
             } else {
                 panic_with_felt252('gift/invalid-selector');
