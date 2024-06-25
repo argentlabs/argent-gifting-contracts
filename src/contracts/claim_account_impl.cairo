@@ -114,7 +114,7 @@ mod ClaimAccountImpl {
         }
     }
 
-    // Never embed this trait.
+    #[abi(embed_v0)]
     impl ExecutableActionImpl of super::IExecutableAction<ContractState> {
         fn claim_external(
             ref self: ContractState,

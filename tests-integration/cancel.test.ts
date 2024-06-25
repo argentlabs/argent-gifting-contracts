@@ -13,7 +13,7 @@ import {
 } from "../lib";
 
 describe("Cancel Claim", function () {
-  it.only(`Cancel Claim (fee_token == gift_token)`, async function () {
+  it(`Cancel Claim (fee_token == gift_token)`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
