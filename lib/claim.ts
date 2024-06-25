@@ -1,14 +1,4 @@
-import {
-  Account,
-  InvokeFunctionResponse,
-  RPC,
-  UniversalDetails,
-  ec,
-  encode,
-  num,
-  shortString,
-  uint256,
-} from "starknet";
+import { Account, RPC, TransactionReceipt, UniversalDetails, ec, encode, num, shortString, uint256 } from "starknet";
 import {
   LegacyStarknetKeyPair,
   StarknetSignature,
@@ -108,7 +98,7 @@ export async function claimExternal(args: {
   dustReceiver?: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string; account?: Account };
   details?: UniversalDetails;
-}): Promise<InvokeFunctionResponse> {
+}): Promise<TransactionReceipt> {
   const account = args.overrides?.account || deployer;
   const signature = await signExternalClaim({
     claim: args.claim,
@@ -117,7 +107,8 @@ export async function claimExternal(args: {
     forceClaimAddress: args.overrides?.claimAccountAddress,
     dustReceiver: args.dustReceiver,
   });
-  return await account.execute(
+
+  const response = await account.execute(
     [
       {
         contractAddress: args.overrides?.factoryAddress || args.claim.factory,
@@ -128,6 +119,8 @@ export async function claimExternal(args: {
     undefined,
     { ...args.details },
   );
+
+  return manager.waitForTransaction(response.transaction_hash);
 }
 
 export async function claimInternal(args: {
@@ -136,10 +129,10 @@ export async function claimInternal(args: {
   claimPrivateKey: string;
   overrides?: { claimAccountAddress?: string; factoryAddress?: string };
   details?: UniversalDetails;
-}): Promise<InvokeFunctionResponse> {
+}): Promise<TransactionReceipt> {
   const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
   const claimAccount = getClaimAccount(args.claim, args.claimPrivateKey, claimAddress);
-  return await claimAccount.execute(
+  const response = await claimAccount.execute(
     [
       {
         contractAddress: args.overrides?.factoryAddress || args.claim.factory,
@@ -150,6 +143,7 @@ export async function claimInternal(args: {
     undefined,
     { ...args.details },
   );
+  return manager.waitForTransaction(response.transaction_hash);
 }
 
 function useTxv3(tokenAddress: string): boolean {
