@@ -147,7 +147,7 @@ mod ClaimAccountImpl {
         fn is_valid_account_signature(
             self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
         ) -> felt252 {
-            0 // Accounts don't support offchain signatures now, but it could
+            0 // Accounts don't support off-chain signatures yet
         }
 
         fn execute_from_outside_v2(
