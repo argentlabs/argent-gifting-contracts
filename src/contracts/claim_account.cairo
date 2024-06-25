@@ -121,16 +121,7 @@ mod ClaimAccount {
             let implementation_class_hash = get_validated_impl(claim);
 
             IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
-                .execute_action(selector, claim, calldata_span)
-        }
-    }
-
-    #[generate_trait]
-    impl ArrayExt<T, +Drop<T>, +Copy<T>> of ArrayExtTrait<T> {
-        fn append_all(ref self: Array<T>, mut value: Span<T>) {
-            while let Option::Some(item) = value.pop_front() {
-                self.append(*item);
-            };
+                .execute_action(implementation_class_hash, selector, claim, calldata_span)
         }
     }
 

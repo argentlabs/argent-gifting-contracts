@@ -1,4 +1,4 @@
-use starknet::{ContractAddress};
+use starknet::{ContractAddress, ClassHash};
 use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
 
 
@@ -7,7 +7,7 @@ pub trait IClaimAccountImpl<TContractState> {
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress) -> Array<Span<felt252>>;
 
     fn execute_action(
-        ref self: TContractState, selector: felt252, claim: ClaimData, calldata: Span<felt252>
+        ref self: TContractState, this_class_hash: ClassHash, selector: felt252, claim: ClaimData, args: Span<felt252>
     ) -> Span<felt252>;
 
     fn is_valid_account_signature(
@@ -48,7 +48,9 @@ mod ClaimAccountImpl {
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
-    use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address};
+    use starknet::{
+        ClassHash, ContractAddress, get_caller_address, get_contract_address, syscalls::library_call_syscall
+    };
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
     use starknet_gifting::contracts::utils::full_deserialize;
@@ -96,25 +98,17 @@ mod ClaimAccountImpl {
         }
 
         fn execute_action(
-            ref self: ContractState, selector: felt252, claim: ClaimData, calldata: Span<felt252>
+            ref self: ContractState,
+            this_class_hash: ClassHash,
+            selector: felt252,
+            claim: ClaimData,
+            args: Span<felt252>
         ) -> Span<felt252> {
-            if selector == selector!("claim_external") {
-                let (receiver, dust_receiver, signature): (ContractAddress, ContractAddress, StarknetSignature) =
-                    full_deserialize(
-                    calldata
-                )
-                    .unwrap();
-                self.claim_external(claim, receiver, dust_receiver, signature);
-            } else if selector == selector!("cancel") {
-                assert(calldata.is_empty(), 'gift/invalid-calldata');
-                self.cancel(claim);
-            } else if selector == selector!("get_dust") {
-                let receiver: ContractAddress = full_deserialize(calldata).unwrap();
-                self.get_dust(claim, receiver);
-            } else {
-                panic_with_felt252('gift/invalid-selector');
-            }
-            array![].span()
+            let is_whitelisted = selector == selector!("claim_external")
+                || selector == selector!("get_dust")
+                || selector == selector!("cancel");
+            assert(is_whitelisted, 'gift/invalid-selector');
+            library_call_syscall(this_class_hash, selector, args).unwrap()
         }
 
         fn is_valid_account_signature(
