@@ -23,16 +23,16 @@ Resources:
 ├───────────────────────────────────────┼─────────┼───────┼───────┼────────┼──────────┼──────────┼─────────────┼───────┤
 │     Transfer ETH (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    25    │    0     │     181     │ 8184  │
 │     Transfer STRK (FeeToken: WEI)     │    0    │   3   │   0   │   0    │    25    │    0     │     181     │ 8184  │
-│      Gifting WEI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    47    │    0     │     334     │ 14506 │
-│     Claiming WEI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    47    │    0     │     373     │ 11718 │
-│ Claiming external WEI (FeeToken: WEI) │    0    │   6   │   0   │   0    │    52    │    4     │     427     │ 15437 │
-│      Gifting WEI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    63    │    0     │     460     │ 20478 │
-│     Claiming WEI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    47    │    0     │     407     │ 11916 │
-│ Claiming external WEI (FeeToken: FRI) │    0    │   6   │   0   │   0    │    52    │    4     │     427     │ 15437 │
-│      Gifting FRI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    63    │    0     │     460     │ 20477 │
-│     Claiming FRI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    47    │    0     │     373     │ 11718 │
-│ Claiming external FRI (FeeToken: WEI) │    0    │   6   │   0   │   0    │    52    │    4     │     427     │ 15437 │
-│      Gifting FRI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    47    │    0     │     334     │ 14507 │
-│     Claiming FRI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    47    │    0     │     407     │ 11916 │
-│ Claiming external FRI (FeeToken: FRI) │    0    │   6   │   0   │   0    │    52    │    4     │     427     │ 15437 │
+│      Gifting WEI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    48    │    0     │     339     │ 14627 │
+│     Claiming WEI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    47    │    0     │     373     │ 11715 │
+│ Claiming external WEI (FeeToken: WEI) │    0    │   6   │   0   │   0    │    52    │    4     │     427     │ 15434 │
+│      Gifting WEI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    64    │    0     │     465     │ 20599 │
+│     Claiming WEI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    47    │    0     │     407     │ 11913 │
+│ Claiming external WEI (FeeToken: FRI) │    0    │   6   │   0   │   0    │    52    │    4     │     427     │ 15434 │
+│      Gifting FRI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    64    │    0     │     465     │ 20598 │
+│     Claiming FRI (FeeToken: WEI)      │    0    │   3   │   0   │   0    │    47    │    0     │     373     │ 11715 │
+│ Claiming external FRI (FeeToken: WEI) │    0    │   6   │   0   │   0    │    52    │    4     │     427     │ 15434 │
+│      Gifting FRI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    48    │    0     │     339     │ 14628 │
+│     Claiming FRI (FeeToken: FRI)      │    0    │   3   │   0   │   0    │    47    │    0     │     407     │ 11913 │
+│ Claiming external FRI (FeeToken: FRI) │    0    │   6   │   0   │   0    │    52    │    4     │     427     │ 15434 │
 └───────────────────────────────────────┴─────────┴───────┴───────┴────────┴──────────┴──────────┴─────────────┴───────┘
