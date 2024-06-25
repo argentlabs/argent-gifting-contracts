@@ -16,32 +16,27 @@ export function getGiftAmount(useTxV3: boolean): bigint {
 
 export async function deposit(depositParams: {
   sender: Account;
-  claimAccountClassHash: string;
   giftAmount: bigint;
   feeAmount: bigint;
   factoryAddress: string;
   feeTokenAddress: string;
   giftTokenAddress: string;
   claimSignerPubKey: bigint;
+  overrides?: {
+    claimAccountClassHash?: string;
+  };
 }): Promise<{ response: InvokeFunctionResponse; claim: Claim }> {
-  const {
-    sender,
-    claimAccountClassHash,
-    giftAmount,
-    feeAmount,
-    factoryAddress,
-    feeTokenAddress,
-    giftTokenAddress,
-    claimSignerPubKey,
-  } = depositParams;
+  const { sender, giftAmount, feeAmount, factoryAddress, feeTokenAddress, giftTokenAddress, claimSignerPubKey } =
+    depositParams;
   const factory = await manager.loadContract(factoryAddress);
   const feeToken = await manager.loadContract(feeTokenAddress);
   const giftToken = await manager.loadContract(giftTokenAddress);
 
-  const classHash = await factory.get_latest_claim_class_hash();
+  const claimAccountClassHash =
+    depositParams.overrides?.claimAccountClassHash || (await factory.get_latest_claim_class_hash());
   const claim: Claim = {
     factory: factoryAddress,
-    class_hash: classHash,
+    class_hash: claimAccountClassHash,
     sender: deployer.address,
     gift_token: giftTokenAddress,
     gift_amount: giftAmount,
@@ -74,9 +69,9 @@ export async function deposit(depositParams: {
 
 export async function defaultDepositTestSetup(args: {
   factory: Contract;
-  claimAccountClassHash: string;
   useTxV3?: boolean;
   overrides?: {
+    claimAccountClassHash?: string;
     claimPrivateKey?: bigint;
     giftTokenAddress?: string;
     feeTokenAddress?: string;
@@ -88,6 +83,8 @@ export async function defaultDepositTestSetup(args: {
   claimPrivateKey: string;
   txReceipt: TransactionReceipt;
 }> {
+  const claimAccountClassHash =
+    args.overrides?.claimAccountClassHash || (await args.factory.get_latest_claim_class_hash());
   const useTxV3 = args.useTxV3 || false;
   const giftAmount = args.overrides?.giftAmount ?? getGiftAmount(useTxV3);
   const feeAmount = args.overrides?.feeAmount ?? getMaxFee(useTxV3);
@@ -102,7 +99,7 @@ export async function defaultDepositTestSetup(args: {
 
   const { response, claim } = await deposit({
     sender: deployer,
-    claimAccountClassHash: args.claimAccountClassHash,
+    overrides: { claimAccountClassHash },
     giftAmount,
     feeAmount,
     factoryAddress: args.factory.address,

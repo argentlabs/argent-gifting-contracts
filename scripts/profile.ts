@@ -39,12 +39,11 @@ await profiler.profile(
 for (const { giftTokenContract, unit } of tokens) {
   for (const useTxV3 of [false, true]) {
     const receiver = "0x42";
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { factory } = await setupGiftProtocol();
 
     // Make a gift
     const { txReceipt, claim, claimPrivateKey } = await defaultDepositTestSetup({
       factory,
-      claimAccountClassHash,
       useTxV3,
       overrides: {
         claimPrivateKey: 42n,
@@ -54,7 +53,6 @@ for (const { giftTokenContract, unit } of tokens) {
 
     const { claim: claimExternalOj, claimPrivateKey: claimPrivateKeyExternal } = await defaultDepositTestSetup({
       factory,
-      claimAccountClassHash,
       useTxV3,
       overrides: {
         claimPrivateKey: 43n,

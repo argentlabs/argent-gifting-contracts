@@ -20,8 +20,8 @@ import {
 
 describe("Test Core Factory Functions", function () {
   it(`Calculate claim address`, async function () {
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
+    const { factory } = await setupGiftProtocol();
+    const { claim } = await defaultDepositTestSetup({ factory });
 
     const claimAddress = await factory.get_claim_address(
       claim.class_hash,
@@ -39,8 +39,8 @@ describe("Test Core Factory Functions", function () {
 
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
-      const { factory, claimAccountClassHash } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, claimAccountClassHash, useTxV3 });
+      const { factory } = await setupGiftProtocol();
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       const dustReceiver = randomReceiver();
 
@@ -67,7 +67,7 @@ describe("Test Core Factory Functions", function () {
 
   it(`Pausable`, async function () {
     // Deploy factory
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
     const claimSigner = new LegacyStarknetKeyPair();
 
@@ -81,7 +81,6 @@ describe("Test Core Factory Functions", function () {
     await expectRevertWithErrorMessage("Pausable: paused", async () => {
       const { response } = await deposit({
         sender: deployer,
-        claimAccountClassHash,
         giftAmount: ETH_GIFT_AMOUNT,
         feeAmount: ETH_GIFT_MAX_FEE,
         factoryAddress: factory.address,
@@ -96,7 +95,6 @@ describe("Test Core Factory Functions", function () {
     await manager.waitForTransaction(txHash2);
     const { claim } = await defaultDepositTestSetup({
       factory,
-      claimAccountClassHash,
       overrides: { claimPrivateKey: BigInt(claimSigner.privateKey) },
     });
     const { execution_status } = await claimInternal({
@@ -130,8 +128,8 @@ describe("Test Core Factory Functions", function () {
     });
 
     it("Ownable: Get Dust", async function () {
-      const { factory, claimAccountClassHash } = await setupGiftProtocol();
-      const { claim } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
+      const { factory } = await setupGiftProtocol();
+      const { claim } = await defaultDepositTestSetup({ factory });
       const dustReceiver = randomReceiver();
 
       factory.connect(devnetAccount());
