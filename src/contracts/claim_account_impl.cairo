@@ -65,19 +65,12 @@ mod ClaimAccountImpl {
 
     #[derive(Drop, starknet::Event)]
     struct GiftClaimed {
-        // TODO remove gift address as it's redundant
-        #[key]
-        gift_address: ContractAddress,
         receiver: ContractAddress,
         dust_receiver: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GiftCancelled {
-        // TODO remove gift address as it's redundant
-        #[key]
-        gift_address: ContractAddress,
-    }
+    struct GiftCancelled {}
 
     #[constructor]
     fn constructor(ref self: ContractState) {
@@ -126,7 +119,7 @@ mod ClaimAccountImpl {
                 self.transfer_from_account(claim.gift_token, gift_balance, claim.sender);
                 self.transfer_from_account(claim.fee_token, fee_balance, claim.sender);
             }
-            self.emit(GiftCancelled { gift_address: contract_address });
+            self.emit(GiftCancelled {});
         }
 
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
@@ -185,7 +178,7 @@ mod ClaimAccountImpl {
                     self.transfer_from_account(claim.fee_token, dust, dust_receiver);
                 }
             }
-            self.emit(GiftClaimed { gift_address: contract_address, receiver, dust_receiver });
+            self.emit(GiftClaimed { receiver, dust_receiver });
         }
 
         fn transfer_from_account(
