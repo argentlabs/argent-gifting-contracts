@@ -109,8 +109,8 @@ export async function signExternalClaim(signParams: {
 export async function claimExternal(args: {
   claim: Claim;
   receiver: string;
-  dustReceiver?: string;
   claimPrivateKey: string;
+  dustReceiver?: string;
   overrides?: { account?: Account };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
