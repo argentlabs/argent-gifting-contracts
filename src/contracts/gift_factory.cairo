@@ -89,6 +89,7 @@ mod GiftFactory {
     impl GiftFactoryImpl of IGiftFactory<ContractState> {
         fn deposit(
             ref self: ContractState,
+            claim_class_hash: ClassHash,
             gift_token: ContractAddress,
             gift_amount: u256,
             fee_token: ContractAddress,
@@ -105,6 +106,7 @@ mod GiftFactory {
             let sender = get_caller_address();
             // TODO We could manually serialize for better performance but then we loose the type safety
             let class_hash = self.claim_class_hash.read();
+            assert(class_hash == claim_class_hash, 'gift-fac/invalid-class-hash');
             let constructor_arguments = AccountConstructorArguments {
                 sender, gift_token, gift_amount, fee_token, fee_amount, claim_pubkey
             };
