@@ -6,7 +6,9 @@ use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, Starkn
 pub trait IClaimAccountImpl<TContractState> {
     fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress) -> Array<Span<felt252>>;
 
-    fn execute_action(ref self: TContractState, calldata: Array<felt252>) -> Span<felt252>;
+    fn execute_action(
+        ref self: TContractState, selector: felt252, claim: ClaimData, calldata: Array<felt252>
+    ) -> Span<felt252>;
 
     fn is_valid_account_signature(
         self: @TContractState, claim: ClaimData, hash: felt252, remaining_signature: Span<felt252>
@@ -46,7 +48,7 @@ mod ClaimAccountImpl {
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
-    use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address,};
+    use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address};
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
     use starknet_gifting::contracts::utils::full_deserialize;
@@ -93,24 +95,23 @@ mod ClaimAccountImpl {
             array![]
         }
 
-        fn execute_action(ref self: ContractState, mut calldata: Array<felt252>) -> Span<felt252> {
-            let selector = calldata.pop_front().unwrap();
+        fn execute_action(
+            ref self: ContractState, selector: felt252, claim: ClaimData, calldata: Array<felt252>
+        ) -> Span<felt252> {
             let mut leftovers = calldata.span();
             if selector == selector!("claim_external") {
-                let (
-                    claimData, receiver, dust_receiver, signature
-                ): (ClaimData, ContractAddress, ContractAddress, StarknetSignature) =
+                let (receiver, dust_receiver, signature): (ContractAddress, ContractAddress, StarknetSignature) =
                     full_deserialize(
                     leftovers
                 )
                     .unwrap();
-                self.claim_external(claimData, receiver, dust_receiver, signature);
+                self.claim_external(claim, receiver, dust_receiver, signature);
             } else if selector == selector!("cancel") {
-                let claimData: ClaimData = full_deserialize(leftovers).unwrap();
-                self.cancel(claimData);
+                assert(calldata.is_empty(), 'gift/invalid-calldata');
+                self.cancel(claim);
             } else if selector == selector!("get_dust") {
-                let (claimData, receiver): (ClaimData, ContractAddress) = full_deserialize(leftovers).unwrap();
-                self.get_dust(claimData, receiver);
+                let receiver: ContractAddress = full_deserialize(leftovers).unwrap();
+                self.get_dust(claim, receiver);
             } else {
                 panic_with_felt252('gift/invalid-selector');
             }
