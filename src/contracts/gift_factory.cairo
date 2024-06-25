@@ -59,9 +59,9 @@ mod GiftFactory {
         get_block_timestamp
     };
     use starknet_gifting::contracts::claim_account::{IGiftAccount, IGiftAccountDispatcher, AccountConstructorArguments};
+    use starknet_gifting::contracts::claim_data::{ClaimData};
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::gift_factory::IGiftFactory;
-    use starknet_gifting::contracts::claim_data::{ClaimData};
     use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
     use starknet_gifting::contracts::utils::{
         calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
