@@ -47,10 +47,10 @@ mod ClaimAccount {
             assert(execution_info.caller_address.is_zero(), 'gift-acc/only-protocol');
             assert(calls.len() == 1, 'gift-acc/invalid-call-len');
             let Call { to, selector, calldata } = calls.at(0);
+            assert(*to == get_contract_address(), 'gift-acc/invalid-call-to');
             assert(*selector == selector!("claim_internal"), 'gift-acc/invalid-call-selector');
             let (claim, _): (ClaimData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
-            assert(*to == get_contract_address(), 'gift-acc/invalid-call-to');
             assert_valid_claim(claim);
 
             let tx_info = execution_info.tx_info.unbox();

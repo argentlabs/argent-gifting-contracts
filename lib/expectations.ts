@@ -28,16 +28,11 @@ export async function expectRevertWithErrorMessage(
     if (e.toString().includes(encodedErrorMessage)) {
       return;
     }
-
-    const match = e.toString().match(/\[([^\]]+)]/);
-    if (match && match.length > 1) {
-      console.log(e);
-      assert.fail(`"${errorMessage}" not detected, instead got: "${shortString.decodeShortString(match[1])}"`);
-    } else {
-      // With e.toString() the error message is not fully displayed
-      console.log(e);
-      assert.fail(`Couldn't find the error (see just above)`);
-    }
+    // With e.toString() the error message is not fully displayed
+    console.log(e);
+    assert.fail(
+      `Couldn't find the error '${errorMessage}' (${shortString.encodeShortString(errorMessage)}) see message above`,
+    );
   }
   assert.fail("No error detected");
 }

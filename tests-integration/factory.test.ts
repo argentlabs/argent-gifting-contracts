@@ -127,12 +127,12 @@ describe("Test Core Factory Functions", function () {
       await factory.unpause();
     });
 
-    it("Get Dust", async function () {
+    it("Ownable: Get Dust", async function () {
       const { factory } = await setupGiftProtocol();
       const { claim } = await defaultDepositTestSetup({ factory });
       const dustReceiver = randomReceiver();
 
-      await expectRevertWithErrorMessage("Caller is not the owner", () =>
+      await expectRevertWithErrorMessage("gift/only-factory-owner", () =>
         getDust({ claim, receiver: dustReceiver, factoryOwner: devnetAccount() }),
       );
     });

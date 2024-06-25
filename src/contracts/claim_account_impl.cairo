@@ -70,19 +70,12 @@ mod ClaimAccountImpl {
 
     #[derive(Drop, starknet::Event)]
     struct GiftClaimed {
-        // TODO remove gift address as it's redundant
-        #[key]
-        gift_address: ContractAddress,
         receiver: ContractAddress,
         dust_receiver: ContractAddress
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GiftCancelled {
-        // TODO remove gift address as it's redundant
-        #[key]
-        gift_address: ContractAddress,
-    }
+    struct GiftCancelled {}
 
     #[constructor]
     fn constructor(ref self: ContractState) {
@@ -171,13 +164,13 @@ mod ClaimAccountImpl {
                 self.transfer_from_account(claim.gift_token, gift_balance, claim.sender);
                 self.transfer_from_account(claim.fee_token, fee_balance, claim.sender);
             }
-            self.emit(GiftCancelled { gift_address: contract_address });
+            self.emit(GiftCancelled {});
         }
 
         fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
             let contract_address = get_contract_address();
             let factory_owner = IOwnableDispatcher { contract_address: claim.factory }.owner();
-            assert(factory_owner == get_caller_address(), 'gift/openzeppelin');
+            assert(factory_owner == get_caller_address(), 'gift/only-factory-owner');
             let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(contract_address);
             assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
             if claim.gift_token == claim.fee_token {
@@ -216,7 +209,7 @@ mod ClaimAccountImpl {
                     self.transfer_from_account(claim.fee_token, dust, dust_receiver);
                 }
             }
-            self.emit(GiftClaimed { gift_address: contract_address, receiver, dust_receiver });
+            self.emit(GiftClaimed { receiver, dust_receiver });
         }
 
         fn transfer_from_account(
