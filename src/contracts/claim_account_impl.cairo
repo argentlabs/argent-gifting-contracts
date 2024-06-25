@@ -1,11 +1,5 @@
-use starknet::{
-    ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
-    get_block_timestamp
-};
-use starknet_gifting::contracts::interface::{
-    IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-    OutsideExecution, StarknetSignature
-};
+use starknet::{ContractAddress};
+use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
 
 
 #[starknet::interface]
@@ -59,7 +53,7 @@ mod ClaimAccountImpl {
     };
     use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
     use starknet_gifting::contracts::utils::{
-        calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize, execute_multicall
+        calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
     };
 
     #[storage]
@@ -242,6 +236,7 @@ mod ClaimAccountImpl {
                 let dust = if claim.gift_token == claim.fee_token {
                     gift_balance - claim.gift_amount
                 } else {
+                    // TODO Double check reentrancy here
                     IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(contract_address)
                 };
                 if dust > 0 {

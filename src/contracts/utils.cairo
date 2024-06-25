@@ -55,32 +55,3 @@ pub fn calculate_claim_account_address(claim: ClaimData) -> ContractAddress {
         claim.factory
     )
 }
-
-pub fn execute_multicall(mut calls: Span<Call>) -> Array<Span<felt252>> {
-    let mut result = array![];
-    let mut index = 0;
-    while let Option::Some(call) = calls
-        .pop_front() {
-            match call_contract_syscall(*call.to, *call.selector, *call.calldata) {
-                Result::Ok(retdata) => {
-                    result.append(retdata);
-                    index += 1;
-                },
-                Result::Err(revert_reason) => {
-                    let mut data = array!['argent/multicall-failed', index];
-                    data.append_all(revert_reason.span());
-                    panic(data);
-                },
-            }
-        };
-    result
-}
-
-#[generate_trait]
-impl ArrayExt<T, +Drop<T>, +Copy<T>> of ArrayExtTrait<T> {
-    fn append_all(ref self: Array<T>, mut value: Span<T>) {
-        while let Option::Some(item) = value.pop_front() {
-            self.append(*item);
-        };
-    }
-}

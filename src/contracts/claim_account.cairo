@@ -15,7 +15,7 @@ mod ClaimAccount {
     };
     use starknet_gifting::contracts::utils::{
         calculate_claim_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
-        TX_V3, TX_V3_ESTIMATE, execute_multicall
+        TX_V3, TX_V3_ESTIMATE
     };
 
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
@@ -90,7 +90,7 @@ mod ClaimAccount {
                     || tx_version == TX_V1_ESTIMATE,
                 'gift-acc/invalid-tx-version'
             );
-            let Call { to, selector, calldata }: @Call = calls[0];
+            let Call { .., calldata }: @Call = calls[0];
             let (claim, receiver): (ClaimData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
             let implementation_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: claim.factory }
@@ -114,10 +114,12 @@ mod ClaimAccount {
 
     #[abi(embed_v0)]
     impl GiftAccountImpl of IGiftAccount<ContractState> {
-        fn action(self: @ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
+        // TODO rename
+        fn action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
+            // TODO consider delegating to a fixed selector to we can have a whitelist of selectors in the implementation
             starknet::syscalls::library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
         }
     }
