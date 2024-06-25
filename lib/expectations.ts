@@ -23,16 +23,21 @@ export async function expectRevertWithErrorMessage(
     }
     await manager.waitForTransaction(executionResult["transaction_hash"]);
   } catch (e: any) {
-    if (!e.toString().includes(shortString.encodeShortString(errorMessage))) {
-      const match = e.toString().match(/\[([^\]]+)]/);
-      if (match && match.length > 1) {
-        console.log(e);
-        assert.fail(`"${errorMessage}" not detected, instead got: "${shortString.decodeShortString(match[1])}"`);
-      } else {
-        assert.fail(`No error detected in: ${e.toString()}`);
-      }
+    // Sometimes we have some leading zeros added, we slice here the "0x" part and search the whole error stack on this
+    const encodedErrorMessage = shortString.encodeShortString(errorMessage).slice(2);
+    if (e.toString().includes(encodedErrorMessage)) {
+      return;
     }
-    return;
+
+    const match = e.toString().match(/\[([^\]]+)]/);
+    if (match && match.length > 1) {
+      console.log(e);
+      assert.fail(`"${errorMessage}" not detected, instead got: "${shortString.decodeShortString(match[1])}"`);
+    } else {
+      // With e.toString() the error message is not fully displayed
+      console.log(e);
+      assert.fail(`Couldn't find the error (see just above)`);
+    }
   }
   assert.fail("No error detected");
 }

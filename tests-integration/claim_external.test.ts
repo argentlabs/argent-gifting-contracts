@@ -145,6 +145,7 @@ describe("Claim External", function () {
     const balanceSenderBefore = await manager.tokens.tokenBalance(deployer.address, claim.gift_token);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
+    await manager.waitForTransaction(transaction_hash);
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await manager.tokens
@@ -187,13 +188,14 @@ describe("Claim External", function () {
     });
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({
       factory,
-      overrides: { claimPrivateKey: 123456n, giftTokenAddress: reentrant.address },
+      overrides: { giftTokenAddress: reentrant.address },
     });
 
     const claimSig = await signExternalClaim({ claim, receiver, claimPrivateKey });
 
     reentrant.connect(deployer);
-    await reentrant.set_claim_data(claim, receiver, "0x0", claimSig);
+    const { transaction_hash } = await reentrant.set_claim_data(claim, receiver, "0x0", claimSig);
+    await manager.waitForTransaction(transaction_hash);
 
     await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
       claimExternal({ claim, receiver, claimPrivateKey }),
