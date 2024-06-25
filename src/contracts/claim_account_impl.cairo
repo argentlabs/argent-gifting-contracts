@@ -74,8 +74,9 @@ mod ClaimAccountImpl {
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        // This prevents creating instances of this classhash by mistakes, as it's not needed. But it's still possible to create it replacing classhashes.
-        // This is not recommended and this contract is intended to be used through library calls only.
+        // This prevents creating instances of this classhash by mistake, as it's not needed. 
+        // While it is technically possible to create instances by replacing classhashes, this practice is not recommended. 
+        // This contract is intended to be used exclusively through library calls.
         panic_with_felt252('not-allowed');
     }
 
