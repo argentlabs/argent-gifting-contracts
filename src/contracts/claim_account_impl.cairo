@@ -41,18 +41,15 @@ pub trait ILama<TContractState> {
 
 #[starknet::contract]
 mod ClaimAccountImpl {
-    use core::array::ArrayTrait;
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address,};
-    use starknet_gifting::contracts::claim_account_impl::ILama;
-
-
     use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use starknet_gifting::contracts::interface::{ClaimData, OutsideExecution, StarknetSignature};
+    use starknet_gifting::contracts::utils::full_deserialize;
 
     #[storage]
     struct Storage {}
@@ -107,16 +104,19 @@ mod ClaimAccountImpl {
             let selector = calldata.pop_front().unwrap();
             let mut leftovers = calldata.span();
             if selector == selector!("claim_external") {
-                let claimData: ClaimData = Serde::deserialize(ref leftovers).unwrap();
-                let receiver: ContractAddress = Serde::deserialize(ref leftovers).unwrap();
-                let dust_receiver: ContractAddress = Serde::deserialize(ref leftovers).unwrap();
-                let signature: StarknetSignature = Serde::deserialize(ref leftovers).unwrap();
+                let (
+                    claimData, receiver, dust_receiver, signature
+                ): (ClaimData, ContractAddress, ContractAddress, StarknetSignature) =
+                    full_deserialize(
+                    leftovers
+                )
+                    .unwrap();
                 self.claim_external(claimData, receiver, dust_receiver, signature);
             } else if selector == selector!("cancel") {
-                let claimData: ClaimData = Serde::deserialize(ref leftovers).unwrap();
+                let claimData: ClaimData = full_deserialize(leftovers).unwrap();
                 self.cancel(claimData);
             } else if selector == selector!("get_dust") {
-                let (claimData, receiver): (ClaimData, ContractAddress) = Serde::deserialize(ref leftovers).unwrap();
+                let (claimData, receiver): (ClaimData, ContractAddress) = full_deserialize(leftovers).unwrap();
                 self.get_dust(claimData, receiver);
             } else {
                 panic_with_felt252('gift/invalid-selector');

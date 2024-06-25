@@ -114,14 +114,12 @@ mod ClaimAccount {
 
     #[abi(embed_v0)]
     impl GiftAccountImpl of IGiftAccount<ContractState> {
-        fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
+        fn execute_action(ref self: ContractState, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
+            let _selector = calldata_span.pop_front(); // Skip the selector
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
-            // TODO consider delegating to a fixed selector to we can have a whitelist of selectors in the implementation
-            let mut new_calldata = array![selector];
-            new_calldata.append_all(calldata.span());
-            library_call_syscall(implementation_class_hash, selector!("execute_action"), new_calldata.span()).unwrap()
+            library_call_syscall(implementation_class_hash, selector!("execute_action"), calldata.span()).unwrap()
         }
     }
 
