@@ -1,11 +1,11 @@
 import { Contract, byteArray, uint256 } from "starknet";
 import { deployer, manager } from ".";
 
-const cache: Record<string, Contract> = {};
+export const protocolCache: Record<string, Contract> = {};
 
 export async function deployMockERC20(): Promise<Contract> {
-  if (cache["MockERC20"]) {
-    return cache["MockERC20"];
+  if (protocolCache["MockERC20"]) {
+    return protocolCache["MockERC20"];
   }
   const mockERC20 = await manager.deployContract("MockERC20", {
     unique: true,
@@ -17,7 +17,7 @@ export async function deployMockERC20(): Promise<Contract> {
       deployer.address,
     ],
   });
-  cache["MockERC20"] = mockERC20;
+  protocolCache["MockERC20"] = mockERC20;
   return mockERC20;
 }
 
@@ -28,7 +28,7 @@ export async function setupGiftProtocol(): Promise<{
 }> {
   const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
   const accountImplementationClassHash = await manager.declareLocalContract("ClaimAccountImpl");
-  const cachedFactory = cache["GiftFactory"];
+  const cachedFactory = protocolCache["GiftFactory"];
   if (cachedFactory) {
     return { factory: cachedFactory, claimAccountClassHash, accountImplementationClassHash };
   }
@@ -36,6 +36,7 @@ export async function setupGiftProtocol(): Promise<{
     unique: true,
     constructorCalldata: [claimAccountClassHash, accountImplementationClassHash, deployer.address],
   });
-  cache["GiftFactory"] = factory;
+
+  protocolCache["GiftFactory"] = factory;
   return { factory, claimAccountClassHash, accountImplementationClassHash };
 }
