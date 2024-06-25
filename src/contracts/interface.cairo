@@ -99,10 +99,6 @@ pub trait IGiftFactory<TContractState> {
         fee_amount: u128,
         claim_pubkey: felt252
     ) -> ContractAddress;
-
-    /// @notice Get the status of a claim
-    /// @param claim The claim data 
-    fn get_gift_status(self: @TContractState, claim: ClaimData) -> GiftStatus;
 }
 
 
@@ -183,13 +179,4 @@ pub struct AccountConstructorArguments {
     pub fee_token: ContractAddress,
     pub fee_amount: u128,
     pub claim_pubkey: felt252
-}
-
-/// @notice Enum representing the status of a gift
-/// @dev ReadyExternalOnly should only happen if there is no fee_amount or if the account reverted during claim_internal
-#[derive(Serde, Drop, Copy)]
-pub enum GiftStatus {
-    ClaimedOrCancelled,
-    Ready,
-    ReadyExternalOnly
 }
