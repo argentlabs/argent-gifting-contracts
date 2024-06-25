@@ -106,12 +106,12 @@ mod ClaimAccountImpl {
             assert(gift_balance > 0, 'gift/already-claimed');
             if claim.gift_token == claim.fee_token {
                 // Sender also gets the dust
-                self.transfer_from_account(claim.gift_token, gift_balance, claim.sender);
+                transfer_from_account(claim.gift_token, claim.sender, gift_balance);
             } else {
                 // Transfer both tokens in a multicall
                 let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(contract_address);
-                self.transfer_from_account(claim.gift_token, gift_balance, claim.sender);
-                self.transfer_from_account(claim.fee_token, fee_balance, claim.sender);
+                transfer_from_account(claim.gift_token, claim.sender, gift_balance);
+                transfer_from_account(claim.fee_token, claim.sender, fee_balance);
             }
             self.emit(GiftCancelled {});
         }
@@ -123,10 +123,10 @@ mod ClaimAccountImpl {
             let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(contract_address);
             assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
             if claim.gift_token == claim.fee_token {
-                self.transfer_from_account(claim.gift_token, gift_balance, receiver);
+                transfer_from_account(claim.gift_token, receiver, gift_balance);
             } else {
                 let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(contract_address);
-                self.transfer_from_account(claim.fee_token, fee_balance, claim.sender);
+                transfer_from_account(claim.fee_token, claim.sender, fee_balance);
             }
         }
 
@@ -157,7 +157,7 @@ mod ClaimAccountImpl {
             // but will increase the complexity of the code for a small performance GiftCanceled
 
             // Transfer the gift
-            self.transfer_from_account(claim.gift_token, claim.gift_amount, receiver);
+            transfer_from_account(claim.gift_token, receiver, claim.gift_amount);
 
             // Transfer the dust
             if dust_receiver.is_non_zero() {
@@ -168,16 +168,14 @@ mod ClaimAccountImpl {
                     IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(contract_address)
                 };
                 if dust > 0 {
-                    self.transfer_from_account(claim.fee_token, dust, dust_receiver);
+                    transfer_from_account(claim.fee_token, dust_receiver, dust);
                 }
             }
             self.emit(GiftClaimed { receiver, dust_receiver });
         }
+    }
 
-        fn transfer_from_account(
-            self: @ContractState, token: ContractAddress, amount: u256, receiver: ContractAddress,
-        ) {
-            assert(IERC20Dispatcher { contract_address: token }.transfer(receiver, amount), 'gift/transfer-failed');
-        }
+    fn transfer_from_account(token: ContractAddress, receiver: ContractAddress, amount: u256,) {
+        assert(IERC20Dispatcher { contract_address: token }.transfer(receiver, amount), 'gift/transfer-failed');
     }
 }
