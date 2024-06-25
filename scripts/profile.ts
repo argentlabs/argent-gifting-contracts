@@ -42,7 +42,7 @@ for (const { giftTokenContract, unit } of tokens) {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
 
     // Make a gift
-    const { response, claim, claimPrivateKey } = await defaultDepositTestSetup({
+    const { txReceipt, claim, claimPrivateKey } = await defaultDepositTestSetup({
       factory,
       claimAccountClassHash,
       useTxV3,
@@ -62,7 +62,7 @@ for (const { giftTokenContract, unit } of tokens) {
       },
     });
 
-    await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
+    await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, txReceipt);
 
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,

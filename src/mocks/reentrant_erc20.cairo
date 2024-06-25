@@ -124,9 +124,7 @@ mod ReentrantERC20 {
                     .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
             }
 
-            self.erc20._transfer(get_caller_address(), recipient, amount);
-
-            true
+            self.erc20.transfer(recipient, amount)
         }
 
         fn total_supply(self: @ContractState) -> u256 {

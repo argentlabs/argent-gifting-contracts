@@ -13,11 +13,11 @@ import {
 describe("All events are emitted", function () {
   it("Deposit", async function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claim, response } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
+    const { claim, txReceipt } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
 
     const claimAddress = calculateClaimAddress(claim);
 
-    await expectEvent(response.transaction_hash, {
+    await expectEvent(txReceipt.transaction_hash, {
       from_address: factory.address,
       eventName: "GiftCreated",
       keys: [claimAddress, deployer.address],

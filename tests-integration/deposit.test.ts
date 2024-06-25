@@ -93,13 +93,13 @@ describe("Deposit", function () {
       const { factory, claimAccountClassHash } = await setupGiftProtocol();
 
       await expectRevertWithErrorMessage("gift-fac/fee-too-high", async () => {
-        const { response } = await defaultDepositTestSetup({
+        const { txReceipt } = await defaultDepositTestSetup({
           factory,
           claimAccountClassHash,
           useTxV3,
           overrides: { giftAmount: 100n, feeAmount: 101n },
         });
-        return response;
+        return txReceipt;
       });
     });
   }
@@ -109,11 +109,11 @@ describe("Deposit", function () {
     const invalidClaimAccountClassHash = "0x1234";
 
     await expectRevertWithErrorMessage("gift-fac/invalid-class-hash", async () => {
-      const { response } = await defaultDepositTestSetup({
+      const { txReceipt } = await defaultDepositTestSetup({
         factory,
         claimAccountClassHash: invalidClaimAccountClassHash,
       });
-      return response;
+      return txReceipt;
     });
   });
 
@@ -124,12 +124,12 @@ describe("Deposit", function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
 
     await expectRevertWithErrorMessage("gift-fac/transfer-gift-failed", async () => {
-      const { response } = await defaultDepositTestSetup({
+      const { txReceipt } = await defaultDepositTestSetup({
         factory,
         claimAccountClassHash,
         overrides: { giftTokenAddress: brokenERC20.address },
       });
-      return response;
+      return txReceipt;
     });
   });
 });

@@ -4,8 +4,8 @@ import {
   defaultDepositTestSetup,
   deployMockERC20,
   deployer,
+  devnetAccount,
   expectRevertWithErrorMessage,
-  genericAccount,
   manager,
   randomReceiver,
   setupGiftProtocol,
@@ -21,6 +21,8 @@ describe("Cancel Claim", function () {
     const balanceSenderBefore = await manager.tokens.tokenBalance(deployer.address, claim.gift_token);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
+    await manager.waitForTransaction(transaction_hash);
+
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await manager.tokens
@@ -49,6 +51,7 @@ describe("Cancel Claim", function () {
     const balanceSenderBeforeFeeToken = await manager.tokens.tokenBalance(deployer.address, claim.fee_token);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
+    await manager.waitForTransaction(transaction_hash);
     const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await manager.tokens
@@ -70,7 +73,7 @@ describe("Cancel Claim", function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup({ factory, claimAccountClassHash });
 
-    factory.connect(genericAccount);
+    factory.connect(devnetAccount());
     await expectRevertWithErrorMessage("gift/wrong-sender", () => factory.cancel(claim));
   });
 
@@ -87,6 +90,7 @@ describe("Cancel Claim", function () {
     const balanceSenderBefore = await manager.tokens.tokenBalance(deployer.address, claim.gift_token);
     factory.connect(deployer);
     const { transaction_hash } = await factory.cancel(claim);
+    await manager.waitForTransaction(transaction_hash);
     const txFeeCancel = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
     await manager.tokens
@@ -107,6 +111,7 @@ describe("Cancel Claim", function () {
     const receiver = randomReceiver();
 
     await claimInternal({ claim, receiver, claimPrivateKey });
+
     factory.connect(deployer);
     await expectRevertWithErrorMessage("gift/already-claimed", () => factory.cancel(claim));
   });

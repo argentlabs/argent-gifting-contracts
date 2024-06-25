@@ -1,7 +1,8 @@
 import { expect } from "chai";
 import { num } from "starknet";
 import {
-  GIFT_MAX_FEE,
+  ETH_GIFT_MAX_FEE,
+  STRK_GIFT_MAX_FEE,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
@@ -34,12 +35,11 @@ describe("Claim Internal", function () {
         factory,
         claimAccountClassHash,
         useTxV3,
-        overrides: { giftAmount: 100n, feeAmount: 0n },
+        overrides: { feeAmount: 0n },
       });
 
-      await expect(claimInternal({ claim, receiver, claimPrivateKey })).to.be.rejectedWith(
-        "Account balance is smaller than the transaction's max_fee: undefined",
-      );
+      const errorMsg = useTxV3 ? "gift-acc/max-fee-too-high-v3" : "gift-acc/max-fee-too-high-v1";
+      await expectRevertWithErrorMessage(errorMsg, () => claimInternal({ claim, receiver, claimPrivateKey }));
     });
 
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
@@ -47,14 +47,17 @@ describe("Claim Internal", function () {
       const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, claimAccountClassHash, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
+        // If you run this test on testnet, it'll fail
+        // You can then take the value from the error message and replace 1n (given some extra iff the price rises)
+        const gasPrice = manager.isDevnet ? 36000000000n : 1n;
         const newResourceBounds = {
           l2_gas: {
-            max_amount: num.toHexString(GIFT_MAX_FEE),
-            max_price_per_unit: num.toHexString(1),
-          },
-          l1_gas: {
             max_amount: "0x0",
             max_price_per_unit: "0x0",
+          },
+          l1_gas: {
+            max_amount: num.toHexString(STRK_GIFT_MAX_FEE / gasPrice + 1n),
+            max_price_per_unit: num.toHexString(gasPrice),
           },
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
@@ -67,7 +70,7 @@ describe("Claim Internal", function () {
             receiver,
             claimPrivateKey,
             details: {
-              maxFee: GIFT_MAX_FEE + 1n,
+              maxFee: ETH_GIFT_MAX_FEE + 1n,
             },
           }),
         );
