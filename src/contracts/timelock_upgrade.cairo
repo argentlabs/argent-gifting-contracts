@@ -90,7 +90,7 @@ pub mod TimelockUpgradeComponent {
     impl TimelockUpgrade<
         TContractState,
         +HasComponent<TContractState>,
-        impl Ownable: OwnableComponent::HasComponent<TContractState>,
+        +OwnableComponent::HasComponent<TContractState>,
         +ITimelockUpgradeCallback<TContractState>,
     > of ITimelockUpgrade<ComponentState<TContractState>> {
         fn propose_upgrade(
