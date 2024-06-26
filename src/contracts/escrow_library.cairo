@@ -118,14 +118,14 @@ mod EscrowLibrary {
             let contract_address = get_contract_address();
             assert(get_caller_address() == gift.sender, 'gift/wrong-sender');
 
-            let gift_balance = IERC20Dispatcher { contract_address: gift.gift_token }.balance_of(contract_address);
+            let gift_balance = balance_of(gift.gift_token, contract_address);
             assert(gift_balance > 0, 'gift/already-claimed');
             if gift.gift_token == gift.fee_token {
                 // Sender also gets the dust
                 transfer_from_account(gift.gift_token, gift.sender, gift_balance);
             } else {
-                // Transfer both tokens in a multicall
-                let fee_balance = IERC20Dispatcher { contract_address: gift.fee_token }.balance_of(contract_address);
+                // Transfer both tokens
+                let fee_balance = balance_of(gift.fee_token, contract_address);
                 transfer_from_account(gift.gift_token, gift.sender, gift_balance);
                 transfer_from_account(gift.fee_token, gift.sender, fee_balance);
             }
@@ -136,12 +136,12 @@ mod EscrowLibrary {
             let contract_address = get_contract_address();
             let factory_owner = IOwnableDispatcher { contract_address: gift.factory }.owner();
             assert(factory_owner == get_caller_address(), 'gift/only-factory-owner');
-            let gift_balance = IERC20Dispatcher { contract_address: gift.gift_token }.balance_of(contract_address);
+            let gift_balance = balance_of(gift.gift_token, contract_address);
             assert(gift_balance < gift.gift_amount, 'gift/not-yet-claimed');
             if gift.gift_token == gift.fee_token {
                 transfer_from_account(gift.gift_token, receiver, gift_balance);
             } else {
-                let fee_balance = IERC20Dispatcher { contract_address: gift.fee_token }.balance_of(contract_address);
+                let fee_balance = balance_of(gift.fee_token, contract_address);
                 transfer_from_account(gift.fee_token, gift.sender, fee_balance);
             }
         }
@@ -166,12 +166,12 @@ mod EscrowLibrary {
         ) {
             assert(receiver.is_non_zero(), 'gift/zero-receiver');
             let contract_address = get_contract_address();
-            let gift_balance = IERC20Dispatcher { contract_address: gift.gift_token }.balance_of(contract_address);
+            let gift_balance = balance_of(gift.gift_token, contract_address);
             assert(gift_balance >= gift.gift_amount, 'gift/already-claimed-or-cancel');
 
             // could be optimized to 1 transfer only when the receiver is also the dust receiver,
             // and the fee token is the same as the gift token
-            // but will increase the complexity of the code for a small performance GiftCanceled
+            // but will increase the complexity of the code for a small performance
 
             // Transfer the gift
             transfer_from_account(gift.gift_token, receiver, gift.gift_amount);
@@ -182,7 +182,7 @@ mod EscrowLibrary {
                     gift_balance - gift.gift_amount
                 } else {
                     // TODO Double check reentrancy here
-                    IERC20Dispatcher { contract_address: gift.fee_token }.balance_of(contract_address)
+                    balance_of(gift.fee_token, contract_address)
                 };
                 if dust > 0 {
                     transfer_from_account(gift.fee_token, dust_receiver, dust);
@@ -194,5 +194,9 @@ mod EscrowLibrary {
 
     fn transfer_from_account(token: ContractAddress, receiver: ContractAddress, amount: u256,) {
         assert(IERC20Dispatcher { contract_address: token }.transfer(receiver, amount), 'gift/transfer-failed');
+    }
+
+    fn balance_of(token: ContractAddress, account: ContractAddress) -> u256 {
+        IERC20Dispatcher { contract_address: token }.balance_of(account)
     }
 }
