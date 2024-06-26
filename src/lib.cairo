@@ -1,10 +1,11 @@
 pub mod contracts {
-    mod claim_account;
-    mod claim_account_impl;
+    pub mod claim_account;
+    pub mod claim_account_impl;
+    pub mod claim_data;
     pub mod claim_hash;
-    mod gift_factory;
-    pub mod interface;
-    mod timelock_upgrade;
+    pub mod gift_factory;
+    pub mod outside_execution;
+    pub mod timelock_upgrade;
     pub mod utils;
 }
 

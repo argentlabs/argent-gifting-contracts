@@ -1,3 +1,38 @@
+use starknet::{ContractAddress, ClassHash, account::Call};
+
+#[starknet::interface]
+pub trait IAccount<TContractState> {
+    fn __validate__(ref self: TContractState, calls: Array<Call>) -> felt252;
+    fn __execute__(ref self: TContractState, calls: Array<Call>) -> Array<Span<felt252>>;
+    fn is_valid_signature(self: @TContractState, hash: felt252, signature: Array<felt252>) -> felt252;
+    fn supports_interface(self: @TContractState, interface_id: felt252) -> bool;
+}
+
+
+#[starknet::interface]
+pub trait IGiftAccount<TContractState> {
+    /// @notice delegates an action to the account implementation
+    fn execute_action(ref self: TContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252>;
+}
+
+/// @notice Struct representing the arguments required for constructing a gift account
+/// @dev This will be used to determine the address of the gift account
+/// @param sender The address of the sender
+/// @param gift_token The ERC-20 token address of the gift
+/// @param gift_amount The amount of the gift
+/// @param fee_token The ERC-20 token address of the fee
+/// @param fee_amount The amount of the fee
+/// @param claim_pubkey The public key associated with the gift
+#[derive(Serde, Drop, Copy)]
+pub struct AccountConstructorArguments {
+    pub sender: ContractAddress,
+    pub gift_token: ContractAddress,
+    pub gift_amount: u256,
+    pub fee_token: ContractAddress,
+    pub fee_amount: u128,
+    pub claim_pubkey: felt252
+}
+
 #[starknet::contract(account)]
 mod ClaimAccount {
     use core::ecdsa::check_ecdsa_signature;
@@ -9,14 +44,15 @@ mod ClaimAccount {
     use starknet_gifting::contracts::claim_account_impl::{
         IClaimAccountImplLibraryDispatcher, IClaimAccountImplDispatcherTrait
     };
-    use starknet_gifting::contracts::interface::{
-        IAccount, IGiftAccount, IOutsideExecution, OutsideExecution, ClaimData, AccountConstructorArguments,
-        IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait
-    };
+    use starknet_gifting::contracts::claim_data::{ClaimData};
+    use starknet_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+    use starknet_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
+
     use starknet_gifting::contracts::utils::{
         calculate_claim_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
         TX_V3, TX_V3_ESTIMATE
     };
+    use super::{IGiftAccount, IAccount, AccountConstructorArguments};
 
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
     const SRC5_INTERFACE_ID: felt252 = 0x3f918d17e5ee77373b56385708f855659a07f75997f365cf87748628532a055;
@@ -118,8 +154,8 @@ mod ClaimAccount {
             let mut calldata_span = calldata.span();
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
-            // TODO consider delegating to a fixed selector to we can have a whitelist of selectors in the implementation
-            library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
+            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
+                .execute_action(implementation_class_hash, selector, calldata.span())
         }
     }
 
