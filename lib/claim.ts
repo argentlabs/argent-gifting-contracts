@@ -89,7 +89,7 @@ export async function signExternalClaim(signParams: {
   receiver: string;
   giftPrivateKey: string;
   dustReceiver?: string;
-  forceClaimAddress?: string;
+  forceEscrowAddress?: string;
 }): Promise<StarknetSignature> {
   const giftSigner = new LegacyStarknetKeyPair(signParams.giftPrivateKey);
   const claimExternalData = await getClaimExternalData({
@@ -98,7 +98,7 @@ export async function signExternalClaim(signParams: {
   });
   const stringArray = (await giftSigner.signMessage(
     claimExternalData,
-    signParams.forceClaimAddress || calculateEscrowAddress(signParams.gift),
+    signParams.forceEscrowAddress || calculateEscrowAddress(signParams.gift),
   )) as string[];
   if (stringArray.length !== 2) {
     throw new Error("Invalid signature");
@@ -202,10 +202,10 @@ export const randomReceiver = (): string => {
   return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
 };
 
-export function getEscrowAccount(gift: Gift, giftPrivateKey: string, forceClaimAddress?: string): Account {
+export function getEscrowAccount(gift: Gift, giftPrivateKey: string, forceEscrowAddress?: string): Account {
   return new Account(
     manager,
-    forceClaimAddress || num.toHex(calculateEscrowAddress(gift)),
+    forceEscrowAddress || num.toHex(calculateEscrowAddress(gift)),
     giftPrivateKey,
     undefined,
     useTxv3(gift.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2,

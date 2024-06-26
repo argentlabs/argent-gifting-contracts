@@ -97,7 +97,7 @@ export async function defaultDepositTestSetup(args: {
   const giftSigner = new LegacyStarknetKeyPair(args.overrides?.giftPrivateKey);
   const giftPubKey = giftSigner.publicKey;
 
-  const { response, gift: gift } = await deposit({
+  const { response, gift } = await deposit({
     sender: deployer,
     overrides: { escrowAccountClassHash },
     giftAmount,
@@ -108,7 +108,7 @@ export async function defaultDepositTestSetup(args: {
     giftSignerPubKey: giftPubKey,
   });
   const txReceipt = await manager.waitForTransaction(response.transaction_hash);
-  return { gift: gift, giftPrivateKey: giftSigner.privateKey, txReceipt };
+  return { gift, giftPrivateKey: giftSigner.privateKey, txReceipt };
 }
 
 export function calculateEscrowAddress(gift: Gift): string {
@@ -121,7 +121,7 @@ export function calculateEscrowAddress(gift: Gift): string {
     gift_pubkey: gift.gift_pubkey,
   };
 
-  const claimAddress = hash.calculateContractAddressFromHash(
+  const escrowAddress = hash.calculateContractAddressFromHash(
     0,
     gift.class_hash,
     CallData.compile({
@@ -130,5 +130,5 @@ export function calculateEscrowAddress(gift: Gift): string {
     }),
     gift.factory,
   );
-  return claimAddress;
+  return escrowAddress;
 }

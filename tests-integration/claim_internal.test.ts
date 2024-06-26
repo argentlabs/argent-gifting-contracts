@@ -16,13 +16,13 @@ describe("Claim Internal", function () {
   for (const useTxV3 of [false, true]) {
     it(`gift token == fee token using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { gift: gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
-      const claimAddress = calculateEscrowAddress(gift);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      await claimInternal({ gift: gift, receiver, giftPrivateKey: giftPrivateKey });
+      await claimInternal({ gift, receiver, giftPrivateKey });
 
-      const finalBalance = await manager.tokens.tokenBalance(claimAddress, gift.gift_token);
+      const finalBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
       expect(finalBalance < gift.fee_amount).to.be.true;
       await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
     });
@@ -31,21 +31,19 @@ describe("Claim Internal", function () {
       const { factory } = await setupGiftProtocol();
       const receiver = randomReceiver();
 
-      const { gift: gift, giftPrivateKey } = await defaultDepositTestSetup({
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({
         factory,
         useTxV3,
         overrides: { feeAmount: 0n },
       });
 
       const errorMsg = useTxV3 ? "gift-acc/max-fee-too-high-v3" : "gift-acc/max-fee-too-high-v1";
-      await expectRevertWithErrorMessage(errorMsg, () =>
-        claimInternal({ gift: gift, receiver, giftPrivateKey: giftPrivateKey }),
-      );
+      await expectRevertWithErrorMessage(errorMsg, () => claimInternal({ gift, receiver, giftPrivateKey }));
     });
 
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { gift: gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
         // If you run this test on testnet, it'll fail
@@ -63,18 +61,18 @@ describe("Claim Internal", function () {
         };
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
           claimInternal({
-            gift: gift,
+            gift,
             receiver,
-            giftPrivateKey: giftPrivateKey,
+            giftPrivateKey,
             details: { resourceBounds: newResourceBounds, tip: 1 },
           }),
         );
       } else {
         await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
           claimInternal({
-            gift: gift,
+            gift,
             receiver,
-            giftPrivateKey: giftPrivateKey,
+            giftPrivateKey,
             details: {
               maxFee: ETH_GIFT_MAX_FEE + 1n,
             },
@@ -86,12 +84,12 @@ describe("Claim Internal", function () {
 
   it(`Cant call gift internal twice`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { gift: gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
-    await claimInternal({ gift: gift, receiver, giftPrivateKey: giftPrivateKey });
+    await claimInternal({ gift, receiver, giftPrivateKey });
     await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal({ gift: gift, receiver, giftPrivateKey: giftPrivateKey }),
+      claimInternal({ gift, receiver, giftPrivateKey }),
     );
   });
 });

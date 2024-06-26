@@ -42,11 +42,7 @@ for (const { giftTokenContract, unit } of tokens) {
     const { factory } = await setupGiftProtocol();
 
     // Make a gift
-    const {
-      txReceipt,
-      gift: gift,
-      giftPrivateKey,
-    } = await defaultDepositTestSetup({
+    const { txReceipt, gift, giftPrivateKey } = await defaultDepositTestSetup({
       factory,
       useTxV3,
       overrides: {
@@ -55,7 +51,7 @@ for (const { giftTokenContract, unit } of tokens) {
       },
     });
 
-    const { gift: claimExternalOj, giftPrivateKey: claimPrivateKeyExternal } = await defaultDepositTestSetup({
+    const { claimExternalOj, giftPrivateKey: claimPrivateKeyExternal } = await defaultDepositTestSetup({
       factory,
       useTxV3,
       overrides: {
@@ -68,12 +64,12 @@ for (const { giftTokenContract, unit } of tokens) {
 
     await profiler.profile(
       `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimInternal({ gift: gift, receiver, giftPrivateKey: giftPrivateKey }),
+      await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey }),
     );
 
     await profiler.profile(
       `Claiming external ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimExternal({ gift: claimExternalOj, receiver, giftPrivateKey: claimPrivateKeyExternal }),
+      await claimExternal({ claimExternalOj, receiver, giftPrivateKey: claimPrivateKeyExternal }),
     );
   }
 }

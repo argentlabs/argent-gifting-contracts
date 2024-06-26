@@ -13,9 +13,9 @@ describe("Deposit", function () {
   it(`Double deposit`, async function () {
     const { factory } = await setupGiftProtocol();
     const giftPrivateKey = BigInt(randomReceiver());
-    await defaultDepositTestSetup({ factory, overrides: { giftPrivateKey: giftPrivateKey } });
+    await defaultDepositTestSetup({ factory, overrides: { giftPrivateKey } });
     try {
-      await defaultDepositTestSetup({ factory, overrides: { giftPrivateKey: giftPrivateKey } });
+      await defaultDepositTestSetup({ factory, overrides: { giftPrivateKey } });
     } catch (e: any) {
       expect(e.toString()).to.include("is unavailable for deployment");
     }
@@ -25,26 +25,26 @@ describe("Deposit", function () {
     it(`Deposit works using txV3: ${useTxV3} (gift token == gift token)`, async function () {
       const { factory } = await setupGiftProtocol();
 
-      const { gift: gift } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const { gift } = await defaultDepositTestSetup({ factory, useTxV3 });
 
-      const claimAddress = calculateEscrowAddress(gift);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, gift.gift_token);
+      const giftTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
       expect(giftTokenBalance).to.equal(gift.gift_amount + gift.fee_amount);
     });
 
     it(`Deposit works using txV3: ${useTxV3} with 0 fee amount set (gift token == gift token)`, async function () {
       const { factory } = await setupGiftProtocol();
 
-      const { gift: gift } = await defaultDepositTestSetup({
+      const { gift } = await defaultDepositTestSetup({
         factory,
         useTxV3,
         overrides: { giftAmount: 100n, feeAmount: 0n },
       });
 
-      const claimAddress = calculateEscrowAddress(gift);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, gift.gift_token);
+      const giftTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
       expect(giftTokenBalance).to.equal(gift.gift_amount + gift.fee_amount);
     });
 
@@ -52,18 +52,18 @@ describe("Deposit", function () {
       const { factory } = await setupGiftProtocol();
       const giftToken = await deployMockERC20();
 
-      const { gift: gift } = await defaultDepositTestSetup({
+      const { gift } = await defaultDepositTestSetup({
         factory,
         useTxV3,
         overrides: { giftAmount: 100n, feeAmount: 0n, giftTokenAddress: giftToken.address },
       });
 
-      const claimAddress = calculateEscrowAddress(gift);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, gift.gift_token);
+      const giftTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
       expect(giftTokenBalance).to.equal(gift.gift_amount);
 
-      const feeTokenBalance = await manager.tokens.tokenBalance(claimAddress, gift.fee_token);
+      const feeTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.fee_token);
       expect(feeTokenBalance).to.equal(gift.fee_amount);
     });
 
@@ -71,18 +71,18 @@ describe("Deposit", function () {
       const { factory } = await setupGiftProtocol();
       const giftToken = await deployMockERC20();
 
-      const { gift: gift } = await defaultDepositTestSetup({
+      const { gift } = await defaultDepositTestSetup({
         factory,
         useTxV3,
         overrides: { giftTokenAddress: giftToken.address },
       });
 
-      const claimAddress = calculateEscrowAddress(gift);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, gift.gift_token);
+      const giftTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
       expect(giftTokenBalance).to.equal(gift.gift_amount);
 
-      const feeTokenBalance = await manager.tokens.tokenBalance(claimAddress, gift.fee_token);
+      const feeTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.fee_token);
       expect(feeTokenBalance).to.equal(gift.fee_amount);
     });
 

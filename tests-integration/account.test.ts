@@ -9,35 +9,35 @@ import {
   setupGiftProtocol,
 } from "../lib";
 
-describe("Claim Account", function () {
+describe("Escrow Account", function () {
   it(`Test only protocol can call validate`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { gift: gift } = await defaultDepositTestSetup({ factory });
-    const claimAddress = calculateEscrowAddress(gift);
+    const { gift } = await defaultDepositTestSetup({ factory });
+    const escrowAddress = calculateEscrowAddress(gift);
 
     await expectRevertWithErrorMessage("gift-acc/only-protocol", () =>
-      deployer.execute([{ contractAddress: claimAddress, calldata: [0x0], entrypoint: "__validate__" }]),
+      deployer.execute([{ contractAddress: escrowAddress, calldata: [0x0], entrypoint: "__validate__" }]),
     );
   });
 
   it(`Test only protocol can call execute`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { gift: gift } = await defaultDepositTestSetup({ factory });
-    const claimAddress = calculateEscrowAddress(gift);
+    const { gift } = await defaultDepositTestSetup({ factory });
+    const escrowAddress = calculateEscrowAddress(gift);
 
     await expectRevertWithErrorMessage("gift-acc/only-protocol", () =>
-      deployer.execute([{ contractAddress: claimAddress, calldata: [0x0], entrypoint: "__execute__" }]),
+      deployer.execute([{ contractAddress: escrowAddress, calldata: [0x0], entrypoint: "__execute__" }]),
     );
   });
 
   it(`Test escrow contract cant call another contract`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { gift: gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
       claimInternal({
-        gift: gift,
+        gift,
         receiver,
         giftPrivateKey: giftPrivateKey,
         details: { skipValidate: false },
@@ -46,15 +46,15 @@ describe("Claim Account", function () {
     );
   });
 
-  it(`Test escrow contract can only call 'claim_internal'`, async function () {
+  it(`Test escrow contract can only call 'escrow_internal'`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { gift: gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
 
-    const EscrowAccount = getEscrowAccount(gift, giftPrivateKey);
+    const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
-      EscrowAccount.execute(
-        [{ contractAddress: EscrowAccount.address, calldata: [], entrypoint: "execute_action" }],
+      escrowAccount.execute(
+        [{ contractAddress: escrowAccount.address, calldata: [], entrypoint: "execute_action" }],
         undefined,
         { skipValidate: false },
       ),
@@ -63,13 +63,13 @@ describe("Claim Account", function () {
 
   it(`Test escrow contract cant perform a multicall`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { gift: gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
-    const EscrowAccount = getEscrowAccount(gift, giftPrivateKey);
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
-      EscrowAccount.execute(
+      escrowAccount.execute(
         [
-          { contractAddress: EscrowAccount.address, calldata: [], entrypoint: "execute_action" },
-          { contractAddress: EscrowAccount.address, calldata: [], entrypoint: "execute_action" },
+          { contractAddress: escrowAccount.address, calldata: [], entrypoint: "execute_action" },
+          { contractAddress: escrowAccount.address, calldata: [], entrypoint: "execute_action" },
         ],
         undefined,
         { skipValidate: false },
@@ -79,13 +79,13 @@ describe("Claim Account", function () {
 
   it(`Test cannot call 'claim_internal' twice`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { gift: gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
     // double gift
-    await claimInternal({ gift: gift, receiver, giftPrivateKey: giftPrivateKey });
+    await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
     await expectRevertWithErrorMessage("gift-acc/invalid-gift-nonce", () =>
-      claimInternal({ gift: gift, receiver, giftPrivateKey: giftPrivateKey, details: { skipValidate: false } }),
+      claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey, details: { skipValidate: false } }),
     );
   });
 });
