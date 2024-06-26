@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import {
-  calculateClaimAddress,
+  calculateEscrowAddress,
   defaultDepositTestSetup,
   deployMockERC20,
   expectRevertWithErrorMessage,
@@ -12,81 +12,81 @@ import {
 describe("Deposit", function () {
   it(`Double deposit`, async function () {
     const { factory } = await setupGiftProtocol();
-    const claimPrivateKey = BigInt(randomReceiver());
-    await defaultDepositTestSetup({ factory, overrides: { claimPrivateKey } });
+    const giftPrivateKey = BigInt(randomReceiver());
+    await defaultDepositTestSetup({ factory, overrides: { giftPrivateKey } });
     try {
-      await defaultDepositTestSetup({ factory, overrides: { claimPrivateKey } });
+      await defaultDepositTestSetup({ factory, overrides: { giftPrivateKey } });
     } catch (e: any) {
       expect(e.toString()).to.include("is unavailable for deployment");
     }
   });
 
   for (const useTxV3 of [false, true]) {
-    it(`Deposit works using txV3: ${useTxV3} (gift token == claim token)`, async function () {
+    it(`Deposit works using txV3: ${useTxV3} (gift token == gift token)`, async function () {
       const { factory } = await setupGiftProtocol();
 
-      const { claim } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const { gift } = await defaultDepositTestSetup({ factory, useTxV3 });
 
-      const claimAddress = calculateClaimAddress(claim);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(giftTokenBalance).to.equal(claim.gift_amount + claim.fee_amount);
+      const giftTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
+      expect(giftTokenBalance).to.equal(gift.gift_amount + gift.fee_amount);
     });
 
-    it(`Deposit works using txV3: ${useTxV3} with 0 fee amount set (gift token == claim token)`, async function () {
+    it(`Deposit works using txV3: ${useTxV3} with 0 fee amount set (gift token == gift token)`, async function () {
       const { factory } = await setupGiftProtocol();
 
-      const { claim } = await defaultDepositTestSetup({
+      const { gift } = await defaultDepositTestSetup({
         factory,
         useTxV3,
         overrides: { giftAmount: 100n, feeAmount: 0n },
       });
 
-      const claimAddress = calculateClaimAddress(claim);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(giftTokenBalance).to.equal(claim.gift_amount + claim.fee_amount);
+      const giftTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
+      expect(giftTokenBalance).to.equal(gift.gift_amount + gift.fee_amount);
     });
 
-    it(`Deposit works using txV3: ${useTxV3} with 0 fee amount set (gift token != claim token)`, async function () {
+    it(`Deposit works using txV3: ${useTxV3} with 0 fee amount set (gift token != gift token)`, async function () {
       const { factory } = await setupGiftProtocol();
       const giftToken = await deployMockERC20();
 
-      const { claim } = await defaultDepositTestSetup({
+      const { gift } = await defaultDepositTestSetup({
         factory,
         useTxV3,
         overrides: { giftAmount: 100n, feeAmount: 0n, giftTokenAddress: giftToken.address },
       });
 
-      const claimAddress = calculateClaimAddress(claim);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(giftTokenBalance).to.equal(claim.gift_amount);
+      const giftTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
+      expect(giftTokenBalance).to.equal(gift.gift_amount);
 
-      const feeTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.fee_token);
-      expect(feeTokenBalance).to.equal(claim.fee_amount);
+      const feeTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.fee_token);
+      expect(feeTokenBalance).to.equal(gift.fee_amount);
     });
 
-    it(`Deposit works using: ${useTxV3} (gift token != claim token)`, async function () {
+    it(`Deposit works using: ${useTxV3} (gift token != gift token)`, async function () {
       const { factory } = await setupGiftProtocol();
       const giftToken = await deployMockERC20();
 
-      const { claim } = await defaultDepositTestSetup({
+      const { gift } = await defaultDepositTestSetup({
         factory,
         useTxV3,
         overrides: { giftTokenAddress: giftToken.address },
       });
 
-      const claimAddress = calculateClaimAddress(claim);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      const giftTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(giftTokenBalance).to.equal(claim.gift_amount);
+      const giftTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
+      expect(giftTokenBalance).to.equal(gift.gift_amount);
 
-      const feeTokenBalance = await manager.tokens.tokenBalance(claimAddress, claim.fee_token);
-      expect(feeTokenBalance).to.equal(claim.fee_amount);
+      const feeTokenBalance = await manager.tokens.tokenBalance(escrowAddress, gift.fee_token);
+      expect(feeTokenBalance).to.equal(gift.fee_amount);
     });
 
-    it(`Max fee too high claim.gift > claim.fee (gift token == fee token)`, async function () {
+    it(`Max fee too high gift_amount > fee_amount (gift token == fee token)`, async function () {
       const { factory } = await setupGiftProtocol();
 
       await expectRevertWithErrorMessage("gift-fac/fee-too-high", async () => {
@@ -102,13 +102,13 @@ describe("Deposit", function () {
 
   it("Deposit fails class hash passed != class hash in factory storage", async function () {
     const { factory } = await setupGiftProtocol();
-    const invalidClaimAccountClassHash = "0x1234";
+    const invalidEscrowAccountClassHash = "0x1234";
 
     await expectRevertWithErrorMessage("gift-fac/invalid-class-hash", async () => {
       const { txReceipt } = await defaultDepositTestSetup({
         factory,
         overrides: {
-          claimAccountClassHash: invalidClaimAccountClassHash,
+          escrowAccountClassHash: invalidEscrowAccountClassHash,
         },
       });
       return txReceipt;

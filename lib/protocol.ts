@@ -23,20 +23,20 @@ export async function deployMockERC20(): Promise<Contract> {
 
 export async function setupGiftProtocol(): Promise<{
   factory: Contract;
-  claimAccountClassHash: string;
-  accountImplementationClassHash: string;
+  escrowAccountClassHash: string;
+  escrowLibraryClassHash: string;
 }> {
-  const claimAccountClassHash = await manager.declareLocalContract("ClaimAccount");
-  const accountImplementationClassHash = await manager.declareLocalContract("ClaimAccountImpl");
+  const escrowAccountClassHash = await manager.declareLocalContract("EscrowAccount");
+  const escrowLibraryClassHash = await manager.declareLocalContract("EscrowLibrary");
   const cachedFactory = protocolCache["GiftFactory"];
   if (cachedFactory) {
-    return { factory: cachedFactory, claimAccountClassHash, accountImplementationClassHash };
+    return { factory: cachedFactory, escrowAccountClassHash, escrowLibraryClassHash };
   }
   const factory = await manager.deployContract("GiftFactory", {
     unique: true,
-    constructorCalldata: [claimAccountClassHash, accountImplementationClassHash, deployer.address],
+    constructorCalldata: [escrowAccountClassHash, escrowLibraryClassHash, deployer.address],
   });
 
   protocolCache["GiftFactory"] = factory;
-  return { factory, claimAccountClassHash, accountImplementationClassHash };
+  return { factory, escrowAccountClassHash, escrowLibraryClassHash };
 }

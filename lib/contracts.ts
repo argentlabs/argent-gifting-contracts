@@ -13,8 +13,8 @@ import {
 import { deployer } from "./accounts";
 import { WithDevnet } from "./devnet";
 
-export const contractsFolder = "./target/release/starknet_gifting_";
-export const fixturesFolder = "./tests-integration/fixtures/starknet_gifting_";
+export const contractsFolder = "./target/release/argent_gifting_";
+export const fixturesFolder = "./tests-integration/fixtures/argent_gifting_";
 
 export const WithContracts = <T extends ReturnType<typeof WithDevnet>>(Base: T) =>
   class extends Base {
