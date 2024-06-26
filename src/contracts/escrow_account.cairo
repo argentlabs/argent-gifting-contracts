@@ -35,9 +35,7 @@ pub struct AccountConstructorArguments {
 
 #[starknet::contract(account)]
 mod EscrowAccount {
-    use argent_gifting::contracts::escrow_library::{
-        IEscrowLibraryLibraryDispatcher as IEscrowLibraryDelegateDispatcher, IEscrowLibraryDispatcherTrait
-    };
+    use argent_gifting::contracts::escrow_library::{IEscrowLibraryLibraryDispatcher, IEscrowLibraryDispatcherTrait};
     use argent_gifting::contracts::gift_data::GiftData;
     use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
     use argent_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
@@ -131,8 +129,8 @@ mod EscrowAccount {
                 .expect('gift-acc/invalid-calldata');
             // The __validate__ function already ensures the claim is valid
             let library_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
-                .get_escrow_lib_class_hash(gift.class_hash);
-            IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
+                .get_escrow_lib_class_hash(gift.escrow_class_hash);
+            IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
@@ -172,11 +170,11 @@ mod EscrowAccount {
         }
     }
 
-    fn get_validated_lib(gift: GiftData) -> IEscrowLibraryDelegateDispatcher {
+    fn get_validated_lib(gift: GiftData) -> IEscrowLibraryLibraryDispatcher {
         assert_valid_claim(gift);
         let library_class_hash = IGiftFactoryDispatcher { contract_address: gift.factory }
-            .get_escrow_lib_class_hash(gift.class_hash);
-        IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }
+            .get_escrow_lib_class_hash(gift.escrow_class_hash);
+        IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }
     }
 
     fn assert_valid_claim(gift: GiftData) {
