@@ -1,8 +1,7 @@
 use starknet::{ContractAddress, ClassHash};
 
-// TODO Align => Rename ClaimData to Claim OR  claim to claim_data 
-// Or even rename to GIFT? so that the user will see gifts in the interface
-/// @notice Struct representing the data required for a gift claim
+
+/// @notice Struct representing the data required for a claiming a gift
 /// @param factory The address of the factory
 /// @param class_hash The class hash of the gift account
 /// @param sender The address of the sender
@@ -12,7 +11,7 @@ use starknet::{ContractAddress, ClassHash};
 /// @param fee_amount The amount of the fee
 /// @param claim_pubkey The public key associated with the gift
 #[derive(Serde, Drop, Copy)]
-pub struct ClaimData {
+pub struct GiftData {
     pub factory: ContractAddress,
     pub class_hash: ClassHash,
     pub sender: ContractAddress,

@@ -58,13 +58,13 @@ mod GiftFactory {
         ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
         get_block_timestamp
     };
-    use starknet_gifting::contracts::claim_account::{IGiftAccount, IGiftAccountDispatcher, AccountConstructorArguments};
-    use starknet_gifting::contracts::claim_data::{ClaimData};
-    use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::gift_factory::IGiftFactory;
-    use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
-    use starknet_gifting::contracts::utils::{
-        calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
+    use argent_gifting::contracts::escrow_account::{IEscrowAccount, IEscrowAccountDispatcher, AccountConstructorArguments};
+    use argent_gifting::contracts::claim_data::{GiftData};
+    use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
+    use argent_gifting::contracts::gift_factory::IGiftFactory;
+    use argent_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
+    use argent_gifting::contracts::utils::{
+        calculate_escrow_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
     };
 
     // Ownable 
@@ -210,8 +210,8 @@ mod GiftFactory {
             fee_amount: u128,
             claim_pubkey: felt252
         ) -> ContractAddress {
-            calculate_claim_account_address(
-                ClaimData {
+            calculate_escrow_account_address(
+                GiftData {
                     factory: get_contract_address(),
                     class_hash,
                     sender,

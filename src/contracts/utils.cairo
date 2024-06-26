@@ -1,7 +1,7 @@
 use openzeppelin::utils::deployments::calculate_contract_address_from_deploy_syscall;
 use starknet::{ContractAddress, account::Call, contract_address::contract_address_const};
-use starknet_gifting::contracts::claim_account::{AccountConstructorArguments};
-use starknet_gifting::contracts::claim_data::{ClaimData};
+use argent_gifting::contracts::escrow_account::{AccountConstructorArguments};
+use argent_gifting::contracts::claim_data::{GiftData};
 
 pub const TX_V1: felt252 = 1; // INVOKE
 pub const TX_V1_ESTIMATE: felt252 = consteval_int!(0x100000000000000000000000000000000 + 1); // 2**128 + TX_V1
@@ -44,7 +44,7 @@ pub fn serialize<E, impl ESerde: Serde<E>>(value: @E) -> Array<felt252> {
 /// @dev The deployer_address is the factory address, as the account contract is deployed by the factory
 /// @param claim The claim data for which you need to calculate the account contract address
 /// @return The ContractAddress of the account contract corresponding to the claim
-pub fn calculate_claim_account_address(claim: ClaimData) -> ContractAddress {
+pub fn calculate_escrow_account_address(claim: GiftData) -> ContractAddress {
     let constructor_arguments = AccountConstructorArguments {
         sender: claim.sender,
         gift_token: claim.gift_token,

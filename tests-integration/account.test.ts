@@ -4,7 +4,7 @@ import {
   defaultDepositTestSetup,
   deployer,
   expectRevertWithErrorMessage,
-  getClaimAccount,
+  getEscrowAccount,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
@@ -50,11 +50,11 @@ describe("Claim Account", function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
 
-    const claimAccount = getClaimAccount(claim, claimPrivateKey);
+    const EscrowAccount = getEscrowAccount(claim, claimPrivateKey);
 
     await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
-      claimAccount.execute(
-        [{ contractAddress: claimAccount.address, calldata: [], entrypoint: "execute_action" }],
+      EscrowAccount.execute(
+        [{ contractAddress: EscrowAccount.address, calldata: [], entrypoint: "execute_action" }],
         undefined,
         { skipValidate: false },
       ),
@@ -64,12 +64,12 @@ describe("Claim Account", function () {
   it(`Test claim contract cant perform a multicall`, async function () {
     const { factory } = await setupGiftProtocol();
     const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
-    const claimAccount = getClaimAccount(claim, claimPrivateKey);
+    const EscrowAccount = getEscrowAccount(claim, claimPrivateKey);
     await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
-      claimAccount.execute(
+      EscrowAccount.execute(
         [
-          { contractAddress: claimAccount.address, calldata: [], entrypoint: "execute_action" },
-          { contractAddress: claimAccount.address, calldata: [], entrypoint: "execute_action" },
+          { contractAddress: EscrowAccount.address, calldata: [], entrypoint: "execute_action" },
+          { contractAddress: EscrowAccount.address, calldata: [], entrypoint: "execute_action" },
         ],
         undefined,
         { skipValidate: false },

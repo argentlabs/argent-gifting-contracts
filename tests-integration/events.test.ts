@@ -13,7 +13,7 @@ import {
 
 describe("All events are emitted", function () {
   it("Deposit", async function () {
-    const { factory, claimAccountClassHash } = await setupGiftProtocol();
+    const { factory, escrowAccountClassHash: EscrowAccountClassHash } = await setupGiftProtocol();
     const { claim, txReceipt } = await defaultDepositTestSetup({ factory });
 
     const claimAddress = calculateClaimAddress(claim);
@@ -23,7 +23,7 @@ describe("All events are emitted", function () {
       eventName: "GiftCreated",
       keys: [claimAddress, deployer.address],
       data: CallData.compile([
-        claimAccountClassHash,
+        EscrowAccountClassHash,
         claim.gift_token,
         uint256.bnToUint256(claim.gift_amount),
         claim.fee_token,

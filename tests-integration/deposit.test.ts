@@ -102,13 +102,13 @@ describe("Deposit", function () {
 
   it("Deposit fails class hash passed != class hash in factory storage", async function () {
     const { factory } = await setupGiftProtocol();
-    const invalidClaimAccountClassHash = "0x1234";
+    const invalidEscrowAccountClassHash = "0x1234";
 
     await expectRevertWithErrorMessage("gift-fac/invalid-class-hash", async () => {
       const { txReceipt } = await defaultDepositTestSetup({
         factory,
         overrides: {
-          claimAccountClassHash: invalidClaimAccountClassHash,
+          EscrowAccountClassHash: invalidEscrowAccountClassHash,
         },
       });
       return txReceipt;

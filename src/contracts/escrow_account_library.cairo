@@ -1,19 +1,19 @@
 use starknet::{ContractAddress, ClassHash};
-use starknet_gifting::contracts::claim_data::{ClaimData};
-use starknet_gifting::contracts::outside_execution::{OutsideExecution};
-use starknet_gifting::contracts::utils::{StarknetSignature};
+use argent_gifting::contracts::claim_data::{GiftData};
+use argent_gifting::contracts::outside_execution::{OutsideExecution};
+use argent_gifting::contracts::utils::{StarknetSignature};
 
 #[starknet::interface]
-pub trait IClaimAccountImpl<TContractState> {
+pub trait IEscrowAccountImpl<TContractState> {
     fn execute_action(
         ref self: TContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
     ) -> Span<felt252>;
 
-    fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress) -> Array<Span<felt252>>;
+    fn claim_internal(ref self: TContractState, claim: GiftData, receiver: ContractAddress) -> Array<Span<felt252>>;
 
     fn claim_external(
         ref self: TContractState,
-        claim: ClaimData,
+        claim: GiftData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
         signature: StarknetSignature
@@ -22,25 +22,25 @@ pub trait IClaimAccountImpl<TContractState> {
     /// @notice Allows the sender of a gift to cancel their gift
     /// @dev Will refund both the gift and the fee
     /// @param claim The claim data of the gift to cancel
-    fn cancel(ref self: TContractState, claim: ClaimData);
+    fn cancel(ref self: TContractState, claim: GiftData);
 
     /// @notice Allows the owner of the factory to claim the dust (leftovers) of a claim
     /// @dev Only allowed if the gift has been claimed
     /// @param claim The claim data 
     /// @param receiver The address of the receiver
-    fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
+    fn get_dust(ref self: TContractState, claim: GiftData, receiver: ContractAddress);
 
     fn is_valid_account_signature(
-        self: @TContractState, claim: ClaimData, hash: felt252, remaining_signature: Span<felt252>
+        self: @TContractState, claim: GiftData, hash: felt252, remaining_signature: Span<felt252>
     ) -> felt252;
 
     fn execute_from_outside_v2(
-        ref self: TContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
+        ref self: TContractState, claim: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
     ) -> Array<Span<felt252>>;
 }
 
 #[starknet::contract]
-mod ClaimAccountImpl {
+mod EscrowAccountImpl {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
@@ -49,10 +49,10 @@ mod ClaimAccountImpl {
     use starknet::{
         ClassHash, ContractAddress, get_caller_address, get_contract_address, syscalls::library_call_syscall
     };
-    use starknet_gifting::contracts::claim_data::{ClaimData};
-    use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::outside_execution::{OutsideExecution};
-    use starknet_gifting::contracts::utils::{StarknetSignature};
+    use argent_gifting::contracts::claim_data::{GiftData};
+    use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
+    use argent_gifting::contracts::outside_execution::{OutsideExecution};
+    use argent_gifting::contracts::utils::{StarknetSignature};
 
     #[storage]
     struct Storage {}
@@ -82,9 +82,9 @@ mod ClaimAccountImpl {
     }
 
     #[abi(embed_v0)]
-    impl ClaimAccountImpl of super::IClaimAccountImpl<ContractState> {
+    impl EscrowAccountImpl of super::IEscrowAccountImpl<ContractState> {
         fn claim_internal(
-            ref self: ContractState, claim: ClaimData, receiver: ContractAddress
+            ref self: ContractState, claim: GiftData, receiver: ContractAddress
         ) -> Array<Span<felt252>> {
             self.proceed_with_claim(claim, receiver, Zero::zero());
             array![]
@@ -102,7 +102,7 @@ mod ClaimAccountImpl {
 
         fn claim_external(
             ref self: ContractState,
-            claim: ClaimData,
+            claim: GiftData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
             signature: StarknetSignature
@@ -116,7 +116,7 @@ mod ClaimAccountImpl {
             self.proceed_with_claim(claim, receiver, dust_receiver);
         }
 
-        fn cancel(ref self: ContractState, claim: ClaimData) {
+        fn cancel(ref self: ContractState, claim: GiftData) {
             let contract_address = get_contract_address();
             assert(get_caller_address() == claim.sender, 'gift/wrong-sender');
 
@@ -134,7 +134,7 @@ mod ClaimAccountImpl {
             self.emit(GiftCancelled {});
         }
 
-        fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
+        fn get_dust(ref self: ContractState, claim: GiftData, receiver: ContractAddress) {
             let contract_address = get_contract_address();
             let factory_owner = IOwnableDispatcher { contract_address: claim.factory }.owner();
             assert(factory_owner == get_caller_address(), 'gift/only-factory-owner');
@@ -149,13 +149,13 @@ mod ClaimAccountImpl {
         }
 
         fn is_valid_account_signature(
-            self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
+            self: @ContractState, claim: GiftData, hash: felt252, mut remaining_signature: Span<felt252>
         ) -> felt252 {
             0 // Accounts don't support off-chain signatures yet
         }
 
         fn execute_from_outside_v2(
-            ref self: ContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
+            ref self: ContractState, claim: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
         ) -> Array<Span<felt252>> {
             panic_with_felt252('not-allowed-yet')
         }
@@ -164,7 +164,7 @@ mod ClaimAccountImpl {
     #[generate_trait]
     impl Private of PrivateTrait {
         fn proceed_with_claim(
-            ref self: ContractState, claim: ClaimData, receiver: ContractAddress, dust_receiver: ContractAddress
+            ref self: ContractState, claim: GiftData, receiver: ContractAddress, dust_receiver: ContractAddress
         ) {
             assert(receiver.is_non_zero(), 'gift/zero-receiver');
             let contract_address = get_contract_address();

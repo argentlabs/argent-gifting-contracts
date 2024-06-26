@@ -1,6 +1,6 @@
 pub mod contracts {
-    pub mod claim_account;
-    pub mod claim_account_impl;
+    pub mod escrow_account;
+    pub mod escrow_account_library;
     pub mod claim_data;
     pub mod claim_hash;
     pub mod gift_factory;

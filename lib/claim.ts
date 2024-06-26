@@ -148,12 +148,12 @@ export async function claimInternal(args: {
   claim: Claim;
   receiver: string;
   claimPrivateKey: string;
-  overrides?: { claimAccountAddress?: string; callToAddress?: string };
+  overrides?: { EscrowAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
-  const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
-  const claimAccount = getClaimAccount(args.claim, args.claimPrivateKey, claimAddress);
-  const response = await claimAccount.execute(
+  const claimAddress = args.overrides?.EscrowAccountAddress || calculateClaimAddress(args.claim);
+  const EscrowAccount = getEscrowAccount(args.claim, args.claimPrivateKey, claimAddress);
+  const response = await EscrowAccount.execute(
     [
       {
         contractAddress: args.overrides?.callToAddress ?? claimAddress,
@@ -202,7 +202,7 @@ export const randomReceiver = (): string => {
   return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
 };
 
-export function getClaimAccount(claim: Claim, claimPrivateKey: string, forceClaimAddress?: string): Account {
+export function getEscrowAccount(claim: Claim, claimPrivateKey: string, forceClaimAddress?: string): Account {
   return new Account(
     manager,
     forceClaimAddress || num.toHex(calculateClaimAddress(claim)),

@@ -1,5 +1,5 @@
 [package]
-name = "starknet_gifting"
+name = "argent_gifting"
 version = "0.1.0"
 edition = "2023_11"
 

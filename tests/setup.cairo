@@ -3,9 +3,9 @@ use openzeppelin::utils::serde::SerializedAppend;
 
 use snforge_std::{declare, ContractClassTrait, ContractClass, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ClassHash;
-use starknet_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
 
-use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
+use argent_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
 
 use super::constants::{OWNER, DEPOSITOR, CLAIMER};
 
@@ -25,7 +25,7 @@ pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
     let broken_erc20 = IERC20Dispatcher { contract_address: broken_erc20_address };
 
     // claim contract
-    let claim_contract = declare("ClaimAccount").expect('Failed to declare claim');
+    let claim_contract = declare("EscrowAccount").expect('Failed to declare claim');
 
     // gift factory
     let factory_contract = declare("GiftFactory").expect('Failed to declare factory');
@@ -74,7 +74,7 @@ pub fn deploy_gifting_normal() -> GiftingSetup {
     assert(mock_strk.balance_of(OWNER()) == erc20_supply, 'Failed to mint STRK');
 
     // claim contract
-    let claim_contract = declare("ClaimAccount").expect('Failed to declare claim');
+    let claim_contract = declare("EscrowAccount").expect('Failed to declare claim');
 
     // gift factory
     let factory_contract = declare("GiftFactory").expect('Failed to declare factory');

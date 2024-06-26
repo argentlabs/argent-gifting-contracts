@@ -10,7 +10,7 @@ pub trait IAccount<TContractState> {
 
 
 #[starknet::interface]
-pub trait IGiftAccount<TContractState> {
+pub trait IEscrowAccount<TContractState> {
     /// @notice delegates an action to the account implementation
     fn execute_action(ref self: TContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252>;
 }
@@ -34,25 +34,25 @@ pub struct AccountConstructorArguments {
 }
 
 #[starknet::contract(account)]
-mod ClaimAccount {
+mod EscrowAccount {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
     use starknet::{
         TxInfo, account::Call, VALIDATED, syscalls::library_call_syscall, ContractAddress, get_contract_address,
         get_execution_info, ClassHash
     };
-    use starknet_gifting::contracts::claim_account_impl::{
-        IClaimAccountImplLibraryDispatcher, IClaimAccountImplDispatcherTrait
+    use argent_gifting::contracts::escrow_account_library::{
+        IEscrowAccountImplLibraryDispatcher, IEscrowAccountImplDispatcherTrait
     };
-    use starknet_gifting::contracts::claim_data::{ClaimData};
-    use starknet_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
-    use starknet_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
+    use argent_gifting::contracts::claim_data::{GiftData};
+    use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+    use argent_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
 
-    use starknet_gifting::contracts::utils::{
-        calculate_claim_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
+    use argent_gifting::contracts::utils::{
+        calculate_escrow_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
         TX_V3, TX_V3_ESTIMATE
     };
-    use super::{IGiftAccount, IAccount, AccountConstructorArguments};
+    use super::{IEscrowAccount, IAccount, AccountConstructorArguments};
 
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
     const SRC5_INTERFACE_ID: felt252 = 0x3f918d17e5ee77373b56385708f855659a07f75997f365cf87748628532a055;
@@ -85,7 +85,7 @@ mod ClaimAccount {
             let Call { to, selector, calldata } = calls.at(0);
             assert(*to == get_contract_address(), 'gift-acc/invalid-call-to');
             assert(*selector == selector!("claim_internal"), 'gift-acc/invalid-call-selector');
-            let (claim, _): (ClaimData, ContractAddress) = full_deserialize(*calldata)
+            let (claim, _): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
             assert_valid_claim(claim);
 
@@ -127,17 +127,17 @@ mod ClaimAccount {
                 'gift-acc/invalid-tx-version'
             );
             let Call { .., calldata }: @Call = calls[0];
-            let (claim, receiver): (ClaimData, ContractAddress) = full_deserialize(*calldata)
+            let (claim, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
             let implementation_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: claim.factory }
                 .get_account_impl_class_hash(claim.class_hash);
-            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }.claim_internal(claim, receiver)
+            IEscrowAccountImplLibraryDispatcher { class_hash: implementation_class_hash }.claim_internal(claim, receiver)
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
             let mut signature_span = signature.span();
-            let claim: ClaimData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-claim');
-            IClaimAccountImplLibraryDispatcher { class_hash: get_validated_impl(claim) }
+            let claim: GiftData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-claim');
+            IEscrowAccountImplLibraryDispatcher { class_hash: get_validated_impl(claim) }
                 .is_valid_account_signature(claim, hash, signature_span)
         }
 
@@ -149,12 +149,12 @@ mod ClaimAccount {
     }
 
     #[abi(embed_v0)]
-    impl GiftAccountImpl of IGiftAccount<ContractState> {
+    impl GiftAccountImpl of IEscrowAccount<ContractState> {
         fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
-            let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
+            let claim: GiftData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
-            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
+            IEscrowAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
                 .execute_action(implementation_class_hash, selector, calldata.span())
         }
     }
@@ -164,9 +164,9 @@ mod ClaimAccount {
         fn execute_from_outside_v2(
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            let claim: ClaimData = Serde::deserialize(ref signature).expect('gift-acc/invalid-claim');
+            let claim: GiftData = Serde::deserialize(ref signature).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
-            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
+            IEscrowAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
                 .execute_from_outside_v2(claim, outside_execution, signature)
         }
 
@@ -175,13 +175,13 @@ mod ClaimAccount {
         }
     }
 
-    fn get_validated_impl(claim: ClaimData) -> ClassHash {
+    fn get_validated_impl(claim: GiftData) -> ClassHash {
         assert_valid_claim(claim);
         IGiftFactoryDispatcher { contract_address: claim.factory }.get_account_impl_class_hash(claim.class_hash)
     }
 
-    fn assert_valid_claim(claim: ClaimData) {
-        let calculated_address = calculate_claim_account_address(claim);
+    fn assert_valid_claim(claim: GiftData) {
+        let calculated_address = calculate_escrow_account_address(claim);
         assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
     }
 
