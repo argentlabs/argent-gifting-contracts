@@ -36,7 +36,7 @@ export async function deposit(depositParams: {
     depositParams.overrides?.escrowAccountClassHash || (await factory.get_latest_escrow_class_hash());
   const gift: Gift = {
     factory: factoryAddress,
-    class_hash: escrowAccountClassHash,
+    escrow_class_hash: escrowAccountClassHash,
     sender: deployer.address,
     gift_token: giftTokenAddress,
     gift_amount: giftAmount,
@@ -123,7 +123,7 @@ export function calculateEscrowAddress(gift: Gift): string {
 
   const escrowAddress = hash.calculateContractAddressFromHash(
     0,
-    gift.class_hash,
+    gift.escrow_class_hash,
     CallData.compile({
       ...constructorArgs,
       gift_amount: uint256.bnToUint256(gift.gift_amount),

@@ -55,7 +55,7 @@ pub fn calculate_escrow_account_address(gift: GiftData) -> ContractAddress {
     };
     calculate_contract_address_from_deploy_syscall(
         0, // salt
-        gift.class_hash, // class_hash
+        gift.escrow_class_hash, // escrow_class_hash
         serialize(@constructor_arguments).span(), // constructor_data
         gift.factory
     )

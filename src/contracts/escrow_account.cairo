@@ -130,7 +130,7 @@ mod EscrowAccount {
             let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
             let library_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
-                .get_escrow_lib_class_hash(gift.class_hash);
+                .get_escrow_lib_class_hash(gift.escrow_class_hash);
             IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
         }
 
@@ -177,7 +177,7 @@ mod EscrowAccount {
 
     fn get_validated_lib(gift: GiftData) -> ClassHash {
         assert_valid_claim(gift);
-        IGiftFactoryDispatcher { contract_address: gift.factory }.get_escrow_lib_class_hash(gift.class_hash)
+        IGiftFactoryDispatcher { contract_address: gift.factory }.get_escrow_lib_class_hash(gift.escrow_class_hash)
     }
 
     fn assert_valid_claim(gift: GiftData) {
