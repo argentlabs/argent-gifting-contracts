@@ -27,7 +27,7 @@ describe("Claim Internal", function () {
       await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
     });
 
-    it(`Can't gift if no fee amount deposited (fee token == gift token) using txV3: ${useTxV3}`, async function () {
+    it(`Can't claim if no fee amount deposited (fee token == gift token) using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const receiver = randomReceiver();
 

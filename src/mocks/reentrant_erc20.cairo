@@ -21,7 +21,7 @@ trait IMalicious<TContractState> {
         gift: TestGiftData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
-        claim_signature: StarknetSignature,
+        gift_signature: StarknetSignature,
     );
 }
 
@@ -141,9 +141,9 @@ mod ReentrantERC20 {
             gift: TestGiftData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
-            claim_signature: StarknetSignature,
+            gift_signature: StarknetSignature,
         ) {
-            self.signature.write(claim_signature);
+            self.signature.write(gift_signature);
             self.gift.write(gift);
             self.receiver.write(receiver);
             self.dust_receiver.write(dust_receiver);

@@ -13,7 +13,7 @@ pub struct GiftingSetup {
     pub mock_eth: IERC20Dispatcher,
     pub mock_strk: IERC20Dispatcher,
     pub gift_factory: IGiftFactoryDispatcher,
-    pub claim_class_hash: ClassHash,
+    pub escrow_class_hash: ClassHash,
 }
 
 pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
@@ -37,7 +37,7 @@ pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
     assert(gift_factory.get_latest_escrow_class_hash() == escrow_contract.class_hash, 'Incorrect factory setup');
 
     GiftingSetup {
-        mock_eth: broken_erc20, mock_strk: broken_erc20, gift_factory, claim_class_hash: escrow_contract.class_hash
+        mock_eth: broken_erc20, mock_strk: broken_erc20, gift_factory, escrow_class_hash: escrow_contract.class_hash
     }
 }
 
@@ -101,5 +101,5 @@ pub fn deploy_gifting_normal() -> GiftingSetup {
     assert(mock_eth.allowance(DEPOSITOR(), factory_contract_address) == 1000, 'Failed to approve ETH');
     assert(mock_strk.allowance(DEPOSITOR(), factory_contract_address) == 1000, 'Failed to approve STRK');
 
-    GiftingSetup { mock_eth, mock_strk, gift_factory, claim_class_hash: escrow_contract.class_hash }
+    GiftingSetup { mock_eth, mock_strk, gift_factory, escrow_class_hash: escrow_contract.class_hash }
 }

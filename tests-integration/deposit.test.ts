@@ -86,7 +86,7 @@ describe("Deposit", function () {
       expect(feeTokenBalance).to.equal(gift.fee_amount);
     });
 
-    it(`Max fee too high gift.gift > gift.fee (gift token == fee token)`, async function () {
+    it(`Max fee too high gift_amount > fee_amount (gift token == fee token)`, async function () {
       const { factory } = await setupGiftProtocol();
 
       await expectRevertWithErrorMessage("gift-fac/fee-too-high", async () => {

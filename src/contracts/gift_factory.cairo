@@ -26,7 +26,7 @@ pub trait IGiftFactory<TContractState> {
     /// @notice Retrieves the current class_hash of the escrow account's library
     fn get_account_lib_class_hash(self: @TContractState, account_class_hash: ClassHash) -> ClassHash;
 
-    /// @notice Get the address of the gift account contract given all parameters
+    /// @notice Get the address of the escrow account contract given all parameters
     /// @param class_hash The class hash
     /// @param sender The address of the sender
     /// @param gift_token The ERC-20 token address of the gift
@@ -34,7 +34,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param fee_token The ERC-20 token address of the fee
     /// @param fee_amount The amount of the fee
     /// @param gift_pubkey The public key associated with the gift
-    fn get_claim_address(
+    fn get_escrow_address(
         self: @TContractState,
         class_hash: ClassHash,
         sender: ContractAddress,
@@ -206,7 +206,7 @@ mod GiftFactory {
             self.account_class_hash.read()
         }
 
-        fn get_claim_address(
+        fn get_escrow_address(
             self: @ContractState,
             class_hash: ClassHash,
             sender: ContractAddress,

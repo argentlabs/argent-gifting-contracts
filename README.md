@@ -49,7 +49,7 @@ The factory can be upgraded to a newer version, allowing it to potentially recov
 The upgrade cannot be done immediately and must go through a waiting period of 7 days. There is then a window of 7 days to perform the upgrade.  
 It is important to note that through an upgrade, the ownership of the factory and its upgradeability can both be revoked.
 
-## Gift account address calculation
+## Escrow account address calculation
 
 To compute the address of the escrow account, you can either call `get_escrow_address()` with the relevant arguments. Or you can do it off-chain using, for example, starknetJS.  
 The parameters are as follow:
