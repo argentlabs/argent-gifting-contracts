@@ -11,12 +11,12 @@ pub trait IAccount<TContractState> {
 
 #[starknet::interface]
 pub trait IEscrowAccount<TContractState> {
-    /// @notice delegates an action to the account implementation
+    /// @notice delegates an action to the account library
     fn execute_action(ref self: TContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252>;
 }
 
-/// @notice Struct representing the arguments required for constructing a gift account
-/// @dev This will be used to determine the address of the gift account
+/// @notice Struct representing the arguments required for constructing an escrow account
+/// @dev This will be used to determine the address of the escrow account
 /// @param sender The address of the sender
 /// @param gift_token The ERC-20 token address of the gift
 /// @param gift_amount The amount of the gift
@@ -38,7 +38,7 @@ mod EscrowAccount {
     use argent_gifting::contracts::escrow_account_library::{
         IEscrowLibraryLibraryDispatcher as IEscrowLibraryDelegateDispatcher, IEscrowLibraryDispatcherTrait
     };
-    use argent_gifting::contracts::gift_data::{GiftData};
+    use argent_gifting::contracts::gift_data::GiftData;
     use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
     use argent_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
 
@@ -129,15 +129,15 @@ mod EscrowAccount {
             let Call { .., calldata }: @Call = calls[0];
             let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
-            let implementation_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
-                .get_account_impl_class_hash(gift.class_hash);
-            IEscrowLibraryDelegateDispatcher { class_hash: implementation_class_hash }.claim_internal(gift, receiver)
+            let library_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
+                .get_account_lib_class_hash(gift.class_hash);
+            IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
             let mut signature_span = signature.span();
             let gift: GiftData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-gift');
-            IEscrowLibraryDelegateDispatcher { class_hash: get_validated_impl(gift) }
+            IEscrowLibraryDelegateDispatcher { class_hash: get_validated_lib(gift) }
                 .is_valid_account_signature(gift, hash, signature_span)
         }
 
@@ -153,9 +153,9 @@ mod EscrowAccount {
         fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
             let gift: GiftData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-gift');
-            let implementation_class_hash = get_validated_impl(gift);
-            IEscrowLibraryDelegateDispatcher { class_hash: implementation_class_hash }
-                .execute_action(implementation_class_hash, selector, calldata.span())
+            let library_class_hash = get_validated_lib(gift);
+            IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }
+                .execute_action(library_class_hash, selector, calldata.span())
         }
     }
 
@@ -165,8 +165,8 @@ mod EscrowAccount {
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
             let gift: GiftData = Serde::deserialize(ref signature).expect('gift-acc/invalid-gift');
-            let implementation_class_hash = get_validated_impl(gift);
-            IEscrowLibraryDelegateDispatcher { class_hash: implementation_class_hash }
+            let library_class_hash = get_validated_lib(gift);
+            IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }
                 .execute_from_outside_v2(gift, outside_execution, signature)
         }
 
@@ -175,14 +175,14 @@ mod EscrowAccount {
         }
     }
 
-    fn get_validated_impl(gift: GiftData) -> ClassHash {
+    fn get_validated_lib(gift: GiftData) -> ClassHash {
         assert_valid_claim(gift);
-        IGiftFactoryDispatcher { contract_address: gift.factory }.get_account_impl_class_hash(gift.class_hash)
+        IGiftFactoryDispatcher { contract_address: gift.factory }.get_account_lib_class_hash(gift.class_hash)
     }
 
     fn assert_valid_claim(gift: GiftData) {
         let calculated_address = calculate_escrow_account_address(gift);
-        assert(calculated_address == get_contract_address(), 'gift-acc/invalid-gift-address');
+        assert(calculated_address == get_contract_address(), 'gift-acc/invalid-escrow-address');
     }
 
     fn compute_max_fee_v3(tx_info: TxInfo, tip: u128) -> u128 {

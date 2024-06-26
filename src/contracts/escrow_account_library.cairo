@@ -1,6 +1,6 @@
-use argent_gifting::contracts::gift_data::{GiftData};
-use argent_gifting::contracts::outside_execution::{OutsideExecution};
-use argent_gifting::contracts::utils::{StarknetSignature};
+use argent_gifting::contracts::gift_data::GiftData;
+use argent_gifting::contracts::outside_execution::OutsideExecution;
+use argent_gifting::contracts::utils::StarknetSignature;
 use starknet::{ContractAddress, ClassHash};
 
 #[starknet::interface]
@@ -21,10 +21,10 @@ pub trait IEscrowLibrary<TContractState> {
 
     /// @notice Allows the sender of a gift to cancel their gift
     /// @dev Will refund both the gift and the fee
-    /// @param gift The gift data of the gift to cancel
+    /// @param gift The data of the gift to cancel
     fn cancel(ref self: TContractState, gift: GiftData);
 
-    /// @notice Allows the owner of the factory to gift the dust (leftovers) of a gift
+    /// @notice Allows the owner of the factory to claim the dust (leftovers) of a gift
     /// @dev Only allowed if the gift has been claimed
     /// @param gift The gift data 
     /// @param receiver The address of the receiver
@@ -42,9 +42,9 @@ pub trait IEscrowLibrary<TContractState> {
 #[starknet::contract]
 mod EscrowLibrary {
     use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use argent_gifting::contracts::gift_data::{GiftData};
-    use argent_gifting::contracts::outside_execution::{OutsideExecution};
-    use argent_gifting::contracts::utils::{StarknetSignature};
+    use argent_gifting::contracts::gift_data::GiftData;
+    use argent_gifting::contracts::outside_execution::OutsideExecution;
+    use argent_gifting::contracts::utils::StarknetSignature;
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
@@ -169,7 +169,8 @@ mod EscrowLibrary {
             let gift_balance = IERC20Dispatcher { contract_address: gift.gift_token }.balance_of(contract_address);
             assert(gift_balance >= gift.gift_amount, 'gift/already-claimed-or-cancel');
 
-            // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
+            // could be optimized to 1 transfer only when the receiver is also the dust receiver,
+            // and the fee token is the same as the gift token
             // but will increase the complexity of the code for a small performance GiftCanceled
 
             // Transfer the gift

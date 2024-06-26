@@ -3,7 +3,7 @@ use starknet::{ContractAddress, ClassHash};
 
 /// @notice Struct representing the data required for a claiming a gift
 /// @param factory The address of the factory
-/// @param class_hash The class hash of the gift account
+/// @param class_hash The class hash of the escrow account
 /// @param sender The address of the sender
 /// @param gift_token The ERC-20 token address of the gift
 /// @param gift_amount The amount of the gift

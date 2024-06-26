@@ -111,16 +111,16 @@ mod ReentrantERC20 {
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
             // if (!self.has_reentered.read()) {
             //     self.has_reentered.write(true);
-            //     let test_claim: TestGiftData = self.gift.read();
+            //     let test_gift: TestGiftData = self.gift.read();
             //     let gift = GiftData {
-            //         factory: test_claim.factory,
-            //         class_hash: test_claim.class_hash,
-            //         sender: test_claim.sender,
-            //         gift_token: test_claim.gift_token,
-            //         gift_amount: test_claim.gift_amount,
-            //         fee_token: test_claim.fee_token,
-            //         fee_amount: test_claim.fee_amount,
-            //         claim_pubkey: test_claim.claim_pubkey,
+            //         factory: test_gift.factory,
+            //         class_hash: test_gift.class_hash,
+            //         sender: test_gift.sender,
+            //         gift_token: test_gift.gift_token,
+            //         gift_amount: test_gift.gift_amount,
+            //         fee_token: test_gift.fee_token,
+            //         fee_amount: test_gift.fee_amount,
+            //         claim_pubkey: test_gift.claim_pubkey,
             //     };
             // IGiftFactoryDispatcher { contract_address: self.factory.read() }
             //     .claim_external(gift, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
