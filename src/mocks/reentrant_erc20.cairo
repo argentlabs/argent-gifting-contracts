@@ -32,8 +32,7 @@ mod ReentrantERC20 {
 
     use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
 
-    use argent_gifting::contracts::utils::ETH_ADDRESS;
-    use argent_gifting::contracts::utils::{StarknetSignature};
+    use argent_gifting::contracts::utils::{ETH_ADDRESS, StarknetSignature};
     use openzeppelin::token::erc20::erc20::ERC20Component::InternalTrait;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
