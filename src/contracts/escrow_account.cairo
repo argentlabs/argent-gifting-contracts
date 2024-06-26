@@ -40,7 +40,9 @@ mod EscrowAccount {
     };
     use argent_gifting::contracts::gift_data::GiftData;
     use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
-    use argent_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
+    use argent_gifting::contracts::outside_execution::{
+        IOutsideExecution, OutsideExecution, ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_2
+    };
 
     use argent_gifting::contracts::utils::{
         calculate_escrow_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
@@ -58,10 +60,6 @@ mod EscrowAccount {
     const SRC5_INTERFACE_ID: felt252 = 0x3f918d17e5ee77373b56385708f855659a07f75997f365cf87748628532a055;
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-6.md
     const SRC5_ACCOUNT_INTERFACE_ID: felt252 = 0x2ceccef7f994940b3962a6c67e0ba4fcd37df7d131417c604f91e03caecc1cd;
-    // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-9.md version 1
-    const ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_1: felt252 =
-        0x1d1144bb2138366ff28d8e9ab57456b1d332ac42196230c3a602003c89872;
-
 
     #[storage]
     struct Storage {
@@ -144,7 +142,7 @@ mod EscrowAccount {
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
             interface_id == SRC5_INTERFACE_ID
                 || interface_id == SRC5_ACCOUNT_INTERFACE_ID
-                || interface_id == ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_1
+                || interface_id == ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_2
         }
     }
 
@@ -165,8 +163,7 @@ mod EscrowAccount {
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
             let gift: GiftData = Serde::deserialize(ref signature).expect('gift-acc/invalid-gift');
-            let library_class_hash = get_validated_lib(gift);
-            IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }
+            IEscrowLibraryDelegateDispatcher { class_hash: get_validated_lib(gift) }
                 .execute_from_outside_v2(gift, outside_execution, signature)
         }
 
