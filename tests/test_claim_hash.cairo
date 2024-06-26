@@ -1,9 +1,9 @@
-use core::poseidon::hades_permutation;
-use snforge_std::cheat_chain_id_global;
-use starknet::get_tx_info;
 use argent_gifting::contracts::claim_hash::{
     IStructHashRev1, StarknetDomain, MAINNET_FIRST_HADES_PERMUTATION, SEPOLIA_FIRST_HADES_PERMUTATION
 };
+use core::poseidon::hades_permutation;
+use snforge_std::cheat_chain_id_global;
+use starknet::get_tx_info;
 
 
 fn get_domain_hash() -> felt252 {

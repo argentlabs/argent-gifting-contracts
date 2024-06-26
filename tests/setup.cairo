@@ -1,11 +1,11 @@
+use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+
+use argent_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
 use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin::utils::serde::SerializedAppend;
 
 use snforge_std::{declare, ContractClassTrait, ContractClass, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ClassHash;
-use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
-
-use argent_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
 
 use super::constants::{OWNER, DEPOSITOR, CLAIMER};
 

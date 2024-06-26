@@ -2,12 +2,12 @@ use starknet::{ContractAddress, ClassHash};
 
 #[starknet::interface]
 pub trait IGiftFactory<TContractState> {
-    /// @notice Creates a new claim
+    /// @notice Creates a new gift
     /// @dev This function can be paused by the owner of the factory and prevent any further deposits
-    /// @param claim_class_hash The class hash of the claim account (needed in FE to have an optimistic UI)
+    /// @param claim_class_hash The class hash of the gift account (needed in FE to have an optimistic UI)
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
-    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift through claim_internal
+    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to gift the gift through claim_internal
     /// @param fee_amount The amount of the fee
     /// @param claim_pubkey The public key associated with the gift
     fn deposit(
@@ -25,7 +25,7 @@ pub trait IGiftFactory<TContractState> {
 
     fn get_account_impl_class_hash(self: @TContractState, account_class_hash: ClassHash) -> ClassHash;
 
-    /// @notice Get the address of the claim account contract given all parameters
+    /// @notice Get the address of the gift account contract given all parameters
     /// @param class_hash The class hash
     /// @param sender The address of the sender
     /// @param gift_token The ERC-20 token address of the gift
@@ -48,6 +48,16 @@ pub trait IGiftFactory<TContractState> {
 
 #[starknet::contract]
 mod GiftFactory {
+    use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
+    use argent_gifting::contracts::escrow_account::{
+        IEscrowAccount, IEscrowAccountDispatcher, AccountConstructorArguments
+    };
+    use argent_gifting::contracts::gift_data::{GiftData};
+    use argent_gifting::contracts::gift_factory::IGiftFactory;
+    use argent_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
+    use argent_gifting::contracts::utils::{
+        calculate_escrow_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
+    };
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
@@ -57,14 +67,6 @@ mod GiftFactory {
     use starknet::{
         ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
         get_block_timestamp
-    };
-    use argent_gifting::contracts::escrow_account::{IEscrowAccount, IEscrowAccountDispatcher, AccountConstructorArguments};
-    use argent_gifting::contracts::claim_data::{GiftData};
-    use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use argent_gifting::contracts::gift_factory::IGiftFactory;
-    use argent_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
-    use argent_gifting::contracts::utils::{
-        calculate_escrow_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
     };
 
     // Ownable 
@@ -111,7 +113,7 @@ mod GiftFactory {
 
     #[derive(Drop, starknet::Event)]
     struct GiftCreated {
-        #[key] // If you have the ContractAddress you can find back the claim 
+        #[key] // If you have the ContractAddress you can find back the gift 
         gift_address: ContractAddress,
         #[key] // Find all gifts from a specific sender
         sender: ContractAddress,

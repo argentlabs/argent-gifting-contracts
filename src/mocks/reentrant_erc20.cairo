@@ -1,5 +1,5 @@
-use starknet::{ClassHash, ContractAddress};
 use argent_gifting::contracts::utils::{StarknetSignature};
+use starknet::{ClassHash, ContractAddress};
 
 
 #[derive(Serde, Drop, Copy, starknet::Store, Debug)]
@@ -16,9 +16,9 @@ struct TestGiftData {
 
 #[starknet::interface]
 trait IMalicious<TContractState> {
-    fn set_claim_data(
+    fn set_gift_data(
         ref self: TContractState,
-        claim: TestGiftData,
+        gift: TestGiftData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
         claim_signature: StarknetSignature,
@@ -28,6 +28,12 @@ trait IMalicious<TContractState> {
 
 #[starknet::contract]
 mod ReentrantERC20 {
+    use argent_gifting::contracts::gift_data::{GiftData};
+
+    use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+
+    use argent_gifting::contracts::utils::ETH_ADDRESS;
+    use argent_gifting::contracts::utils::{StarknetSignature};
     use openzeppelin::token::erc20::erc20::ERC20Component::InternalTrait;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
@@ -36,12 +42,6 @@ mod ReentrantERC20 {
         get_caller_address, ContractAddress, get_contract_address, contract_address_const,
         syscalls::call_contract_syscall
     };
-    use argent_gifting::contracts::claim_data::{GiftData};
-
-    use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
-
-    use argent_gifting::contracts::utils::ETH_ADDRESS;
-    use argent_gifting::contracts::utils::{StarknetSignature};
     use super::IMalicious;
     use super::TestGiftData;
 
@@ -53,7 +53,7 @@ mod ReentrantERC20 {
     #[storage]
     struct Storage {
         factory: ContractAddress,
-        claim: TestGiftData,
+        gift: TestGiftData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
         has_reentered: bool,
@@ -111,8 +111,8 @@ mod ReentrantERC20 {
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
             // if (!self.has_reentered.read()) {
             //     self.has_reentered.write(true);
-            //     let test_claim: TestGiftData = self.claim.read();
-            //     let claim = GiftData {
+            //     let test_claim: TestGiftData = self.gift.read();
+            //     let gift = GiftData {
             //         factory: test_claim.factory,
             //         class_hash: test_claim.class_hash,
             //         sender: test_claim.sender,
@@ -123,7 +123,7 @@ mod ReentrantERC20 {
             //         claim_pubkey: test_claim.claim_pubkey,
             //     };
             // IGiftFactoryDispatcher { contract_address: self.factory.read() }
-            //     .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
+            //     .claim_external(gift, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
             // }
 
             self.erc20.transfer(recipient, amount)
@@ -136,15 +136,15 @@ mod ReentrantERC20 {
 
     #[abi(embed_v0)]
     impl MaliciousImpl of IMalicious<ContractState> {
-        fn set_claim_data(
+        fn set_gift_data(
             ref self: ContractState,
-            claim: TestGiftData,
+            gift: TestGiftData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
             claim_signature: StarknetSignature,
         ) {
             self.signature.write(claim_signature);
-            self.claim.write(claim);
+            self.gift.write(gift);
             self.receiver.write(receiver);
             self.dust_receiver.write(dust_receiver);
         }
