@@ -36,7 +36,7 @@ pub struct AccountConstructorArguments {
 #[starknet::contract(account)]
 mod EscrowAccount {
     use argent_gifting::contracts::escrow_library::{
-        IEscrowLibraryLibraryDispatcher as IEscrowLibraryDelegateDispatcher, IEscrowLibraryDispatcherTrait
+        IEscrowLibraryLibraryDispatcher, IEscrowLibraryDispatcherTrait
     };
     use argent_gifting::contracts::gift_data::GiftData;
     use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
@@ -131,13 +131,13 @@ mod EscrowAccount {
                 .expect('gift-acc/invalid-calldata');
             let library_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
                 .get_escrow_lib_class_hash(gift.escrow_class_hash);
-            IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
+            IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
             let mut signature_span = signature.span();
             let gift: GiftData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-gift');
-            IEscrowLibraryDelegateDispatcher { class_hash: get_validated_lib(gift) }
+            IEscrowLibraryLibraryDispatcher { class_hash: get_validated_lib(gift) }
                 .is_valid_account_signature(gift, hash, signature_span)
         }
 
@@ -154,7 +154,7 @@ mod EscrowAccount {
             let mut calldata_span = calldata.span();
             let gift: GiftData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-gift');
             let library_class_hash = get_validated_lib(gift);
-            IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }
+            IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }
                 .execute_action(library_class_hash, selector, calldata.span())
         }
     }
@@ -166,7 +166,7 @@ mod EscrowAccount {
         ) -> Array<Span<felt252>> {
             let gift: GiftData = Serde::deserialize(ref signature).expect('gift-acc/invalid-gift');
             let library_class_hash = get_validated_lib(gift);
-            IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }
+            IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }
                 .execute_from_outside_v2(gift, outside_execution, signature)
         }
 
