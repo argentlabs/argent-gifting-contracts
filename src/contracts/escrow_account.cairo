@@ -131,7 +131,7 @@ mod EscrowAccount {
                 .expect('gift-acc/invalid-calldata');
             // The __validate__ function already ensures the claim is valid
             let library_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
-                .get_account_lib_class_hash(gift.class_hash);
+                .get_escrow_lib_class_hash(gift.class_hash);
             IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
         }
 
@@ -175,7 +175,7 @@ mod EscrowAccount {
     fn get_validated_lib(gift: GiftData) -> IEscrowLibraryDelegateDispatcher {
         assert_valid_claim(gift);
         let library_class_hash = IGiftFactoryDispatcher { contract_address: gift.factory }
-            .get_account_lib_class_hash(gift.class_hash);
+            .get_escrow_lib_class_hash(gift.class_hash);
         IEscrowLibraryDelegateDispatcher { class_hash: library_class_hash }
     }
 

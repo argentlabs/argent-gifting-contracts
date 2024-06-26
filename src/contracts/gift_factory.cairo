@@ -4,7 +4,7 @@ use starknet::{ContractAddress, ClassHash};
 pub trait IGiftFactory<TContractState> {
     /// @notice Creates a new gift
     /// @dev This function can be paused by the owner of the factory and prevent any further deposits
-    /// @param account_class_hash The class hash of the escrow account (needed in FE to have an optimistic UI)
+    /// @param escrow_class_hash The class hash of the escrow account (needed in FE to have an optimistic UI)
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
     /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift through claim_internal
@@ -12,7 +12,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param gift_pubkey The public key associated with the gift
     fn deposit(
         ref self: TContractState,
-        account_class_hash: ClassHash,
+        escrow_class_hash: ClassHash,
         gift_token: ContractAddress,
         gift_amount: u256,
         fee_token: ContractAddress,
@@ -24,7 +24,7 @@ pub trait IGiftFactory<TContractState> {
     fn get_latest_escrow_class_hash(self: @TContractState) -> ClassHash;
 
     /// @notice Retrieves the current class_hash of the escrow account's library
-    fn get_account_lib_class_hash(self: @TContractState, account_class_hash: ClassHash) -> ClassHash;
+    fn get_escrow_lib_class_hash(self: @TContractState, escrow_class_hash: ClassHash) -> ClassHash;
 
     /// @notice Get the address of the escrow account contract given all parameters
     /// @param class_hash The class hash
@@ -96,8 +96,8 @@ mod GiftFactory {
         pausable: PausableComponent::Storage,
         #[substorage(v0)]
         timelock_upgrade: TimelockUpgradeComponent::Storage,
-        account_class_hash: ClassHash,
-        account_lib_class_hash: ClassHash,
+        escrow_class_hash: ClassHash,
+        escrow_lib_class_hash: ClassHash,
     }
 
     #[event]
@@ -128,13 +128,10 @@ mod GiftFactory {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState,
-        account_class_hash: ClassHash,
-        account_lib_class_hash: ClassHash,
-        owner: ContractAddress
+        ref self: ContractState, escrow_class_hash: ClassHash, escrow_lib_class_hash: ClassHash, owner: ContractAddress
     ) {
-        self.account_class_hash.write(account_class_hash);
-        self.account_lib_class_hash.write(account_lib_class_hash);
+        self.escrow_class_hash.write(escrow_class_hash);
+        self.escrow_lib_class_hash.write(escrow_lib_class_hash);
         self.ownable.initializer(owner);
     }
 
@@ -142,7 +139,7 @@ mod GiftFactory {
     impl GiftFactoryImpl of IGiftFactory<ContractState> {
         fn deposit(
             ref self: ContractState,
-            account_class_hash: ClassHash,
+            escrow_class_hash: ClassHash,
             gift_token: ContractAddress,
             gift_amount: u256,
             fee_token: ContractAddress,
@@ -158,8 +155,8 @@ mod GiftFactory {
 
             let sender = get_caller_address();
             // TODO We could manually serialize for better performance but then we loose the type safety
-            let class_hash = self.account_class_hash.read();
-            assert(class_hash == account_class_hash, 'gift-fac/invalid-class-hash');
+            let class_hash = self.escrow_class_hash.read();
+            assert(class_hash == escrow_class_hash, 'gift-fac/invalid-class-hash');
             let constructor_arguments = AccountConstructorArguments {
                 sender, gift_token, gift_amount, fee_token, fee_amount, gift_pubkey
             };
@@ -198,12 +195,12 @@ mod GiftFactory {
             }
         }
 
-        fn get_account_lib_class_hash(self: @ContractState, account_class_hash: ClassHash) -> ClassHash {
-            self.account_lib_class_hash.read()
+        fn get_escrow_lib_class_hash(self: @ContractState, escrow_class_hash: ClassHash) -> ClassHash {
+            self.escrow_lib_class_hash.read()
         }
 
         fn get_latest_escrow_class_hash(self: @ContractState) -> ClassHash {
-            self.account_class_hash.read()
+            self.escrow_class_hash.read()
         }
 
         fn get_escrow_address(
