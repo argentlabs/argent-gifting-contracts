@@ -35,9 +35,7 @@ pub struct AccountConstructorArguments {
 
 #[starknet::contract(account)]
 mod EscrowAccount {
-    use argent_gifting::contracts::escrow_library::{
-        IEscrowLibraryLibraryDispatcher, IEscrowLibraryDispatcherTrait
-    };
+    use argent_gifting::contracts::escrow_library::{IEscrowLibraryLibraryDispatcher, IEscrowLibraryDispatcherTrait};
     use argent_gifting::contracts::gift_data::GiftData;
     use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
     use argent_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
