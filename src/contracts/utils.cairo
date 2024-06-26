@@ -51,7 +51,7 @@ pub fn calculate_escrow_account_address(gift: GiftData) -> ContractAddress {
         gift_amount: gift.gift_amount,
         fee_token: gift.fee_token,
         fee_amount: gift.fee_amount,
-        claim_pubkey: gift.claim_pubkey
+        gift_pubkey: gift.gift_pubkey
     };
     calculate_contract_address_from_deploy_syscall(
         0, // salt

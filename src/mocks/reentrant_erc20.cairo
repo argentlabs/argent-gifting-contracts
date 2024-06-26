@@ -11,7 +11,7 @@ struct TestGiftData {
     gift_amount: u256,
     fee_token: ContractAddress,
     fee_amount: u128,
-    claim_pubkey: felt252
+    gift_pubkey: felt252
 }
 
 #[starknet::interface]
@@ -120,7 +120,7 @@ mod ReentrantERC20 {
             //         gift_amount: test_gift.gift_amount,
             //         fee_token: test_gift.fee_token,
             //         fee_amount: test_gift.fee_amount,
-            //         claim_pubkey: test_gift.claim_pubkey,
+            //         gift_pubkey: test_gift.gift_pubkey,
             //     };
             // IGiftFactoryDispatcher { contract_address: self.factory.read() }
             //     .claim_external(gift, self.receiver.read(), self.dust_receiver.read(), self.signature.read());

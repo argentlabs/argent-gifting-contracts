@@ -24,8 +24,8 @@ pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
         .expect('Failed to deploy broken ERC20');
     let broken_erc20 = IERC20Dispatcher { contract_address: broken_erc20_address };
 
-    // claim contract
-    let escrow_contract = declare("EscrowAccount").expect('Failed to declare claim');
+    // escrow contract
+    let escrow_contract = declare("EscrowAccount").expect('Failed to declare escrow');
 
     // gift factory
     let factory_contract = declare("GiftFactory").expect('Failed to declare factory');
@@ -73,8 +73,8 @@ pub fn deploy_gifting_normal() -> GiftingSetup {
     let mock_strk = IERC20Dispatcher { contract_address: mock_strk_address };
     assert(mock_strk.balance_of(OWNER()) == erc20_supply, 'Failed to mint STRK');
 
-    // claim contract
-    let escrow_contract = declare("EscrowAccount").expect('Failed to declare claim');
+    // escrow contract
+    let escrow_contract = declare("EscrowAccount").expect('Failed to declare escrow');
 
     // gift factory
     let factory_contract = declare("GiftFactory").expect('Failed to declare factory');

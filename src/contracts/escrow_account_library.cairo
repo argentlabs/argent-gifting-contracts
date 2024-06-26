@@ -28,7 +28,7 @@ pub trait IEscrowLibrary<TContractState> {
     /// @dev Only allowed if the gift has been claimed
     /// @param gift The gift data 
     /// @param receiver The address of the receiver
-    fn get_dust(ref self: TContractState, gift: GiftData, receiver: ContractAddress);
+    fn claim_dust(ref self: TContractState, gift: GiftData, receiver: ContractAddress);
 
     fn is_valid_account_signature(
         self: @TContractState, gift: GiftData, hash: felt252, remaining_signature: Span<felt252>
@@ -92,7 +92,7 @@ mod EscrowLibrary {
             ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
         ) -> Span<felt252> {
             let is_whitelisted = selector == selector!("claim_external")
-                || selector == selector!("get_dust")
+                || selector == selector!("claim_dust")
                 || selector == selector!("cancel");
             assert(is_whitelisted, 'gift/invalid-selector');
             library_call_syscall(this_class_hash, selector, args).unwrap()
@@ -108,7 +108,7 @@ mod EscrowLibrary {
             let claim_external_hash = ClaimExternal { receiver, dust_receiver }
                 .get_message_hash_rev_1(get_contract_address());
             assert(
-                check_ecdsa_signature(claim_external_hash, gift.claim_pubkey, signature.r, signature.s),
+                check_ecdsa_signature(claim_external_hash, gift.gift_pubkey, signature.r, signature.s),
                 'gift/invalid-ext-signature'
             );
             self.proceed_with_claim(gift, receiver, dust_receiver);
@@ -132,7 +132,7 @@ mod EscrowLibrary {
             self.emit(GiftCancelled {});
         }
 
-        fn get_dust(ref self: ContractState, gift: GiftData, receiver: ContractAddress) {
+        fn claim_dust(ref self: ContractState, gift: GiftData, receiver: ContractAddress) {
             let contract_address = get_contract_address();
             let factory_owner = IOwnableDispatcher { contract_address: gift.factory }.owner();
             assert(factory_owner == get_caller_address(), 'gift/only-factory-owner');

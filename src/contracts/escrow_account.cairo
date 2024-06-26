@@ -22,7 +22,7 @@ pub trait IEscrowAccount<TContractState> {
 /// @param gift_amount The amount of the gift
 /// @param fee_token The ERC-20 token address of the fee
 /// @param fee_amount The amount of the fee
-/// @param claim_pubkey The public key associated with the gift
+/// @param gift_pubkey The public key associated with the gift
 #[derive(Serde, Drop, Copy)]
 pub struct AccountConstructorArguments {
     pub sender: ContractAddress,
@@ -30,7 +30,7 @@ pub struct AccountConstructorArguments {
     pub gift_amount: u256,
     pub fee_token: ContractAddress,
     pub fee_amount: u128,
-    pub claim_pubkey: felt252
+    pub gift_pubkey: felt252
 }
 
 #[starknet::contract(account)]
@@ -97,7 +97,7 @@ mod EscrowAccount {
 
             let tx_version = tx_info.version;
             assert(
-                check_ecdsa_signature(execution_hash, gift.claim_pubkey, *signature[0], *signature[1])
+                check_ecdsa_signature(execution_hash, gift.gift_pubkey, *signature[0], *signature[1])
                     || tx_version == TX_V3_ESTIMATE
                     || tx_version == TX_V1_ESTIMATE,
                 'invalid-signature'

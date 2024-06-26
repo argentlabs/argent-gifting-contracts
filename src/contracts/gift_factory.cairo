@@ -9,7 +9,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param gift_amount The amount of the gift
     /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift through claim_internal
     /// @param fee_amount The amount of the fee
-    /// @param claim_pubkey The public key associated with the gift
+    /// @param gift_pubkey The public key associated with the gift
     fn deposit(
         ref self: TContractState,
         account_class_hash: ClassHash,
@@ -17,7 +17,7 @@ pub trait IGiftFactory<TContractState> {
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
-        claim_pubkey: felt252
+        gift_pubkey: felt252
     );
 
     /// @notice Retrieves the current class_hash used for creating an escrow account
@@ -33,7 +33,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param gift_amount The amount of the gift
     /// @param fee_token The ERC-20 token address of the fee
     /// @param fee_amount The amount of the fee
-    /// @param claim_pubkey The public key associated with the gift
+    /// @param gift_pubkey The public key associated with the gift
     fn get_claim_address(
         self: @TContractState,
         class_hash: ClassHash,
@@ -42,7 +42,7 @@ pub trait IGiftFactory<TContractState> {
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
-        claim_pubkey: felt252
+        gift_pubkey: felt252
     ) -> ContractAddress;
 }
 
@@ -123,7 +123,7 @@ mod GiftFactory {
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
-        claim_pubkey: felt252
+        gift_pubkey: felt252
     }
 
     #[constructor]
@@ -147,7 +147,7 @@ mod GiftFactory {
             gift_amount: u256,
             fee_token: ContractAddress,
             fee_amount: u128,
-            claim_pubkey: felt252
+            gift_pubkey: felt252
         ) {
             self.pausable.assert_not_paused();
             assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
@@ -161,7 +161,7 @@ mod GiftFactory {
             let class_hash = self.account_class_hash.read();
             assert(class_hash == account_class_hash, 'gift-fac/invalid-class-hash');
             let constructor_arguments = AccountConstructorArguments {
-                sender, gift_token, gift_amount, fee_token, fee_amount, claim_pubkey
+                sender, gift_token, gift_amount, fee_token, fee_amount, gift_pubkey
             };
             let (escrow_contract, _) = deploy_syscall(
                 class_hash, // class_hash
@@ -180,7 +180,7 @@ mod GiftFactory {
                         gift_amount,
                         fee_token,
                         fee_amount,
-                        claim_pubkey
+                        gift_pubkey
                     }
                 );
 
@@ -214,7 +214,7 @@ mod GiftFactory {
             gift_amount: u256,
             fee_token: ContractAddress,
             fee_amount: u128,
-            claim_pubkey: felt252
+            gift_pubkey: felt252
         ) -> ContractAddress {
             calculate_escrow_account_address(
                 GiftData {
@@ -225,7 +225,7 @@ mod GiftFactory {
                     gift_token,
                     fee_token,
                     fee_amount,
-                    claim_pubkey,
+                    gift_pubkey,
                 }
             )
         }

@@ -1,5 +1,5 @@
 import { Account, Call, CallData, Contract, InvokeFunctionResponse, TransactionReceipt, hash, uint256 } from "starknet";
-import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
+import { AccountConstructorArguments, Gift, LegacyStarknetKeyPair, deployer, manager } from "./";
 
 export const STRK_GIFT_MAX_FEE = 200000000000000000n; // 0.2 STRK
 export const STRK_GIFT_AMOUNT = STRK_GIFT_MAX_FEE + 1n;
@@ -21,28 +21,28 @@ export async function deposit(depositParams: {
   factoryAddress: string;
   feeTokenAddress: string;
   giftTokenAddress: string;
-  claimSignerPubKey: bigint;
+  giftSignerPubKey: bigint;
   overrides?: {
-    EscrowAccountClassHash?: string;
+    escrowAccountClassHash?: string;
   };
-}): Promise<{ response: InvokeFunctionResponse; claim: Claim }> {
-  const { sender, giftAmount, feeAmount, factoryAddress, feeTokenAddress, giftTokenAddress, claimSignerPubKey } =
+}): Promise<{ response: InvokeFunctionResponse; gift: Gift }> {
+  const { sender, giftAmount, feeAmount, factoryAddress, feeTokenAddress, giftTokenAddress, giftSignerPubKey } =
     depositParams;
   const factory = await manager.loadContract(factoryAddress);
   const feeToken = await manager.loadContract(feeTokenAddress);
   const giftToken = await manager.loadContract(giftTokenAddress);
 
-  const EscrowAccountClassHash =
-    depositParams.overrides?.EscrowAccountClassHash || (await factory.get_latest_claim_class_hash());
-  const claim: Claim = {
+  const escrowAccountClassHash =
+    depositParams.overrides?.escrowAccountClassHash || (await factory.get_latest_escrow_class_hash());
+  const gift: Gift = {
     factory: factoryAddress,
-    class_hash: EscrowAccountClassHash,
+    class_hash: escrowAccountClassHash,
     sender: deployer.address,
     gift_token: giftTokenAddress,
     gift_amount: giftAmount,
     fee_token: feeTokenAddress,
     fee_amount: feeAmount,
-    claim_pubkey: claimSignerPubKey,
+    gift_pubkey: giftSignerPubKey,
   };
   const calls: Array<Call> = [];
   if (feeTokenAddress === giftTokenAddress) {
@@ -53,17 +53,17 @@ export async function deposit(depositParams: {
   }
   calls.push(
     factory.populateTransaction.deposit(
-      EscrowAccountClassHash,
+      escrowAccountClassHash,
       giftTokenAddress,
       giftAmount,
       feeTokenAddress,
       feeAmount,
-      claimSignerPubKey,
+      giftSignerPubKey,
     ),
   );
   return {
     response: await sender.execute(calls),
-    claim,
+    gift,
   };
 }
 
@@ -71,20 +71,20 @@ export async function defaultDepositTestSetup(args: {
   factory: Contract;
   useTxV3?: boolean;
   overrides?: {
-    EscrowAccountClassHash?: string;
-    claimPrivateKey?: bigint;
+    escrowAccountClassHash?: string;
+    giftPrivateKey?: bigint;
     giftTokenAddress?: string;
     feeTokenAddress?: string;
     giftAmount?: bigint;
     feeAmount?: bigint;
   };
 }): Promise<{
-  claim: Claim;
-  claimPrivateKey: string;
+  gift: Gift;
+  giftPrivateKey: string;
   txReceipt: TransactionReceipt;
 }> {
-  const EscrowAccountClassHash =
-    args.overrides?.EscrowAccountClassHash || (await args.factory.get_latest_claim_class_hash());
+  const escrowAccountClassHash =
+    args.overrides?.escrowAccountClassHash || (await args.factory.get_latest_escrow_class_hash());
   const useTxV3 = args.useTxV3 || false;
   const giftAmount = args.overrides?.giftAmount ?? getGiftAmount(useTxV3);
   const feeAmount = args.overrides?.feeAmount ?? getMaxFee(useTxV3);
@@ -94,41 +94,41 @@ export async function defaultDepositTestSetup(args: {
     : await manager.tokens.feeTokenContract(useTxV3);
 
   const giftTokenAddress = args.overrides?.giftTokenAddress || feeToken.address;
-  const claimSigner = new LegacyStarknetKeyPair(args.overrides?.claimPrivateKey);
-  const claimPubKey = claimSigner.publicKey;
+  const giftSigner = new LegacyStarknetKeyPair(args.overrides?.giftPrivateKey);
+  const giftPubKey = giftSigner.publicKey;
 
-  const { response, claim } = await deposit({
+  const { response, gift: gift } = await deposit({
     sender: deployer,
-    overrides: { EscrowAccountClassHash },
+    overrides: { escrowAccountClassHash },
     giftAmount,
     feeAmount,
     factoryAddress: args.factory.address,
     feeTokenAddress: feeToken.address,
     giftTokenAddress,
-    claimSignerPubKey: claimPubKey,
+    giftSignerPubKey: giftPubKey,
   });
   const txReceipt = await manager.waitForTransaction(response.transaction_hash);
-  return { claim, claimPrivateKey: claimSigner.privateKey, txReceipt };
+  return { gift: gift, giftPrivateKey: giftSigner.privateKey, txReceipt };
 }
 
-export function calculateClaimAddress(claim: Claim): string {
+export function calculateEscrowAddress(gift: Gift): string {
   const constructorArgs: AccountConstructorArguments = {
-    sender: claim.sender,
-    gift_token: claim.gift_token,
-    gift_amount: claim.gift_amount,
-    fee_token: claim.fee_token,
-    fee_amount: claim.fee_amount,
-    claim_pubkey: claim.claim_pubkey,
+    sender: gift.sender,
+    gift_token: gift.gift_token,
+    gift_amount: gift.gift_amount,
+    fee_token: gift.fee_token,
+    fee_amount: gift.fee_amount,
+    gift_pubkey: gift.gift_pubkey,
   };
 
   const claimAddress = hash.calculateContractAddressFromHash(
     0,
-    claim.class_hash,
+    gift.class_hash,
     CallData.compile({
       ...constructorArgs,
-      gift_amount: uint256.bnToUint256(claim.gift_amount),
+      gift_amount: uint256.bnToUint256(gift.gift_amount),
     }),
-    claim.factory,
+    gift.factory,
   );
   return claimAddress;
 }

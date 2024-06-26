@@ -9,7 +9,7 @@ use starknet::{ContractAddress, ClassHash};
 /// @param gift_amount The amount of the gift
 /// @param fee_token The ERC-20 token address of the fee
 /// @param fee_amount The amount of the fee
-/// @param claim_pubkey The public key associated with the gift
+/// @param gift_pubkey The public key associated with the gift
 #[derive(Serde, Drop, Copy)]
 pub struct GiftData {
     pub factory: ContractAddress,
@@ -19,5 +19,5 @@ pub struct GiftData {
     pub gift_amount: u256,
     pub fee_token: ContractAddress,
     pub fee_amount: u128,
-    pub claim_pubkey: felt252
+    pub gift_pubkey: felt252
 }
