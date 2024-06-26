@@ -3,7 +3,7 @@ use starknet::{ContractAddress, ClassHash};
 
 /// @notice Struct representing the data required for a claiming a gift
 /// @param factory The address of the factory
-/// @param class_hash The class hash of the escrow account
+/// @param escrow_class_hash The class hash of the escrow account
 /// @param sender The address of the sender
 /// @param gift_token The ERC-20 token address of the gift
 /// @param gift_amount The amount of the gift
@@ -13,7 +13,7 @@ use starknet::{ContractAddress, ClassHash};
 #[derive(Serde, Drop, Copy)]
 pub struct GiftData {
     pub factory: ContractAddress,
-    pub class_hash: ClassHash,
+    pub escrow_class_hash: ClassHash,
     pub sender: ContractAddress,
     pub gift_token: ContractAddress,
     pub gift_amount: u256,

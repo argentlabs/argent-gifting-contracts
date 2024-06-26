@@ -20,14 +20,14 @@ pub trait IGiftFactory<TContractState> {
         gift_pubkey: felt252
     );
 
-    /// @notice Retrieves the current class_hash used for creating an escrow account
+    /// @notice Retrieves the current escrow_class_hash used for creating an escrow account
     fn get_latest_escrow_class_hash(self: @TContractState) -> ClassHash;
 
-    /// @notice Retrieves the current class_hash of the escrow account's library
+    /// @notice Retrieves the current escrow_class_hash of the escrow account's library
     fn get_escrow_lib_class_hash(self: @TContractState, escrow_class_hash: ClassHash) -> ClassHash;
 
     /// @notice Get the address of the escrow account contract given all parameters
-    /// @param class_hash The class hash
+    /// @param escrow_class_hash The class hash
     /// @param sender The address of the sender
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
@@ -36,7 +36,7 @@ pub trait IGiftFactory<TContractState> {
     /// @param gift_pubkey The public key associated with the gift
     fn get_escrow_address(
         self: @TContractState,
-        class_hash: ClassHash,
+        escrow_class_hash: ClassHash,
         sender: ContractAddress,
         gift_token: ContractAddress,
         gift_amount: u256,
@@ -118,7 +118,7 @@ mod GiftFactory {
         escrow_address: ContractAddress,
         #[key] // Find all gifts from a specific sender
         sender: ContractAddress,
-        class_hash: ClassHash,
+        escrow_class_hash: ClassHash,
         gift_token: ContractAddress,
         gift_amount: u256,
         fee_token: ContractAddress,
@@ -155,13 +155,13 @@ mod GiftFactory {
 
             let sender = get_caller_address();
             // TODO We could manually serialize for better performance but then we loose the type safety
-            let class_hash = self.escrow_class_hash.read();
-            assert(class_hash == escrow_class_hash, 'gift-fac/invalid-class-hash');
+            let escrow_class_hash_storage = self.escrow_class_hash.read();
+            assert(escrow_class_hash_storage == escrow_class_hash, 'gift-fac/invalid-class-hash');
             let constructor_arguments = AccountConstructorArguments {
                 sender, gift_token, gift_amount, fee_token, fee_amount, gift_pubkey
             };
             let (escrow_contract, _) = deploy_syscall(
-                class_hash, // class_hash
+                escrow_class_hash, // escrow_class_hash
                 0, // salt
                 serialize(@constructor_arguments).span(), // constructor data
                 false // deploy_from_zero
@@ -172,7 +172,7 @@ mod GiftFactory {
                     GiftCreated {
                         escrow_address: escrow_contract,
                         sender,
-                        class_hash,
+                        escrow_class_hash,
                         gift_token,
                         gift_amount,
                         fee_token,
@@ -205,7 +205,7 @@ mod GiftFactory {
 
         fn get_escrow_address(
             self: @ContractState,
-            class_hash: ClassHash,
+            escrow_class_hash: ClassHash,
             sender: ContractAddress,
             gift_token: ContractAddress,
             gift_amount: u256,
@@ -216,7 +216,7 @@ mod GiftFactory {
             calculate_escrow_account_address(
                 GiftData {
                     factory: get_contract_address(),
-                    class_hash,
+                    escrow_class_hash,
                     sender,
                     gift_amount,
                     gift_token,

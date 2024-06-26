@@ -74,7 +74,7 @@ export interface AccountConstructorArguments {
 
 export interface Gift extends AccountConstructorArguments {
   factory: string;
-  class_hash: string;
+  escrow_class_hash: string;
 }
 
 export function buildGiftCallData(gift: Gift) {

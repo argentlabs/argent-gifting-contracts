@@ -25,7 +25,7 @@ describe("Test Core Factory Functions", function () {
     const { gift } = await defaultDepositTestSetup({ factory });
 
     const escrowAddress = await factory.get_escrow_address(
-      gift.class_hash,
+      gift.escrow_class_hash,
       deployer.address,
       gift.gift_token,
       gift.gift_amount,

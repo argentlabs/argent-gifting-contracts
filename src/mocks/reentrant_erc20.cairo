@@ -5,7 +5,7 @@ use starknet::{ClassHash, ContractAddress};
 #[derive(Serde, Drop, Copy, starknet::Store, Debug)]
 struct TestGiftData {
     factory: ContractAddress,
-    class_hash: ClassHash,
+    escrow_class_hash: ClassHash,
     sender: ContractAddress,
     gift_token: ContractAddress,
     gift_amount: u256,
@@ -41,8 +41,7 @@ mod ReentrantERC20 {
         get_caller_address, ContractAddress, get_contract_address, contract_address_const,
         syscalls::call_contract_syscall
     };
-    use super::IMalicious;
-    use super::TestGiftData;
+    use super::{IMalicious, TestGiftData};
 
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -113,7 +112,7 @@ mod ReentrantERC20 {
             //     let test_gift: TestGiftData = self.gift.read();
             //     let gift = GiftData {
             //         factory: test_gift.factory,
-            //         class_hash: test_gift.class_hash,
+            //         escrow_class_hash: test_gift.escrow_class_hash,
             //         sender: test_gift.sender,
             //         gift_token: test_gift.gift_token,
             //         gift_amount: test_gift.gift_amount,
