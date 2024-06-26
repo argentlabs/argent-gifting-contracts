@@ -1,7 +1,7 @@
 pub mod contracts {
     pub mod claim_hash;
     pub mod escrow_account;
-    pub mod escrow_account_library;
+    pub mod escrow_library;
     pub mod gift_data;
     pub mod gift_factory;
     pub mod outside_execution;
