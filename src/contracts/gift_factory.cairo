@@ -128,10 +128,7 @@ mod GiftFactory {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState,
-        escrow_class_hash: ClassHash,
-        escrow_lib_class_hash: ClassHash,
-        owner: ContractAddress
+        ref self: ContractState, escrow_class_hash: ClassHash, escrow_lib_class_hash: ClassHash, owner: ContractAddress
     ) {
         self.escrow_class_hash.write(escrow_class_hash);
         self.escrow_lib_class_hash.write(escrow_lib_class_hash);
