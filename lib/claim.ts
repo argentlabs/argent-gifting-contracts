@@ -139,8 +139,8 @@ export async function claimExternal(args: {
 function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
   return {
     contractAddress: accountAddress,
-    calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
     entrypoint: "execute_action",
+    calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
   };
 }
 

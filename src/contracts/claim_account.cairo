@@ -154,8 +154,8 @@ mod ClaimAccount {
             let mut calldata_span = calldata.span();
             let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
             let implementation_class_hash = get_validated_impl(claim);
-            // TODO consider delegating to a fixed selector to we can have a whitelist of selectors in the implementation
-            library_call_syscall(implementation_class_hash, selector, calldata.span()).unwrap()
+            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
+                .execute_action(implementation_class_hash, selector, calldata.span())
         }
     }
 
