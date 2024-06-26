@@ -1,8 +1,18 @@
-import { Account, Call, CallData, Contract, InvokeFunctionResponse, hash, uint256 } from "starknet";
+import { Account, Call, CallData, Contract, InvokeFunctionResponse, TransactionReceipt, hash, uint256 } from "starknet";
 import { AccountConstructorArguments, Claim, LegacyStarknetKeyPair, deployer, manager } from "./";
 
-export const GIFT_AMOUNT = 1000000000000000n;
-export const GIFT_MAX_FEE = 50000000000000n;
+export const STRK_GIFT_MAX_FEE = 200000000000000000n; // 0.2 STRK
+export const STRK_GIFT_AMOUNT = STRK_GIFT_MAX_FEE + 1n;
+export const ETH_GIFT_MAX_FEE = 200000000000000n; // 0.0002 ETH
+export const ETH_GIFT_AMOUNT = ETH_GIFT_MAX_FEE + 1n;
+
+export function getMaxFee(useTxV3: boolean): bigint {
+  return useTxV3 ? STRK_GIFT_MAX_FEE : ETH_GIFT_MAX_FEE;
+}
+
+export function getGiftAmount(useTxV3: boolean): bigint {
+  return useTxV3 ? STRK_GIFT_AMOUNT : ETH_GIFT_AMOUNT;
+}
 
 export async function deposit(depositParams: {
   sender: Account;
@@ -12,6 +22,9 @@ export async function deposit(depositParams: {
   feeTokenAddress: string;
   giftTokenAddress: string;
   claimSignerPubKey: bigint;
+  overrides?: {
+    claimAccountClassHash?: string;
+  };
 }): Promise<{ response: InvokeFunctionResponse; claim: Claim }> {
   const { sender, giftAmount, feeAmount, factoryAddress, feeTokenAddress, giftTokenAddress, claimSignerPubKey } =
     depositParams;
@@ -19,10 +32,11 @@ export async function deposit(depositParams: {
   const feeToken = await manager.loadContract(feeTokenAddress);
   const giftToken = await manager.loadContract(giftTokenAddress);
 
-  const classHash = await factory.get_latest_claim_class_hash();
+  const claimAccountClassHash =
+    depositParams.overrides?.claimAccountClassHash || (await factory.get_latest_claim_class_hash());
   const claim: Claim = {
     factory: factoryAddress,
-    class_hash: classHash,
+    class_hash: claimAccountClassHash,
     sender: deployer.address,
     gift_token: giftTokenAddress,
     gift_amount: giftAmount,
@@ -38,7 +52,14 @@ export async function deposit(depositParams: {
     calls.push(giftToken.populateTransaction.approve(factory.address, giftAmount));
   }
   calls.push(
-    factory.populateTransaction.deposit(giftTokenAddress, giftAmount, feeTokenAddress, feeAmount, claimSignerPubKey),
+    factory.populateTransaction.deposit(
+      claimAccountClassHash,
+      giftTokenAddress,
+      giftAmount,
+      feeTokenAddress,
+      feeAmount,
+      claimSignerPubKey,
+    ),
   );
   return {
     response: await sender.execute(calls),
@@ -50,6 +71,7 @@ export async function defaultDepositTestSetup(args: {
   factory: Contract;
   useTxV3?: boolean;
   overrides?: {
+    claimAccountClassHash?: string;
     claimPrivateKey?: bigint;
     giftTokenAddress?: string;
     feeTokenAddress?: string;
@@ -59,11 +81,13 @@ export async function defaultDepositTestSetup(args: {
 }): Promise<{
   claim: Claim;
   claimPrivateKey: string;
-  response: InvokeFunctionResponse;
+  txReceipt: TransactionReceipt;
 }> {
-  const giftAmount = args.overrides?.giftAmount ?? GIFT_AMOUNT;
-  const feeAmount = args.overrides?.feeAmount ?? GIFT_MAX_FEE;
+  const claimAccountClassHash =
+    args.overrides?.claimAccountClassHash || (await args.factory.get_latest_claim_class_hash());
   const useTxV3 = args.useTxV3 || false;
+  const giftAmount = args.overrides?.giftAmount ?? getGiftAmount(useTxV3);
+  const feeAmount = args.overrides?.feeAmount ?? getMaxFee(useTxV3);
 
   const feeToken = args.overrides?.feeTokenAddress
     ? await manager.loadContract(args.overrides.feeTokenAddress)
@@ -75,6 +99,7 @@ export async function defaultDepositTestSetup(args: {
 
   const { response, claim } = await deposit({
     sender: deployer,
+    overrides: { claimAccountClassHash },
     giftAmount,
     feeAmount,
     factoryAddress: args.factory.address,
@@ -82,8 +107,8 @@ export async function defaultDepositTestSetup(args: {
     giftTokenAddress,
     claimSignerPubKey: claimPubKey,
   });
-
-  return { claim, claimPrivateKey: claimSigner.privateKey, response };
+  const txReceipt = await manager.waitForTransaction(response.transaction_hash);
+  return { claim, claimPrivateKey: claimSigner.privateKey, txReceipt };
 }
 
 export function calculateClaimAddress(claim: Claim): string {

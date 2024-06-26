@@ -1,9 +1,9 @@
 import {
-  buildCallDataClaim,
   claimExternal,
   claimInternal,
   defaultDepositTestSetup,
   deployer,
+  getDust,
   manager,
   randomReceiver,
   setDefaultTransactionVersionV3,
@@ -44,7 +44,7 @@ for (const { giftTokenContract, unit } of tokens) {
     const { factory } = await setupGiftProtocol();
 
     // Profiling deposit
-    const { response, claim, claimPrivateKey } = await defaultDepositTestSetup({
+    const { txReceipt, claim, claimPrivateKey } = await defaultDepositTestSetup({
       factory,
       useTxV3,
       overrides: {
@@ -62,7 +62,7 @@ for (const { giftTokenContract, unit } of tokens) {
       },
     });
 
-    await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, response);
+    await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, txReceipt);
 
     // Profiling claim internal
     await profiler.profile(
@@ -81,7 +81,7 @@ for (const { giftTokenContract, unit } of tokens) {
     factory.connect(account);
     await profiler.profile(
       `Get dust ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await factory.get_dust(buildCallDataClaim(claim), deployer.address),
+      await getDust({ claim, receiver: deployer.address }),
     );
   }
 }

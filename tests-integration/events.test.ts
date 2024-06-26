@@ -1,6 +1,7 @@
 import { CallData, uint256 } from "starknet";
 import {
   calculateClaimAddress,
+  cancelGift,
   claimExternal,
   claimInternal,
   defaultDepositTestSetup,
@@ -13,11 +14,11 @@ import {
 describe("All events are emitted", function () {
   it("Deposit", async function () {
     const { factory, claimAccountClassHash } = await setupGiftProtocol();
-    const { claim, response } = await defaultDepositTestSetup({ factory });
+    const { claim, txReceipt } = await defaultDepositTestSetup({ factory });
 
     const claimAddress = calculateClaimAddress(claim);
 
-    await expectEvent(response.transaction_hash, {
+    await expectEvent(txReceipt.transaction_hash, {
       from_address: factory.address,
       eventName: "GiftCreated",
       keys: [claimAddress, deployer.address],
@@ -36,15 +37,13 @@ describe("All events are emitted", function () {
     const { factory } = await setupGiftProtocol();
     const { claim } = await defaultDepositTestSetup({ factory });
 
-    factory.connect(deployer);
-    const { transaction_hash } = await factory.cancel(claim);
+    const { transaction_hash } = await cancelGift({ claim });
 
     const claimAddress = calculateClaimAddress(claim);
 
     await expectEvent(transaction_hash, {
-      from_address: factory.address,
+      from_address: claimAddress,
       eventName: "GiftCancelled",
-      keys: [claimAddress],
     });
   });
 
@@ -59,9 +58,8 @@ describe("All events are emitted", function () {
     const claimAddress = calculateClaimAddress(claim);
 
     await expectEvent(transaction_hash, {
-      from_address: factory.address,
+      from_address: claimAddress,
       eventName: "GiftClaimed",
-      keys: [claimAddress],
       data: [receiver, dustReceiver],
     });
   });
@@ -77,9 +75,8 @@ describe("All events are emitted", function () {
     const claimAddress = calculateClaimAddress(claim);
 
     await expectEvent(transaction_hash, {
-      from_address: factory.address,
+      from_address: claimAddress,
       eventName: "GiftClaimed",
-      keys: [claimAddress],
       data: [receiver, dustReceiver],
     });
   });

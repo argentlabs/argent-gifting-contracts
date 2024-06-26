@@ -106,27 +106,24 @@ mod ReentrantERC20 {
         }
 
         fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
-            if (!self.has_reentered.read()) {
-                self.has_reentered.write(true);
-                let test_claim: TestClaimData = self.claim.read();
-                let claim = ClaimData {
-                    factory: test_claim.factory,
-                    class_hash: test_claim.class_hash,
-                    sender: test_claim.sender,
-                    gift_token: test_claim.gift_token,
-                    gift_amount: test_claim.gift_amount,
-                    fee_token: test_claim.fee_token,
-                    fee_amount: test_claim.fee_amount,
-                    claim_pubkey: test_claim.claim_pubkey,
-                };
+            // if (!self.has_reentered.read()) {
+            //     self.has_reentered.write(true);
+            //     let test_claim: TestClaimData = self.claim.read();
+            //     let claim = ClaimData {
+            //         factory: test_claim.factory,
+            //         class_hash: test_claim.class_hash,
+            //         sender: test_claim.sender,
+            //         gift_token: test_claim.gift_token,
+            //         gift_amount: test_claim.gift_amount,
+            //         fee_token: test_claim.fee_token,
+            //         fee_amount: test_claim.fee_amount,
+            //         claim_pubkey: test_claim.claim_pubkey,
+            //     };
+            // IGiftFactoryDispatcher { contract_address: self.factory.read() }
+            //     .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
+            // }
 
-                IGiftFactoryDispatcher { contract_address: self.factory.read() }
-                    .claim_external(claim, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
-            }
-
-            self.erc20._transfer(get_caller_address(), recipient, amount);
-
-            true
+            self.erc20.transfer(recipient, amount)
         }
 
         fn total_supply(self: @ContractState) -> u256 {

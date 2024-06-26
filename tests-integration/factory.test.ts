@@ -1,20 +1,23 @@
 import { expect } from "chai";
-import { num } from "starknet";
+import { num, RPC } from "starknet";
 import {
-  GIFT_AMOUNT,
-  LegacyStarknetKeyPair,
   calculateClaimAddress,
   claimInternal,
   defaultDepositTestSetup,
   deployer,
   deposit,
+  devnetAccount,
+  ETH_GIFT_AMOUNT,
+  ETH_GIFT_MAX_FEE,
   expectRevertWithErrorMessage,
-  genericAccount,
+  getDust,
+  getGiftAmount,
+  getMaxFee,
+  LegacyStarknetKeyPair,
   manager,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
-import { GIFT_MAX_FEE } from "./../lib";
 
 describe("Test Core Factory Functions", function () {
   it(`Calculate claim address`, async function () {
@@ -34,10 +37,11 @@ describe("Test Core Factory Functions", function () {
     const correctAddress = calculateClaimAddress(claim);
     expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
   });
+
   for (const useTxV3 of [false, true]) {
     it(`get_dust: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
+      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       const dustReceiver = randomReceiver();
 
@@ -46,18 +50,21 @@ describe("Test Core Factory Functions", function () {
 
       // Final check
       const dustBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(dustBalance < GIFT_MAX_FEE).to.be.true;
-      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(GIFT_AMOUNT);
+      const maxFee = getMaxFee(useTxV3);
+      const giftAmount = getGiftAmount(useTxV3);
+      expect(dustBalance < maxFee).to.be.true;
+      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(giftAmount);
 
       // Test dust
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(0n);
 
-      factory.connect(deployer);
-      await factory.get_dust(claim, dustReceiver);
+      await getDust({ claim, receiver: dustReceiver });
+
       await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
       await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(dustBalance);
     });
   }
+
   it(`Pausable`, async function () {
     // Deploy factory
     const { factory } = await setupGiftProtocol();
@@ -68,12 +75,14 @@ describe("Test Core Factory Functions", function () {
 
     // pause / unpause
     factory.connect(deployer);
-    await factory.pause();
+    const { transaction_hash: txHash1 } = await factory.pause();
+    await manager.waitForTransaction(txHash1);
+
     await expectRevertWithErrorMessage("Pausable: paused", async () => {
       const { response } = await deposit({
         sender: deployer,
-        giftAmount: GIFT_AMOUNT,
-        feeAmount: GIFT_MAX_FEE,
+        giftAmount: ETH_GIFT_AMOUNT,
+        feeAmount: ETH_GIFT_MAX_FEE,
         factoryAddress: factory.address,
         feeTokenAddress: token.address,
         giftTokenAddress: token.address,
@@ -82,41 +91,50 @@ describe("Test Core Factory Functions", function () {
       return response;
     });
 
-    await factory.unpause();
+    const { transaction_hash: txHash2 } = await factory.unpause();
+    await manager.waitForTransaction(txHash2);
     const { claim } = await defaultDepositTestSetup({
       factory,
       overrides: { claimPrivateKey: BigInt(claimSigner.privateKey) },
     });
-    await claimInternal({ claim, receiver, claimPrivateKey: claimSigner.privateKey });
+    const { execution_status } = await claimInternal({
+      claim,
+      receiver,
+      claimPrivateKey: claimSigner.privateKey,
+    });
+    expect(execution_status).to.be.equal(RPC.ETransactionExecutionStatus.SUCCEEDED);
   });
 
-  it("Ownable: Pause", async function () {
-    const { factory } = await setupGiftProtocol();
+  describe("Ownable", function () {
+    it("Pause", async function () {
+      const { factory } = await setupGiftProtocol();
 
-    factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
-  });
+      factory.connect(devnetAccount());
+      await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
+    });
 
-  it("Ownable: Unpause", async function () {
-    const { factory } = await setupGiftProtocol();
+    it("Unpause", async function () {
+      const { factory } = await setupGiftProtocol();
 
-    factory.connect(deployer);
-    await factory.pause();
+      factory.connect(deployer);
+      await factory.pause();
 
-    factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.unpause());
+      factory.connect(devnetAccount());
+      await expectRevertWithErrorMessage("Caller is not the owner", () => factory.unpause());
 
-    // needed for next tests
-    factory.connect(deployer);
-    await factory.unpause();
-  });
+      // needed for next tests
+      factory.connect(deployer);
+      await factory.unpause();
+    });
 
-  it("Ownable: Get Dust", async function () {
-    const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup({ factory });
-    const dustReceiver = randomReceiver();
+    it("Ownable: Get Dust", async function () {
+      const { factory } = await setupGiftProtocol();
+      const { claim } = await defaultDepositTestSetup({ factory });
+      const dustReceiver = randomReceiver();
 
-    factory.connect(genericAccount);
-    await expectRevertWithErrorMessage("Caller is not the owner", () => factory.get_dust(claim, dustReceiver));
+      await expectRevertWithErrorMessage("gift/only-factory-owner", () =>
+        getDust({ claim, receiver: dustReceiver, factoryOwner: devnetAccount() }),
+      );
+    });
   });
 });

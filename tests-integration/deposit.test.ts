@@ -90,15 +90,30 @@ describe("Deposit", function () {
       const { factory } = await setupGiftProtocol();
 
       await expectRevertWithErrorMessage("gift-fac/fee-too-high", async () => {
-        const { response } = await defaultDepositTestSetup({
+        const { txReceipt } = await defaultDepositTestSetup({
           factory,
           useTxV3,
           overrides: { giftAmount: 100n, feeAmount: 101n },
         });
-        return response;
+        return txReceipt;
       });
     });
   }
+
+  it("Deposit fails class hash passed != class hash in factory storage", async function () {
+    const { factory } = await setupGiftProtocol();
+    const invalidClaimAccountClassHash = "0x1234";
+
+    await expectRevertWithErrorMessage("gift-fac/invalid-class-hash", async () => {
+      const { txReceipt } = await defaultDepositTestSetup({
+        factory,
+        overrides: {
+          claimAccountClassHash: invalidClaimAccountClassHash,
+        },
+      });
+      return txReceipt;
+    });
+  });
 
   it("Deposit fails if erc reverts", async function () {
     const brokenERC20 = await manager.deployContract("BrokenERC20", {
@@ -107,11 +122,11 @@ describe("Deposit", function () {
     const { factory } = await setupGiftProtocol();
 
     await expectRevertWithErrorMessage("gift-fac/transfer-gift-failed", async () => {
-      const { response } = await defaultDepositTestSetup({
+      const { txReceipt } = await defaultDepositTestSetup({
         factory,
         overrides: { giftTokenAddress: brokenERC20.address },
       });
-      return response;
+      return txReceipt;
     });
   });
 });
