@@ -1,7 +1,8 @@
 import { expect } from "chai";
 import { num, RPC } from "starknet";
 import {
-  calculateClaimAddress,
+  calculateEscrowAddress,
+  claimDust,
   claimInternal,
   defaultDepositTestSetup,
   deployer,
@@ -10,7 +11,6 @@ import {
   ETH_GIFT_AMOUNT,
   ETH_GIFT_MAX_FEE,
   expectRevertWithErrorMessage,
-  getDust,
   getGiftAmount,
   getMaxFee,
   LegacyStarknetKeyPair,
@@ -20,48 +20,48 @@ import {
 } from "../lib";
 
 describe("Test Core Factory Functions", function () {
-  it(`Calculate claim address`, async function () {
+  it(`Calculate escrow address`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim } = await defaultDepositTestSetup({ factory });
+    const { gift } = await defaultDepositTestSetup({ factory });
 
-    const claimAddress = await factory.get_claim_address(
-      claim.class_hash,
+    const escrowAddress = await factory.get_escrow_address(
+      gift.escrow_class_hash,
       deployer.address,
-      claim.gift_token,
-      claim.gift_amount,
-      claim.fee_token,
-      claim.fee_amount,
-      claim.claim_pubkey,
+      gift.gift_token,
+      gift.gift_amount,
+      gift.fee_token,
+      gift.fee_amount,
+      gift.gift_pubkey,
     );
 
-    const correctAddress = calculateClaimAddress(claim);
-    expect(claimAddress).to.be.equal(num.toBigInt(correctAddress));
+    const correctAddress = calculateEscrowAddress(gift);
+    expect(escrowAddress).to.be.equal(num.toBigInt(correctAddress));
   });
 
   for (const useTxV3 of [false, true]) {
-    it(`get_dust: ${useTxV3}`, async function () {
+    it(`claim_dust: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       const dustReceiver = randomReceiver();
 
-      await claimInternal({ claim, receiver, claimPrivateKey });
-      const claimAddress = calculateClaimAddress(claim);
+      await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
+      const escrowAddress = calculateEscrowAddress(gift);
 
       // Final check
-      const dustBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
+      const dustBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
       const maxFee = getMaxFee(useTxV3);
       const giftAmount = getGiftAmount(useTxV3);
       expect(dustBalance < maxFee).to.be.true;
-      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(giftAmount);
+      await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(giftAmount);
 
       // Test dust
-      await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(0n);
+      await manager.tokens.tokenBalance(dustReceiver, gift.gift_token).should.eventually.equal(0n);
 
-      await getDust({ claim, receiver: dustReceiver });
+      await claimDust({ gift, receiver: dustReceiver });
 
-      await manager.tokens.tokenBalance(claimAddress, claim.gift_token).should.eventually.equal(0n);
-      await manager.tokens.tokenBalance(dustReceiver, claim.gift_token).should.eventually.equal(dustBalance);
+      await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
+      await manager.tokens.tokenBalance(dustReceiver, gift.gift_token).should.eventually.equal(dustBalance);
     });
   }
 
@@ -69,7 +69,7 @@ describe("Test Core Factory Functions", function () {
     // Deploy factory
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
-    const claimSigner = new LegacyStarknetKeyPair();
+    const giftSigner = new LegacyStarknetKeyPair();
 
     const token = await manager.tokens.feeTokenContract(false);
 
@@ -86,21 +86,21 @@ describe("Test Core Factory Functions", function () {
         factoryAddress: factory.address,
         feeTokenAddress: token.address,
         giftTokenAddress: token.address,
-        claimSignerPubKey: claimSigner.publicKey,
+        giftSignerPubKey: giftSigner.publicKey,
       });
       return response;
     });
 
     const { transaction_hash: txHash2 } = await factory.unpause();
     await manager.waitForTransaction(txHash2);
-    const { claim } = await defaultDepositTestSetup({
+    const { gift } = await defaultDepositTestSetup({
       factory,
-      overrides: { claimPrivateKey: BigInt(claimSigner.privateKey) },
+      overrides: { giftPrivateKey: BigInt(giftSigner.privateKey) },
     });
     const { execution_status } = await claimInternal({
-      claim,
+      gift,
       receiver,
-      claimPrivateKey: claimSigner.privateKey,
+      giftPrivateKey: giftSigner.privateKey,
     });
     expect(execution_status).to.be.equal(RPC.ETransactionExecutionStatus.SUCCEEDED);
   });
@@ -129,11 +129,11 @@ describe("Test Core Factory Functions", function () {
 
     it("Ownable: Get Dust", async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim } = await defaultDepositTestSetup({ factory });
+      const { gift } = await defaultDepositTestSetup({ factory });
       const dustReceiver = randomReceiver();
 
       await expectRevertWithErrorMessage("gift/only-factory-owner", () =>
-        getDust({ claim, receiver: dustReceiver, factoryOwner: devnetAccount() }),
+        claimDust({ gift, receiver: dustReceiver, factoryOwner: devnetAccount() }),
       );
     });
   });

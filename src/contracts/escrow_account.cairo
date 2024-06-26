@@ -10,19 +10,19 @@ pub trait IAccount<TContractState> {
 
 
 #[starknet::interface]
-pub trait IGiftAccount<TContractState> {
-    /// @notice delegates an action to the account implementation
+pub trait IEscrowAccount<TContractState> {
+    /// @notice delegates an action to the account library
     fn execute_action(ref self: TContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252>;
 }
 
-/// @notice Struct representing the arguments required for constructing a gift account
-/// @dev This will be used to determine the address of the gift account
+/// @notice Struct representing the arguments required for constructing an escrow account
+/// @dev This will be used to determine the address of the escrow account
 /// @param sender The address of the sender
 /// @param gift_token The ERC-20 token address of the gift
 /// @param gift_amount The amount of the gift
 /// @param fee_token The ERC-20 token address of the fee
 /// @param fee_amount The amount of the fee
-/// @param claim_pubkey The public key associated with the gift
+/// @param gift_pubkey The public key associated with the gift
 #[derive(Serde, Drop, Copy)]
 pub struct AccountConstructorArguments {
     pub sender: ContractAddress,
@@ -30,29 +30,27 @@ pub struct AccountConstructorArguments {
     pub gift_amount: u256,
     pub fee_token: ContractAddress,
     pub fee_amount: u128,
-    pub claim_pubkey: felt252
+    pub gift_pubkey: felt252
 }
 
 #[starknet::contract(account)]
-mod ClaimAccount {
+mod EscrowAccount {
+    use argent_gifting::contracts::escrow_library::{IEscrowLibraryLibraryDispatcher, IEscrowLibraryDispatcherTrait};
+    use argent_gifting::contracts::gift_data::GiftData;
+    use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+    use argent_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
+
+    use argent_gifting::contracts::utils::{
+        calculate_escrow_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
+        TX_V3, TX_V3_ESTIMATE
+    };
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
     use starknet::{
         TxInfo, account::Call, VALIDATED, syscalls::library_call_syscall, ContractAddress, get_contract_address,
         get_execution_info, ClassHash
     };
-    use starknet_gifting::contracts::claim_account_impl::{
-        IClaimAccountImplLibraryDispatcher, IClaimAccountImplDispatcherTrait
-    };
-    use starknet_gifting::contracts::claim_data::{ClaimData};
-    use starknet_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
-    use starknet_gifting::contracts::outside_execution::{IOutsideExecution, OutsideExecution};
-
-    use starknet_gifting::contracts::utils::{
-        calculate_claim_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
-        TX_V3, TX_V3_ESTIMATE
-    };
-    use super::{IGiftAccount, IAccount, AccountConstructorArguments};
+    use super::{IEscrowAccount, IAccount, AccountConstructorArguments};
 
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
     const SRC5_INTERFACE_ID: felt252 = 0x3f918d17e5ee77373b56385708f855659a07f75997f365cf87748628532a055;
@@ -85,30 +83,30 @@ mod ClaimAccount {
             let Call { to, selector, calldata } = calls.at(0);
             assert(*to == get_contract_address(), 'gift-acc/invalid-call-to');
             assert(*selector == selector!("claim_internal"), 'gift-acc/invalid-call-selector');
-            let (claim, _): (ClaimData, ContractAddress) = full_deserialize(*calldata)
+            let (gift, _): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
-            assert_valid_claim(claim);
+            assert_valid_claim(gift);
 
             let tx_info = execution_info.tx_info.unbox();
-            assert(tx_info.nonce == 0, 'gift-acc/invalid-claim-nonce');
+            assert(tx_info.nonce == 0, 'gift-acc/invalid-gift-nonce');
             let execution_hash = tx_info.transaction_hash;
             let signature = tx_info.signature;
             assert(signature.len() == 2, 'gift-acc/invalid-signature-len');
 
             let tx_version = tx_info.version;
             assert(
-                check_ecdsa_signature(execution_hash, claim.claim_pubkey, *signature[0], *signature[1])
+                check_ecdsa_signature(execution_hash, gift.gift_pubkey, *signature[0], *signature[1])
                     || tx_version == TX_V3_ESTIMATE
                     || tx_version == TX_V1_ESTIMATE,
                 'invalid-signature'
             );
-            if claim.fee_token == STRK_ADDRESS() {
+            if gift.fee_token == STRK_ADDRESS() {
                 assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'gift-acc/invalid-tx3-version');
                 let tx_fee = compute_max_fee_v3(tx_info, tx_info.tip);
-                assert(tx_fee <= claim.fee_amount, 'gift-acc/max-fee-too-high-v3');
-            } else if claim.fee_token == ETH_ADDRESS() {
+                assert(tx_fee <= gift.fee_amount, 'gift-acc/max-fee-too-high-v3');
+            } else if gift.fee_token == ETH_ADDRESS() {
                 assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'gift-acc/invalid-tx1-version');
-                assert(tx_info.max_fee <= claim.fee_amount, 'gift-acc/max-fee-too-high-v1');
+                assert(tx_info.max_fee <= gift.fee_amount, 'gift-acc/max-fee-too-high-v1');
             } else {
                 core::panic_with_felt252('gift-acc/invalid-token');
             }
@@ -127,18 +125,18 @@ mod ClaimAccount {
                 'gift-acc/invalid-tx-version'
             );
             let Call { .., calldata }: @Call = calls[0];
-            let (claim, receiver): (ClaimData, ContractAddress) = full_deserialize(*calldata)
+            let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
-            let implementation_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: claim.factory }
-                .get_account_impl_class_hash(claim.class_hash);
-            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }.claim_internal(claim, receiver)
+            let library_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
+                .get_escrow_lib_class_hash(gift.escrow_class_hash);
+            IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
         }
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
             let mut signature_span = signature.span();
-            let claim: ClaimData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-claim');
-            IClaimAccountImplLibraryDispatcher { class_hash: get_validated_impl(claim) }
-                .is_valid_account_signature(claim, hash, signature_span)
+            let gift: GiftData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-gift');
+            IEscrowLibraryLibraryDispatcher { class_hash: get_validated_lib(gift) }
+                .is_valid_account_signature(gift, hash, signature_span)
         }
 
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
@@ -149,13 +147,13 @@ mod ClaimAccount {
     }
 
     #[abi(embed_v0)]
-    impl GiftAccountImpl of IGiftAccount<ContractState> {
+    impl GiftAccountImpl of IEscrowAccount<ContractState> {
         fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
-            let claim: ClaimData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-claim');
-            let implementation_class_hash = get_validated_impl(claim);
-            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
-                .execute_action(implementation_class_hash, selector, calldata.span())
+            let gift: GiftData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-gift');
+            let library_class_hash = get_validated_lib(gift);
+            IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }
+                .execute_action(library_class_hash, selector, calldata.span())
         }
     }
 
@@ -164,10 +162,10 @@ mod ClaimAccount {
         fn execute_from_outside_v2(
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            let claim: ClaimData = Serde::deserialize(ref signature).expect('gift-acc/invalid-claim');
-            let implementation_class_hash = get_validated_impl(claim);
-            IClaimAccountImplLibraryDispatcher { class_hash: implementation_class_hash }
-                .execute_from_outside_v2(claim, outside_execution, signature)
+            let gift: GiftData = Serde::deserialize(ref signature).expect('gift-acc/invalid-gift');
+            let library_class_hash = get_validated_lib(gift);
+            IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }
+                .execute_from_outside_v2(gift, outside_execution, signature)
         }
 
         fn is_valid_outside_execution_nonce(self: @ContractState, nonce: felt252) -> bool {
@@ -175,14 +173,14 @@ mod ClaimAccount {
         }
     }
 
-    fn get_validated_impl(claim: ClaimData) -> ClassHash {
-        assert_valid_claim(claim);
-        IGiftFactoryDispatcher { contract_address: claim.factory }.get_account_impl_class_hash(claim.class_hash)
+    fn get_validated_lib(gift: GiftData) -> ClassHash {
+        assert_valid_claim(gift);
+        IGiftFactoryDispatcher { contract_address: gift.factory }.get_escrow_lib_class_hash(gift.escrow_class_hash)
     }
 
-    fn assert_valid_claim(claim: ClaimData) {
-        let calculated_address = calculate_claim_account_address(claim);
-        assert(calculated_address == get_contract_address(), 'gift-acc/invalid-claim-address');
+    fn assert_valid_claim(gift: GiftData) {
+        let calculated_address = calculate_escrow_account_address(gift);
+        assert(calculated_address == get_contract_address(), 'gift-acc/invalid-escrow-address');
     }
 
     fn compute_max_fee_v3(tx_info: TxInfo, tip: u128) -> u128 {

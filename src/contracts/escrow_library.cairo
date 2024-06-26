@@ -1,19 +1,19 @@
+use argent_gifting::contracts::gift_data::GiftData;
+use argent_gifting::contracts::outside_execution::OutsideExecution;
+use argent_gifting::contracts::utils::StarknetSignature;
 use starknet::{ContractAddress, ClassHash};
-use starknet_gifting::contracts::claim_data::{ClaimData};
-use starknet_gifting::contracts::outside_execution::{OutsideExecution};
-use starknet_gifting::contracts::utils::{StarknetSignature};
 
 #[starknet::interface]
-pub trait IClaimAccountImpl<TContractState> {
+pub trait IEscrowLibrary<TContractState> {
     fn execute_action(
         ref self: TContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
     ) -> Span<felt252>;
 
-    fn claim_internal(ref self: TContractState, claim: ClaimData, receiver: ContractAddress) -> Array<Span<felt252>>;
+    fn claim_internal(ref self: TContractState, gift: GiftData, receiver: ContractAddress) -> Array<Span<felt252>>;
 
     fn claim_external(
         ref self: TContractState,
-        claim: ClaimData,
+        gift: GiftData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
         signature: StarknetSignature
@@ -21,26 +21,30 @@ pub trait IClaimAccountImpl<TContractState> {
 
     /// @notice Allows the sender of a gift to cancel their gift
     /// @dev Will refund both the gift and the fee
-    /// @param claim The claim data of the gift to cancel
-    fn cancel(ref self: TContractState, claim: ClaimData);
+    /// @param gift The data of the gift to cancel
+    fn cancel(ref self: TContractState, gift: GiftData);
 
-    /// @notice Allows the owner of the factory to claim the dust (leftovers) of a claim
+    /// @notice Allows the owner of the factory to claim the dust (leftovers) of a gift
     /// @dev Only allowed if the gift has been claimed
-    /// @param claim The claim data 
+    /// @param gift The gift data 
     /// @param receiver The address of the receiver
-    fn get_dust(ref self: TContractState, claim: ClaimData, receiver: ContractAddress);
+    fn claim_dust(ref self: TContractState, gift: GiftData, receiver: ContractAddress);
 
     fn is_valid_account_signature(
-        self: @TContractState, claim: ClaimData, hash: felt252, remaining_signature: Span<felt252>
+        self: @TContractState, gift: GiftData, hash: felt252, remaining_signature: Span<felt252>
     ) -> felt252;
 
     fn execute_from_outside_v2(
-        ref self: TContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
+        ref self: TContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
     ) -> Array<Span<felt252>>;
 }
 
 #[starknet::contract]
-mod ClaimAccountImpl {
+mod EscrowLibrary {
+    use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
+    use argent_gifting::contracts::gift_data::GiftData;
+    use argent_gifting::contracts::outside_execution::OutsideExecution;
+    use argent_gifting::contracts::utils::StarknetSignature;
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
@@ -49,10 +53,6 @@ mod ClaimAccountImpl {
     use starknet::{
         ClassHash, ContractAddress, get_caller_address, get_contract_address, syscalls::library_call_syscall
     };
-    use starknet_gifting::contracts::claim_data::{ClaimData};
-    use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::outside_execution::{OutsideExecution};
-    use starknet_gifting::contracts::utils::{StarknetSignature};
 
     #[storage]
     struct Storage {}
@@ -82,11 +82,9 @@ mod ClaimAccountImpl {
     }
 
     #[abi(embed_v0)]
-    impl ClaimAccountImpl of super::IClaimAccountImpl<ContractState> {
-        fn claim_internal(
-            ref self: ContractState, claim: ClaimData, receiver: ContractAddress
-        ) -> Array<Span<felt252>> {
-            self.proceed_with_claim(claim, receiver, Zero::zero());
+    impl EscrowLibraryImpl of super::IEscrowLibrary<ContractState> {
+        fn claim_internal(ref self: ContractState, gift: GiftData, receiver: ContractAddress) -> Array<Span<felt252>> {
+            self.proceed_with_claim(gift, receiver, Zero::zero());
             array![]
         }
 
@@ -94,7 +92,7 @@ mod ClaimAccountImpl {
             ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
         ) -> Span<felt252> {
             let is_whitelisted = selector == selector!("claim_external")
-                || selector == selector!("get_dust")
+                || selector == selector!("claim_dust")
                 || selector == selector!("cancel");
             assert(is_whitelisted, 'gift/invalid-selector');
             library_call_syscall(this_class_hash, selector, args).unwrap()
@@ -102,7 +100,7 @@ mod ClaimAccountImpl {
 
         fn claim_external(
             ref self: ContractState,
-            claim: ClaimData,
+            gift: GiftData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
             signature: StarknetSignature
@@ -110,52 +108,52 @@ mod ClaimAccountImpl {
             let claim_external_hash = ClaimExternal { receiver, dust_receiver }
                 .get_message_hash_rev_1(get_contract_address());
             assert(
-                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, signature.r, signature.s),
+                check_ecdsa_signature(claim_external_hash, gift.gift_pubkey, signature.r, signature.s),
                 'gift/invalid-ext-signature'
             );
-            self.proceed_with_claim(claim, receiver, dust_receiver);
+            self.proceed_with_claim(gift, receiver, dust_receiver);
         }
 
-        fn cancel(ref self: ContractState, claim: ClaimData) {
+        fn cancel(ref self: ContractState, gift: GiftData) {
             let contract_address = get_contract_address();
-            assert(get_caller_address() == claim.sender, 'gift/wrong-sender');
+            assert(get_caller_address() == gift.sender, 'gift/wrong-sender');
 
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(contract_address);
+            let gift_balance = IERC20Dispatcher { contract_address: gift.gift_token }.balance_of(contract_address);
             assert(gift_balance > 0, 'gift/already-claimed');
-            if claim.gift_token == claim.fee_token {
+            if gift.gift_token == gift.fee_token {
                 // Sender also gets the dust
-                transfer_from_account(claim.gift_token, claim.sender, gift_balance);
+                transfer_from_account(gift.gift_token, gift.sender, gift_balance);
             } else {
                 // Transfer both tokens in a multicall
-                let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(contract_address);
-                transfer_from_account(claim.gift_token, claim.sender, gift_balance);
-                transfer_from_account(claim.fee_token, claim.sender, fee_balance);
+                let fee_balance = IERC20Dispatcher { contract_address: gift.fee_token }.balance_of(contract_address);
+                transfer_from_account(gift.gift_token, gift.sender, gift_balance);
+                transfer_from_account(gift.fee_token, gift.sender, fee_balance);
             }
             self.emit(GiftCancelled {});
         }
 
-        fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
+        fn claim_dust(ref self: ContractState, gift: GiftData, receiver: ContractAddress) {
             let contract_address = get_contract_address();
-            let factory_owner = IOwnableDispatcher { contract_address: claim.factory }.owner();
+            let factory_owner = IOwnableDispatcher { contract_address: gift.factory }.owner();
             assert(factory_owner == get_caller_address(), 'gift/only-factory-owner');
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(contract_address);
-            assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
-            if claim.gift_token == claim.fee_token {
-                transfer_from_account(claim.gift_token, receiver, gift_balance);
+            let gift_balance = IERC20Dispatcher { contract_address: gift.gift_token }.balance_of(contract_address);
+            assert(gift_balance < gift.gift_amount, 'gift/not-yet-claimed');
+            if gift.gift_token == gift.fee_token {
+                transfer_from_account(gift.gift_token, receiver, gift_balance);
             } else {
-                let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(contract_address);
-                transfer_from_account(claim.fee_token, claim.sender, fee_balance);
+                let fee_balance = IERC20Dispatcher { contract_address: gift.fee_token }.balance_of(contract_address);
+                transfer_from_account(gift.fee_token, gift.sender, fee_balance);
             }
         }
 
         fn is_valid_account_signature(
-            self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
+            self: @ContractState, gift: GiftData, hash: felt252, mut remaining_signature: Span<felt252>
         ) -> felt252 {
             0 // Accounts don't support off-chain signatures yet
         }
 
         fn execute_from_outside_v2(
-            ref self: ContractState, claim: ClaimData, outside_execution: OutsideExecution, signature: Span<felt252>
+            ref self: ContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
         ) -> Array<Span<felt252>> {
             panic_with_felt252('not-allowed-yet')
         }
@@ -164,29 +162,30 @@ mod ClaimAccountImpl {
     #[generate_trait]
     impl Private of PrivateTrait {
         fn proceed_with_claim(
-            ref self: ContractState, claim: ClaimData, receiver: ContractAddress, dust_receiver: ContractAddress
+            ref self: ContractState, gift: GiftData, receiver: ContractAddress, dust_receiver: ContractAddress
         ) {
             assert(receiver.is_non_zero(), 'gift/zero-receiver');
             let contract_address = get_contract_address();
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(contract_address);
-            assert(gift_balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
+            let gift_balance = IERC20Dispatcher { contract_address: gift.gift_token }.balance_of(contract_address);
+            assert(gift_balance >= gift.gift_amount, 'gift/already-claimed-or-cancel');
 
-            // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
+            // could be optimized to 1 transfer only when the receiver is also the dust receiver,
+            // and the fee token is the same as the gift token
             // but will increase the complexity of the code for a small performance GiftCanceled
 
             // Transfer the gift
-            transfer_from_account(claim.gift_token, receiver, claim.gift_amount);
+            transfer_from_account(gift.gift_token, receiver, gift.gift_amount);
 
             // Transfer the dust
             if dust_receiver.is_non_zero() {
-                let dust = if claim.gift_token == claim.fee_token {
-                    gift_balance - claim.gift_amount
+                let dust = if gift.gift_token == gift.fee_token {
+                    gift_balance - gift.gift_amount
                 } else {
                     // TODO Double check reentrancy here
-                    IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(contract_address)
+                    IERC20Dispatcher { contract_address: gift.fee_token }.balance_of(contract_address)
                 };
                 if dust > 0 {
-                    transfer_from_account(claim.fee_token, dust_receiver, dust);
+                    transfer_from_account(gift.fee_token, dust_receiver, dust);
                 }
             }
             self.emit(GiftClaimed { receiver, dust_receiver });

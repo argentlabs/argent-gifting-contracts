@@ -4,7 +4,7 @@ The goal of this protocol is to allow sending tokens to a recipient without know
 
 ## High level Flow
 
-1. The sender creates a key pair locally called **claim_key**.
+1. The sender creates a key pair locally called **gift_key**.
 2. The sender deposits the tokens to be transferred, along with a small amount of fee token (ETH or STK) to cover the claim transaction, to the factory. The sender also specifies the **public key** as an identifier.
 3. The factory deploys an escrow account to which the gift amount is transferred along with the fee amount.
 4. The sender shares the **private key** with the recipient over an external channel such as text or email.
@@ -14,7 +14,7 @@ As the fee should be larger than the claiming transaction cost, there might be a
 
 ## Claiming
 
-Claim can be done in two ways:
+Claiming can be done in two ways:
 
 ### Through the account
 
@@ -35,7 +35,7 @@ If the gift has already been claimed, this allows the sender to redeem the lefto
 This section outlines all the operations that the factory is allowed to perform.  
 As we use OpenZeppelin's Ownable component, this factory has an owner.
 
-### Get Dust
+### Claim Dust
 
 The factory has a function allowing it to claim the dust left on an account. This action can only be done after a claim has been performed. This can also be used to recover any excess tokens a user may have sent to the account.
 
@@ -49,9 +49,9 @@ The factory can be upgraded to a newer version, allowing it to potentially recov
 The upgrade cannot be done immediately and must go through a waiting period of 7 days. There is then a window of 7 days to perform the upgrade.  
 It is important to note that through an upgrade, the ownership of the factory and its upgradeability can both be revoked.
 
-## Gift account address calculation
+## Escrow account address calculation
 
-To compute the address of the escrow account, you can either call `get_claim_address()` with the relevant arguments. Or you can do it off-chain using, for example, starknetJS.  
+To compute the address of the escrow account, you can either call `get_escrow_address()` with the relevant arguments. Or you can do it off-chain using, for example, starknetJS.  
 The parameters are as follow:
 
 - Salt: 0
