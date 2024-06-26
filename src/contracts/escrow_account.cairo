@@ -125,6 +125,7 @@ mod EscrowAccount {
             let Call { .., calldata }: @Call = calls[0];
             let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('gift-acc/invalid-calldata');
+            // The __validate__ function already ensures the claim is valid
             let library_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
                 .get_escrow_lib_class_hash(gift.escrow_class_hash);
             IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }.claim_internal(gift, receiver)
@@ -133,8 +134,7 @@ mod EscrowAccount {
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
             let mut signature_span = signature.span();
             let gift: GiftData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-gift');
-            IEscrowLibraryLibraryDispatcher { class_hash: get_validated_lib(gift) }
-                .is_valid_account_signature(gift, hash, signature_span)
+            get_validated_lib(gift).is_valid_account_signature(gift, hash, signature_span)
         }
 
         fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
@@ -149,9 +149,8 @@ mod EscrowAccount {
         fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
             let gift: GiftData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-gift');
-            let library_class_hash = get_validated_lib(gift);
-            IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }
-                .execute_action(library_class_hash, selector, calldata.span())
+            let lib = get_validated_lib(gift);
+            lib.execute_action(lib.class_hash, selector, calldata.span())
         }
     }
 
@@ -161,8 +160,7 @@ mod EscrowAccount {
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
             let gift: GiftData = Serde::deserialize(ref signature).expect('gift-acc/invalid-gift');
-            IEscrowLibraryLibraryDispatcher { class_hash: get_validated_lib(gift) }
-                .execute_from_outside_v2(gift, outside_execution, signature)
+            get_validated_lib(gift).execute_from_outside_v2(gift, outside_execution, signature)
         }
 
         fn is_valid_outside_execution_nonce(self: @ContractState, nonce: felt252) -> bool {
@@ -170,9 +168,11 @@ mod EscrowAccount {
         }
     }
 
-    fn get_validated_lib(gift: GiftData) -> ClassHash {
+    fn get_validated_lib(gift: GiftData) -> IEscrowLibraryLibraryDispatcher {
         assert_valid_claim(gift);
-        IGiftFactoryDispatcher { contract_address: gift.factory }.get_escrow_lib_class_hash(gift.escrow_class_hash)
+        let library_class_hash = IGiftFactoryDispatcher { contract_address: gift.factory }
+            .get_escrow_lib_class_hash(gift.escrow_class_hash);
+        IEscrowLibraryLibraryDispatcher { class_hash: library_class_hash }
     }
 
     fn assert_valid_claim(gift: GiftData) {
