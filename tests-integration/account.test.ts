@@ -82,7 +82,7 @@ describe("Escrow Account", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
-    // double gift
+    // double claim
     await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
     await expectRevertWithErrorMessage("gift-acc/invalid-gift-nonce", () =>
       claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey, details: { skipValidate: false } }),
