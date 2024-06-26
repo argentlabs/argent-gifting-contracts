@@ -20,14 +20,14 @@ pub trait IGiftFactory<TContractState> {
         gift_pubkey: felt252
     );
 
-    /// @notice Retrieves the current escrow_class_hash used for creating an escrow account
+    /// @notice Retrieves the current clash hash used for creating an escrow account
     fn get_latest_escrow_class_hash(self: @TContractState) -> ClassHash;
 
-    /// @notice Retrieves the current escrow_class_hash of the escrow account's library
+    /// @notice Retrieves the current class hash of the escrow account's library
     fn get_escrow_lib_class_hash(self: @TContractState, escrow_class_hash: ClassHash) -> ClassHash;
 
     /// @notice Get the address of the escrow account contract given all parameters
-    /// @param escrow_class_hash The class hash
+    /// @param escrow_class_hash The class hash of the escrow account
     /// @param sender The address of the sender
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
@@ -149,22 +149,19 @@ mod GiftFactory {
             self.pausable.assert_not_paused();
             assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
             if gift_token == fee_token {
-                // This is needed so we can tell if an gift has been claimed or not just by looking at the balances
+                // This is needed so we can tell if a gift has been claimed or not just by looking at the balances
                 assert(fee_amount.into() < gift_amount, 'gift-fac/fee-too-high');
             }
 
             let sender = get_caller_address();
-            // TODO We could manually serialize for better performance but then we loose the type safety
             let escrow_class_hash_storage = self.escrow_class_hash.read();
             assert(escrow_class_hash_storage == escrow_class_hash, 'gift-fac/invalid-class-hash');
             let constructor_arguments = AccountConstructorArguments {
                 sender, gift_token, gift_amount, fee_token, fee_amount, gift_pubkey
             };
             let (escrow_contract, _) = deploy_syscall(
-                escrow_class_hash, // escrow_class_hash
-                0, // salt
-                serialize(@constructor_arguments).span(), // constructor data
-                false // deploy_from_zero
+                escrow_class_hash, 0, // salt
+                 serialize(@constructor_arguments).span(), false // deploy_from_zero
             )
                 .expect('gift-fac/deploy-failed');
             self
