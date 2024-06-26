@@ -1,6 +1,7 @@
 use openzeppelin::utils::deployments::calculate_contract_address_from_deploy_syscall;
 use starknet::{ContractAddress, account::Call, contract_address::contract_address_const};
-use starknet_gifting::contracts::interface::{ClaimData, AccountConstructorArguments};
+use starknet_gifting::contracts::claim_account::{AccountConstructorArguments};
+use starknet_gifting::contracts::claim_data::{ClaimData};
 
 pub const TX_V1: felt252 = 1; // INVOKE
 pub const TX_V1_ESTIMATE: felt252 = consteval_int!(0x100000000000000000000000000000000 + 1); // 2**128 + TX_V1
@@ -13,6 +14,12 @@ pub fn STRK_ADDRESS() -> ContractAddress {
 
 pub fn ETH_ADDRESS() -> ContractAddress {
     contract_address_const::<0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7>()
+}
+
+#[derive(Serde, Drop, Copy, starknet::Store)]
+pub struct StarknetSignature {
+    pub r: felt252,
+    pub s: felt252,
 }
 
 // Tries to deserialize the given data into.

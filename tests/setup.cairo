@@ -3,8 +3,8 @@ use openzeppelin::utils::serde::SerializedAppend;
 
 use snforge_std::{declare, ContractClassTrait, ContractClass, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ClassHash;
+use starknet_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
 
-use starknet_gifting::contracts::interface::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
 use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
 
 use super::constants::{OWNER, DEPOSITOR, CLAIMER};

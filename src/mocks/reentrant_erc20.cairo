@@ -1,5 +1,6 @@
 use starknet::{ClassHash, ContractAddress};
-use starknet_gifting::contracts::interface::{StarknetSignature};
+use starknet_gifting::contracts::utils::{StarknetSignature};
+
 
 #[derive(Serde, Drop, Copy, starknet::Store, Debug)]
 struct TestClaimData {
@@ -35,10 +36,12 @@ mod ReentrantERC20 {
         get_caller_address, ContractAddress, get_contract_address, contract_address_const,
         syscalls::call_contract_syscall
     };
-    use starknet_gifting::contracts::interface::{
-        ClaimData, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait, StarknetSignature
-    };
+    use starknet_gifting::contracts::claim_data::{ClaimData};
+
+    use starknet_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+
     use starknet_gifting::contracts::utils::ETH_ADDRESS;
+    use starknet_gifting::contracts::utils::{StarknetSignature};
     use super::IMalicious;
     use super::TestClaimData;
 
