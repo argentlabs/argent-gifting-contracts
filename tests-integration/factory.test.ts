@@ -132,7 +132,7 @@ describe("Test Core Factory Functions", function () {
       const { gift } = await defaultDepositTestSetup({ factory });
       const dustReceiver = randomReceiver();
 
-      await expectRevertWithErrorMessage("gift/only-factory-owner", () =>
+      await expectRevertWithErrorMessage("escr-lib/only-factory-owner", () =>
         claimDust({ gift, receiver: dustReceiver, factoryOwner: devnetAccount() }),
       );
     });

@@ -231,7 +231,7 @@ mod GiftFactory {
             // This should do some sanity checks 
             // We should check that the new implementation is a valid implementation
             // Execute the upgrade using replace_class_syscall(...)
-            panic_with_felt252('downgrade-not-allowed');
+            panic_with_felt252('gift-fac/downgrade-not-allowed');
         }
     }
 
