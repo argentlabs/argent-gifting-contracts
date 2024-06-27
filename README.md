@@ -39,7 +39,7 @@ For more details about how to trigger it please see the `claimInternal` function
 
 If for some reason the funds deposited to pay for the claim transaction are not enough. Or if someone prefers to subsidize. It is also possible for someone else to pay for the claim fees.
 
-The receiver can use the private key sign a message containing the address receiving the address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so they should `claim_external` on the escrow account (through the `execute_action` entrypoint)
+The receiver can use the private key sign a message containing the address receiving the address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so, they should call `claim_external` on the escrow account (through the `execute_action` entrypoint)
 
 For more details please see the `claimExternal` function at [Claim External Example](./lib/claim.ts)
 
