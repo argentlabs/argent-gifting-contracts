@@ -72,7 +72,6 @@ mod EscrowAccount {
     #[constructor]
     fn constructor(ref self: ContractState, args: AccountConstructorArguments) {}
 
-
     #[abi(embed_v0)]
     impl IAccountImpl of IAccount<ContractState> {
         fn __validate__(ref self: ContractState, calls: Array<Call>) -> felt252 {
