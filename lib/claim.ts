@@ -136,7 +136,7 @@ export async function claimExternal(args: {
   return manager.waitForTransaction(response.transaction_hash);
 }
 
-function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
+export function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
   return {
     contractAddress: accountAddress,
     entrypoint: "execute_action",
