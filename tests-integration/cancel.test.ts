@@ -70,7 +70,9 @@ describe("Cancel Gift", function () {
   it(`wrong sender`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
-    await expectRevertWithErrorMessage("escr-lib/wrong-sender", () => cancelGift({ gift, senderAccount: devnetAccount() }));
+    await expectRevertWithErrorMessage("escr-lib/wrong-sender", () =>
+      cancelGift({ gift, senderAccount: devnetAccount() }),
+    );
   });
 
   it(`owner reclaim dust (gift_token == fee_token)`, async function () {

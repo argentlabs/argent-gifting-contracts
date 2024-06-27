@@ -14,7 +14,7 @@ describe("Escrow Account", function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
     const escrowAddress = calculateEscrowAddress(gift);
-// This says validate but calls execute?
+
     await expectRevertWithErrorMessage("escrow/only-protocol", () =>
       deployer.execute([{ contractAddress: escrowAddress, calldata: [0x0], entrypoint: "__validate__" }]),
     );

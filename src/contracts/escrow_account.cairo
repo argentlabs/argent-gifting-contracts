@@ -76,13 +76,12 @@ mod EscrowAccount {
     impl IAccountImpl of IAccount<ContractState> {
         fn __validate__(ref self: ContractState, calls: Array<Call>) -> felt252 {
             let execution_info = get_execution_info().unbox();
-            assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol'); // Not tested
+            assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol');
             assert(calls.len() == 1, 'escrow/invalid-call-len');
             let Call { to, selector, calldata } = calls.at(0);
             assert(*to == get_contract_address(), 'escrow/invalid-call-to');
             assert(*selector == selector!("claim_internal"), 'escrow/invalid-call-selector');
-            let (gift, _): (GiftData, ContractAddress) = full_deserialize(*calldata)
-                .expect('escrow/invalid-calldata'); // Not tested
+            let (gift, _): (GiftData, ContractAddress) = full_deserialize(*calldata).expect('escrow/invalid-calldata');
             assert_valid_claim(gift);
 
             let tx_info = execution_info.tx_info.unbox();
@@ -127,7 +126,6 @@ mod EscrowAccount {
                 'escrow/invalid-tx-version'
             );
             let Call { .., calldata }: @Call = calls[0];
-            // Not tested
             let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('escrow/invalid-calldata');
             // The __validate__ function already ensures the claim is valid
