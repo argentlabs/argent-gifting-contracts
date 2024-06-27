@@ -81,6 +81,7 @@ mod EscrowAccount {
             let Call { to, selector, calldata } = calls.at(0);
             assert(*to == get_contract_address(), 'escrow/invalid-call-to');
             assert(*selector == selector!("claim_internal"), 'escrow/invalid-call-selector');
+            // Not tested
             let (gift, _): (GiftData, ContractAddress) = full_deserialize(*calldata).expect('escrow/invalid-calldata');
             assert_valid_claim(gift);
 

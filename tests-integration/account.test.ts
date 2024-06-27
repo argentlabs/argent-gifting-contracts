@@ -25,7 +25,7 @@ describe("Escrow Account", function () {
     const { gift } = await defaultDepositTestSetup({ factory });
     const escrowAddress = calculateEscrowAddress(gift);
 
-    await expectRevertWithErrorMessage("escrow/only-protocol", () =>
+    await expectRevertWithErrorMessage("gift-acc/only-protocol", () =>
       deployer.execute([{ contractAddress: escrowAddress, calldata: [0x0], entrypoint: "__execute__" }]),
     );
   });
@@ -35,7 +35,7 @@ describe("Escrow Account", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
-    await expectRevertWithErrorMessage("escrow/invalid-call-to", () =>
+    await expectRevertWithErrorMessage("gift-acc/invalid-call-to", () =>
       claimInternal({
         gift,
         receiver,
@@ -52,7 +52,7 @@ describe("Escrow Account", function () {
 
     const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
 
-    await expectRevertWithErrorMessage("escrow/invalid-call-selector", () =>
+    await expectRevertWithErrorMessage("gift-acc/invalid-call-selector", () =>
       escrowAccount.execute(
         [{ contractAddress: escrowAccount.address, calldata: [], entrypoint: "execute_action" }],
         undefined,
@@ -65,7 +65,7 @@ describe("Escrow Account", function () {
     const { factory } = await setupGiftProtocol();
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
-    await expectRevertWithErrorMessage("escrow/invalid-call-len", () =>
+    await expectRevertWithErrorMessage("gift-acc/invalid-call-len", () =>
       escrowAccount.execute(
         [
           { contractAddress: escrowAccount.address, calldata: [], entrypoint: "execute_action" },
@@ -84,7 +84,7 @@ describe("Escrow Account", function () {
 
     // double claim
     await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
-    await expectRevertWithErrorMessage("escrow/invalid-gift-nonce", () =>
+    await expectRevertWithErrorMessage("gift-acc/invalid-gift-nonce", () =>
       claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey, details: { skipValidate: false } }),
     );
   });
