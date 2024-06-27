@@ -15,7 +15,7 @@ As the fee should be larger than the claiming transaction cost, there might be a
 ## Deposits
 
 Deposits follow the flow described in the first 3 steps above.
-For more details please see the `deposit` function at [Deposit example](./lib/deposit.ts)
+For more details please see the `deposit` function at [Deposit example](./lib/deposit.ts).
 
 ## Claiming
 
@@ -27,25 +27,25 @@ The recipient uses the private key to craft a transaction to claim the gift. The
 
 Edge cases:
 
-- Insufficient `fee_amount`: Alternative options are "external claiming", waiting for transaction price to go down, or canceling the gift (see below)
-- Dust: `fee_amount` will usually be higher than the actual fee and there will be some amount left in the contract. The protocol owner can collect the dust later
+- Insufficient `fee_amount`: Alternative options are "external claiming", waiting for transaction price to go down, or canceling the gift (see below).
+- Dust: `fee_amount` will usually be higher than the actual fee and there will be some amount left in the contract. The protocol owner can collect the dust later.
 - If the internal claim transaction fails for any reason, the account won't allow to submit another transaction. But the gift can be cancelled or claimed using the external method.
 
-For more details about how to trigger it please see the `claimInternal` function at [Claim Internal Example](./lib/claim.ts)
+For more details about how to trigger it please see the `claimInternal` function at [Claim Internal Example](./lib/claim.ts).
 
 ### External claim
 
-It is also possible for someone else to pay for the claim fees. This can be useful if the funds deposited to pay for the claim transaction are not enough, or if someone wants to subsidize the claim
+It is also possible for someone else to pay for the claim fees. This can be useful if the funds deposited to pay for the claim transaction are not enough, or if someone wants to subsidize the claim.
 
-The receiver can use the private key sign a message containing the address receiving the address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so, they should call `claim_external` on the escrow account (through the `execute_action` entrypoint)
+The receiver can use the private key sign a message containing the address receiving the address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so, they should call `claim_external` on the escrow account (through the `execute_action` entrypoint).
 
-For more details please see the `claimExternal` function at [Claim External Example](./lib/claim.ts)
+For more details please see the `claimExternal` function at [Claim External Example](./lib/claim.ts).
 
 ## Cancelling Gifts
 
 Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the `gift_amount` and the `fee_amount` they deposited for that gift.
 
-For more details please see the `cancelGift` function at [Cancel example](./lib/claim.ts)
+For more details please see the `cancelGift` function at [Cancel example](./lib/claim.ts).
 
 ## Operator
 
