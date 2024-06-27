@@ -28,7 +28,7 @@ The recipient uses the private key to craft a transaction to claim the gift. The
 Edge cases:
 
 - Insufficient `fee_amount`: Alternative options are "external claiming", waiting for transaction price to go down, or canceling the gift (see below)
-- Dust: `fee_amount” will usually be higher than the actual fee and there will be some amount left in the contract. The protocol owner can collect the dust later
+- Dust: `fee_amount` will usually be higher than the actual fee and there will be some amount left in the contract. The protocol owner can collect the dust later
 - If the internal claim transaction fails for any reason, the account won't allow to submit another transaction. But the gift can be cancelled or claimed using the external method.
 
 For more details about how to trigger it please see the `claimInternal` function at [Claim Internal Example](./lib/claim.ts)
