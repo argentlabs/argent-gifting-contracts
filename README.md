@@ -43,7 +43,7 @@ For more details please see the `claimExternal` function at [Claim External Exam
 
 ## Cancelling Gifts
 
-Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the `gift_amount` and the `fee_amount` they deposited for that gift.
+Gifts can be cancelled by the sender provided that they have not been claimed yet. The sender will retrieve both the `gift_amount` and the `fee_amount` they deposited for that gift.
 
 For more details please see the `cancelGift` function at [Cancel example](./lib/claim.ts).
 
