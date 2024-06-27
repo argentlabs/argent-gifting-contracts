@@ -37,7 +37,7 @@ describe("Escrow Account", function () {
     const { gift } = await defaultDepositTestSetup({ factory });
     const minimalCallData = CallData.compile([buildGiftCallData(gift)]);
 
-    await expectRevertWithErrorMessage("gift/invalid-selector", () =>
+    await expectRevertWithErrorMessage("escr-lib/invalid-selector", () =>
       deployer.execute(executeActionOnAccount("claim_internal", calculateEscrowAddress(gift), minimalCallData)),
     );
   });
