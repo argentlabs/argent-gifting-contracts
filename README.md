@@ -65,7 +65,7 @@ The owner has the capability to pause all deposits. However, it cannot prevent a
 
 The protocol can be upgrade to add new functionality or fix issues but it can only be upgraded after a 7 day timelock. This prevents the owner from upgrading it to malicious implementation, as users will have enough time to leave the protocol by either claiming or cancelling their gifts.
 
-Through an upgrade, the owner can make the protocol non upgradeable in the future
+Through an upgrade, the owner can make the protocol non upgradeable in the future.
 
 ## Escrow account address calculation
 
