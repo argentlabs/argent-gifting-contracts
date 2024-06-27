@@ -1,7 +1,7 @@
 use core::num::traits::Zero;
 use starknet::{ClassHash};
 
-#[derive(Serde, Drop, Copy, PartialEq, starknet::Store)]
+#[derive(Serde, Drop, Copy, Default, PartialEq, starknet::Store)]
 struct PendingUpgrade {
     // Gets the classhash after
     implementation: ClassHash,
@@ -51,7 +51,7 @@ pub mod TimelockUpgradeComponent {
     use starknet::{get_block_timestamp, ClassHash};
     use super::{
         ITimelockUpgrade, ITimelockUpgradeCallback, ITimelockUpgradeCallbackLibraryDispatcher,
-        ITimelockUpgradeCallbackDispatcherTrait, PendingUpgrade, PendingUpgradeZero
+        ITimelockUpgradeCallbackDispatcherTrait, PendingUpgrade
     };
 
     /// Time before the upgrade can be performed
@@ -70,7 +70,7 @@ pub mod TimelockUpgradeComponent {
     pub enum Event {
         UpgradeProposed: UpgradeProposed,
         UpgradeCancelled: UpgradeCancelled,
-        Upgraded: Upgraded,
+        UpgradedExecuted: UpgradedExecuted,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -86,8 +86,9 @@ pub mod TimelockUpgradeComponent {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct Upgraded {
-        executed_upgrade: PendingUpgrade
+    struct UpgradedExecuted {
+        new_implementation: ClassHash,
+        calldata: Array<felt252>
     }
 
     #[embeddable_as(TimelockUpgradeImpl)]
@@ -104,7 +105,7 @@ pub mod TimelockUpgradeComponent {
             assert(new_implementation.is_non_zero(), 'upgrade/new-implementation-null');
 
             let pending_upgrade = self.pending_upgrade.read();
-            if pending_upgrade.is_non_zero() {
+            if pending_upgrade != Default::default() {
                 self.emit(UpgradeCancelled { cancelled_upgrade: pending_upgrade })
             }
 
@@ -121,29 +122,27 @@ pub mod TimelockUpgradeComponent {
 
         fn cancel_upgrade(ref self: ComponentState<TContractState>) {
             self.assert_only_owner();
-            let proposed_implementation = self.pending_upgrade.read();
-            assert(proposed_implementation.is_non_zero(), 'upgrade/no-pending-upgrade');
-            self.pending_upgrade.write(Zero::zero());
-            self.emit(UpgradeCancelled { cancelled_upgrade: proposed_implementation });
+            let pending_upgrade = self.pending_upgrade.read();
+            assert(pending_upgrade != Default::default(), 'upgrade/no-pending-upgrade');
+            self.pending_upgrade.write(Default::default());
+            self.emit(UpgradeCancelled { cancelled_upgrade: pending_upgrade });
         }
 
         fn upgrade(ref self: ComponentState<TContractState>, calldata: Array<felt252>) {
             self.assert_only_owner();
-            let proposed_implementation = self.pending_upgrade.read();
-            assert(proposed_implementation.is_non_zero(), 'upgrade/no-pending-upgrade');
+            let pending_upgrade: PendingUpgrade = self.pending_upgrade.read();
+            assert(pending_upgrade != Default::default(), 'upgrade/no-pending-upgrade');
+            let PendingUpgrade { implementation, ready_at, calldata_hash } = pending_upgrade;
+
+            assert(calldata_hash == poseidon_hash_span(calldata.span()), 'upgrade/invalid-calldata');
 
             let current_timestamp = get_block_timestamp();
-            assert(
-                proposed_implementation.calldata_hash == poseidon_hash_span(calldata.span()), 'upgrade/invalid-calldata'
-            );
+            assert(current_timestamp >= ready_at, 'upgrade/too-early');
+            assert(current_timestamp < ready_at + VALID_WINDOW_PERIOD, 'upgrade/upgrade-too-late');
 
-            assert(current_timestamp >= proposed_implementation.ready_at, 'upgrade/too-early');
-            assert(
-                current_timestamp < proposed_implementation.ready_at + VALID_WINDOW_PERIOD, 'upgrade/upgrade-too-late'
-            );
-            self.pending_upgrade.write(Zero::zero());
-            ITimelockUpgradeCallbackLibraryDispatcher { class_hash: proposed_implementation.implementation }
-                .perform_upgrade(proposed_implementation.implementation, calldata.span());
+            self.pending_upgrade.write(Default::default());
+            ITimelockUpgradeCallbackLibraryDispatcher { class_hash: implementation }
+                .perform_upgrade(implementation, calldata.span());
         }
 
         fn get_pending_upgrade(self: @ComponentState<TContractState>) -> PendingUpgrade {
@@ -161,14 +160,8 @@ pub mod TimelockUpgradeComponent {
 }
 
 
-impl PendingUpgradeZero of core::num::traits::Zero<PendingUpgrade> {
-    fn zero() -> PendingUpgrade {
-        PendingUpgrade { implementation: Zero::zero(), ready_at: 0, calldata_hash: 0 }
-    }
-    fn is_zero(self: @PendingUpgrade) -> bool {
-        *self == Zero::zero()
-    }
-    fn is_non_zero(self: @PendingUpgrade) -> bool {
-        !self.is_zero()
+impl DefaultClassHash of Default<ClassHash> {
+    fn default() -> ClassHash {
+        Zero::zero()
     }
 }

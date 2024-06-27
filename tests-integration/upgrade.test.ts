@@ -43,6 +43,7 @@ describe("Test Factory Upgrade", function () {
 
     await manager.getClassHashAt(factory.address).should.eventually.equal(newFactoryClassHash);
 
+    // test new factory has new method
     const newFactory = await manager.loadContract(factory.address, newFactoryClassHash);
     newFactory.connect(deployer);
     await newFactory.get_num().should.eventually.equal(1n);
