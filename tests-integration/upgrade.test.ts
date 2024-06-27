@@ -1,4 +1,3 @@
-import { assert } from "chai";
 import { CallData, hash, num } from "starknet";
 import {
   deployer,
@@ -27,19 +26,21 @@ describe("Test Factory Upgrade", function () {
     factory.connect(deployer);
     await factory.propose_upgrade(newFactoryClassHash, calldata);
 
-    let pendingUpgrade = await factory.get_pending_upgrade();
-    assert(pendingUpgrade.ready_at === CURRENT_TIME + MIN_SECURITY_PERIOD);
-    assert(pendingUpgrade.implementation === num.toBigInt(newFactoryClassHash));
-    assert(pendingUpgrade.calldata_hash === BigInt(hash.computePoseidonHashOnElements(calldata)));
+    await factory.get_pending_upgrade().should.eventually.deep.equal({
+      ready_at: CURRENT_TIME + MIN_SECURITY_PERIOD,
+      implementation: num.toBigInt(newFactoryClassHash),
+      calldata_hash: BigInt(hash.computePoseidonHashOnElements(calldata)),
+    });
 
     await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD + 1n);
     await factory.upgrade(calldata);
 
     // check storage was reset
-    pendingUpgrade = await factory.get_pending_upgrade();
-    assert(pendingUpgrade.ready_at === 0n);
-    assert(pendingUpgrade.implementation === 0n);
-    assert(pendingUpgrade.calldata_hash === 0n);
+    await factory.get_pending_upgrade().should.eventually.deep.equal({
+      ready_at: 0n,
+      implementation: 0n,
+      calldata_hash: 0n,
+    });
 
     await manager.getClassHashAt(factory.address).should.eventually.equal(newFactoryClassHash);
 
@@ -149,27 +150,33 @@ describe("Test Factory Upgrade", function () {
       factory.connect(deployer);
       const { transaction_hash: tx1 } = await factory.propose_upgrade(newClassHash, calldata);
 
-      let pendingUpgrade = await factory.get_pending_upgrade();
-      assert(pendingUpgrade.implementation === newClassHash);
+      let expectedPendingUpgrade = {
+        ready_at: CURRENT_TIME + MIN_SECURITY_PERIOD,
+        implementation: num.toBigInt(newClassHash),
+        calldata_hash: BigInt(hash.computePoseidonHashOnElements(calldata)),
+      };
+      await factory.get_pending_upgrade().should.eventually.deep.equal(expectedPendingUpgrade);
 
       await expectEvent(tx1, {
         from_address: factory.address,
         eventName: "UpgradeProposed",
-        data: CallData.compile([newClassHash.toString(), pendingUpgrade.ready_at.toString(), calldata]),
+        data: CallData.compile([newClassHash.toString(), expectedPendingUpgrade.ready_at.toString(), calldata]),
       });
 
       const { transaction_hash: tx2 } = await factory.propose_upgrade(replacementClassHash, calldata);
 
-      pendingUpgrade = await factory.get_pending_upgrade();
-      assert(pendingUpgrade.implementation === replacementClassHash);
+      await factory.get_pending_upgrade().should.eventually.deep.equal({
+        ...expectedPendingUpgrade,
+        implementation: num.toBigInt(replacementClassHash),
+      });
 
       await expectEvent(tx2, {
         from_address: factory.address,
         eventName: "UpgradeCancelled",
         data: [
           newClassHash.toString(),
-          pendingUpgrade.ready_at.toString(),
-          BigInt(hash.computePoseidonHashOnElements(calldata)),
+          expectedPendingUpgrade.ready_at.toString(),
+          expectedPendingUpgrade.calldata_hash.toString(),
         ],
       });
     });
@@ -197,10 +204,12 @@ describe("Test Factory Upgrade", function () {
         ],
       });
 
-      const pendingUpgrade = await factory.get_pending_upgrade();
-      assert(pendingUpgrade.ready_at === 0n);
-      assert(pendingUpgrade.implementation === 0n);
-      assert(pendingUpgrade.calldata_hash === 0n);
+      // check storage was reset
+      await factory.get_pending_upgrade().should.eventually.deep.equal({
+        ready_at: 0n,
+        implementation: 0n,
+        calldata_hash: 0n,
+      });
     });
 
     it("No new implementation", async function () {
