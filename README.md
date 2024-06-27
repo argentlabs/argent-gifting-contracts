@@ -35,7 +35,7 @@ For more details about how to trigger it please see the `claimInternal` function
 
 ### External claim
 
-It is also possible for someone else to pay for the claim fees. This can be useful if the funds deposited to pay for the claim transaction are not enough, or in someone wants to subsidize the claim
+It is also possible for someone else to pay for the claim fees. This can be useful if the funds deposited to pay for the claim transaction are not enough, or if someone wants to subsidize the claim
 
 The receiver can use the private key sign a message containing the address receiving the address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so, they should call `claim_external` on the escrow account (through the `execute_action` entrypoint)
 
