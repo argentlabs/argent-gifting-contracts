@@ -147,6 +147,7 @@ mod GiftFactory {
             gift_pubkey: felt252
         ) {
             self.pausable.assert_not_paused();
+            // Not tested
             assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
             if gift_token == fee_token {
                 // This is needed so we can tell if a gift has been claimed or not just by looking at the balances
@@ -163,7 +164,7 @@ mod GiftFactory {
                 escrow_class_hash, 0, // salt
                  serialize(@constructor_arguments).span(), false // deploy_from_zero
             )
-                .expect('gift-fac/deploy-failed');
+                .expect('gift-fac/deploy-failed'); // Not tested?
             self
                 .emit(
                     GiftCreated {
@@ -181,6 +182,7 @@ mod GiftFactory {
             if (gift_token == fee_token) {
                 let transfer_status = IERC20Dispatcher { contract_address: gift_token }
                     .transfer_from(get_caller_address(), escrow_contract, gift_amount + fee_amount.into());
+                // Not tested
                 assert(transfer_status, 'gift-fac/transfer-failed');
             } else {
                 let transfer_gift_status = IERC20Dispatcher { contract_address: gift_token }
@@ -188,6 +190,7 @@ mod GiftFactory {
                 assert(transfer_gift_status, 'gift-fac/transfer-gift-failed');
                 let transfer_fee_status = IERC20Dispatcher { contract_address: fee_token }
                     .transfer_from(get_caller_address(), escrow_contract, fee_amount.into());
+                // Not tested
                 assert(transfer_fee_status, 'gift-fac/transfer-fee-failed');
             }
         }
@@ -231,7 +234,7 @@ mod GiftFactory {
             // This should do some sanity checks 
             // We should check that the new implementation is a valid implementation
             // Execute the upgrade using replace_class_syscall(...)
-            panic_with_felt252('downgrade-not-allowed');
+            panic_with_felt252('gift-fac/downgrade-not-allowed');
         }
     }
 

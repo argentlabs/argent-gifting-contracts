@@ -128,6 +128,7 @@ pub mod TimelockUpgradeComponent {
             let block_timestamp = get_block_timestamp();
             let calldata_hash = poseidon_hash_span(calldata.span());
             assert(calldata_hash == self.calldata_hash.read(), 'upgrade/invalid-calldata');
+            // Not tested
             assert(new_implementation.is_non_zero(), 'upgrade/no-pending-upgrade');
             assert(block_timestamp >= ready_at, 'upgrade/too-early');
             assert(block_timestamp < ready_at + VALID_WINDOW_PERIOD, 'upgrade/upgrade-too-late');

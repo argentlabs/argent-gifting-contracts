@@ -37,7 +37,7 @@ describe("Claim Internal", function () {
         overrides: { feeAmount: 0n },
       });
 
-      const errorMsg = useTxV3 ? "gift-acc/max-fee-too-high-v3" : "gift-acc/max-fee-too-high-v1";
+      const errorMsg = useTxV3 ? "escrow/max-fee-too-high-v3" : "escrow/max-fee-too-high-v1";
       await expectRevertWithErrorMessage(errorMsg, () => claimInternal({ gift, receiver, giftPrivateKey }));
     });
 
@@ -59,7 +59,7 @@ describe("Claim Internal", function () {
             max_price_per_unit: num.toHexString(gasPrice),
           },
         };
-        await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
+        await expectRevertWithErrorMessage("escrow/max-fee-too-high-v3", () =>
           claimInternal({
             gift,
             receiver,
@@ -68,7 +68,7 @@ describe("Claim Internal", function () {
           }),
         );
       } else {
-        await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
+        await expectRevertWithErrorMessage("escrow/max-fee-too-high-v1", () =>
           claimInternal({
             gift,
             receiver,
@@ -88,7 +88,7 @@ describe("Claim Internal", function () {
     const receiver = randomReceiver();
 
     await claimInternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
       claimInternal({ gift, receiver, giftPrivateKey }),
     );
   });
