@@ -25,7 +25,7 @@ Claiming can be done in two ways:
 
 ### Internal claim
 
-The recipient uses the private key to craft a transaction to claim the gift. The `fee_amount` will be used to cover the transaction fees, so the recipient only gets the `gift_amount`. The recipient doesn’t need to have any funds in their wallet or even a deployed wallet to claim the gift using this method
+The recipient uses the private key to craft a transaction to claim the gift. The `fee_amount` will be used to cover the transaction fees, so the recipient only gets the `gift_amount`. The recipient doesn’t need to have any funds in their wallet or even a deployed wallet to claim the gift using this method.
 
 Edge cases:
 
