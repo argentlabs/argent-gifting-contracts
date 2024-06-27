@@ -88,7 +88,9 @@ describe("Claim External", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = "0x0";
 
-    await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal({ gift, receiver, giftPrivateKey }));
+    await expectRevertWithErrorMessage("escr-lib/zero-receiver", () =>
+      claimExternal({ gift, receiver, giftPrivateKey }),
+    );
   });
 
   it(`Cannot call claim external twice`, async function () {
