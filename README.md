@@ -12,42 +12,60 @@ The goal of this protocol is to allow sending tokens to a recipient without know
 
 As the fee should be larger than the claiming transaction cost, there might be a small amount of fee token left. We will refer to this leftover amount as "dust".
 
+## Deposits
+
+Deposits follow the flow described in the first 3 steps above.
+For more details please see the `deposit` function at [Deposit example](./lib/deposit.ts)
+
+Claiming can be done in two ways:
+
 ## Claiming
 
 Claiming can be done in two ways:
 
-### Through the account
+### Internal claim
 
-The recipient just needs to call `claim_internal` from the account to the factory. As the account is funded with some extra tokens (ETH or STRK) which will be used for the claiming operation.  
-If this transaction fails for any reason, the account won't allow to submit another transaction. But the gift can still be claimed using the external method.
+The recipient uses the private key to craft a transaction to claim the gift. The `fee_amount` will be used to cover the transaction fees, so the recipient only gets the `gift_amount`. The recipient doesn’t need to have any funds in their wallet or even a deployed wallet to claim the gift using this method
 
-### Through the factory
+Edge cases:
 
-It is also possible for someone else to pay for the claim. To do this, the dapp should ask the recipient to provide a valid signature using the private key. The SNIP-12 compliant message the user must sign is as follows: `ClaimExternal { receiver }`. This ensures that the user acknowledges and approves only a specific recipient. This signature should then be used as an argument when calling `claim_external` on the factory.
+- Insufficient `fee_amount`: Alternative options are external claiming or cancellation (see below)
+- Dust: `fee+amount” will usually be higher than the actual fee and there will be some amount left in the contract. The owner can collect this amount later
+- If the internal claim transaction fails for any reason, the account won't allow to submit another transaction. But the gift can be cancelled or be claimed using the external method.
+
+For more details about how to trigger it please see the `claimInternal` function at [Claim Internal Example](./lib/claim.ts)
+
+### External claim
+
+If for some reason the funds deposited to pay for the claim transaction are not enough. Or if someone prefers to subsidize. It is also possible for someone else to pay for the claim fees.
+
+The receiver can use the private key sign a message containing the address receiving the address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so they should `claim_external` on the escrow account (through the `execute_action` entrypoint)
+
+For more details please see the `claimExternal` function at [Claim External Example](./lib/claim.ts)
 
 ## Cancelling Gifts
 
-Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the `gift_amount` and the `fee_amount` he agreed to pay for that gift.  
-If the gift has already been claimed, this allows the sender to redeem the leftover dust remaining.
+Gifts can be canceled by the sender provided that they have not been claimed yet. The sender will retrieve both the `gift_amount` and the `fee_amount` they deposited for that gift.
 
-## Factory Operations
+For more details please see the `cancelGift` function at [Cancel example](./lib/claim.ts)
 
-This section outlines all the operations that the factory is allowed to perform.  
-As we use OpenZeppelin's Ownable component, this factory has an owner.
+## Operator
+
+This section outlines all the operations that the factory owner is allowed to perform.
 
 ### Claim Dust
 
-The factory has a function allowing it to claim the dust left on an account. This action can only be done after a claim has been performed. This can also be used to recover any excess tokens a user may have sent to the account.
+The operator can claim the dust left in an escrow account. This action can only be done after a claim has been performed.
 
-### Pausable
+### Pause deposits
 
 The owner has the capability to pause all deposits. However, it cannot prevent any claims from happening, nor can it prevent any cancellations.
 
 ### Upgrade
 
-The factory can be upgraded to a newer version, allowing it to potentially recover from future user mistakes and add more functionalities as needed.  
-The upgrade cannot be done immediately and must go through a waiting period of 7 days. There is then a window of 7 days to perform the upgrade.  
-It is important to note that through an upgrade, the ownership of the factory and its upgradeability can both be revoked.
+The protocol can be upgrade to add new functionality or fix issues but it can only be upgraded after a 7 day timelock. This prevents the owner from upgrading it to malicious implementation, as users will have enough time to leave the protocol by either claiming or cancelling their gifts.
+
+Through an upgrade, the owner can make the protocol non upgradeable in the future
 
 ## Escrow account address calculation
 
