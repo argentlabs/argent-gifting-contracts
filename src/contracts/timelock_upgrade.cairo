@@ -3,7 +3,7 @@ use starknet::{ClassHash};
 
 #[derive(Serde, Drop, Copy, Default, PartialEq, starknet::Store)]
 struct PendingUpgrade {
-    // Gets the classhash after
+    // Gets the classhash after the upgrade, 0 if no upgrade ongoing
     implementation: ClassHash,
     // Gets the timestamp when the upgrade is ready to be performed, 0 if no upgrade ongoing
     ready_at: u64,
@@ -70,7 +70,7 @@ pub mod TimelockUpgradeComponent {
     pub enum Event {
         UpgradeProposed: UpgradeProposed,
         UpgradeCancelled: UpgradeCancelled,
-        UpgradedExecuted: UpgradedExecuted,
+        UpgradeExecuted: UpgradeExecuted,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -86,7 +86,7 @@ pub mod TimelockUpgradeComponent {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct UpgradedExecuted {
+    struct UpgradeExecuted {
         new_implementation: ClassHash,
         calldata: Array<felt252>
     }
@@ -158,7 +158,6 @@ pub mod TimelockUpgradeComponent {
         }
     }
 }
-
 
 impl DefaultClassHash of Default<ClassHash> {
     fn default() -> ClassHash {
