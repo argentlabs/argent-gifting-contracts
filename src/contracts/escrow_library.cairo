@@ -91,6 +91,8 @@ mod EscrowLibrary {
         fn execute_action(
             ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
         ) -> Span<felt252> {
+            // This is needed to make sure no arbitrary methods can be called directly using `execute_action` in the escrow account
+            // Some methods like `claim_internal` should only be called after some checks are performed in the escrow account
             let is_whitelisted = selector == selector!("claim_external")
                 || selector == selector!("claim_dust")
                 || selector == selector!("cancel");
@@ -180,7 +182,6 @@ mod EscrowLibrary {
                 let dust = if gift.gift_token == gift.fee_token {
                     gift_balance - gift.gift_amount
                 } else {
-                    // TODO Double check reentrancy here
                     balance_of(gift.fee_token, contract_address)
                 };
                 if dust > 0 {

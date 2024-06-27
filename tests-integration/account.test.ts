@@ -1,14 +1,16 @@
+import { CallData } from "starknet";
 import {
+  buildGiftCallData,
   calculateEscrowAddress,
   claimInternal,
   defaultDepositTestSetup,
   deployer,
+  executeActionOnAccount,
   expectRevertWithErrorMessage,
   getEscrowAccount,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
-
 describe("Escrow Account", function () {
   it(`Test only protocol can call validate`, async function () {
     const { factory } = await setupGiftProtocol();
@@ -27,6 +29,16 @@ describe("Escrow Account", function () {
 
     await expectRevertWithErrorMessage("escrow/only-protocol", () =>
       deployer.execute([{ contractAddress: escrowAddress, calldata: [0x0], entrypoint: "__execute__" }]),
+    );
+  });
+
+  it(`Test escrow can only do whitelisted lib calls`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift } = await defaultDepositTestSetup({ factory });
+    const minimalCallData = CallData.compile([buildGiftCallData(gift)]);
+
+    await expectRevertWithErrorMessage("gift/invalid-selector", () =>
+      deployer.execute(executeActionOnAccount("claim_internal", calculateEscrowAddress(gift), minimalCallData)),
     );
   });
 
