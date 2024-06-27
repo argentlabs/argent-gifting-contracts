@@ -1,7 +1,7 @@
 use core::num::traits::Zero;
 use starknet::{ClassHash};
 
-#[derive(Serde, Drop, Copy, starknet::Store)]
+#[derive(Serde, Drop, Copy, PartialEq, starknet::Store)]
 struct PendingUpgrade {
     // Gets the classhash after
     implementation: ClassHash,
@@ -166,7 +166,7 @@ impl PendingUpgradeZero of core::num::traits::Zero<PendingUpgrade> {
         PendingUpgrade { implementation: Zero::zero(), ready_at: 0, calldata_hash: 0 }
     }
     fn is_zero(self: @PendingUpgrade) -> bool {
-        *self.calldata_hash == 0
+        *self == Zero::zero()
     }
     fn is_non_zero(self: @PendingUpgrade) -> bool {
         !self.is_zero()
