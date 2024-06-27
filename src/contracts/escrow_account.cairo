@@ -76,55 +76,54 @@ mod EscrowAccount {
     impl IAccountImpl of IAccount<ContractState> {
         fn __validate__(ref self: ContractState, calls: Array<Call>) -> felt252 {
             let execution_info = get_execution_info().unbox();
-            assert(execution_info.caller_address.is_zero(), 'gift-acc/only-protocol');
-            assert(calls.len() == 1, 'gift-acc/invalid-call-len');
+            assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol');
+            assert(calls.len() == 1, 'escrow/invalid-call-len');
             let Call { to, selector, calldata } = calls.at(0);
-            assert(*to == get_contract_address(), 'gift-acc/invalid-call-to');
-            assert(*selector == selector!("claim_internal"), 'gift-acc/invalid-call-selector');
-            let (gift, _): (GiftData, ContractAddress) = full_deserialize(*calldata)
-                .expect('gift-acc/invalid-calldata');
+            assert(*to == get_contract_address(), 'escrow/invalid-call-to');
+            assert(*selector == selector!("claim_internal"), 'escrow/invalid-call-selector');
+            let (gift, _): (GiftData, ContractAddress) = full_deserialize(*calldata).expect('escrow/invalid-calldata');
             assert_valid_claim(gift);
 
             let tx_info = execution_info.tx_info.unbox();
-            assert(tx_info.nonce == 0, 'gift-acc/invalid-gift-nonce');
+            assert(tx_info.nonce == 0, 'escrow/invalid-gift-nonce');
             let execution_hash = tx_info.transaction_hash;
             let signature = tx_info.signature;
-            assert(signature.len() == 2, 'gift-acc/invalid-signature-len');
+            assert(signature.len() == 2, 'escrow/invalid-signature-len');
 
             let tx_version = tx_info.version;
             assert(
                 check_ecdsa_signature(execution_hash, gift.gift_pubkey, *signature[0], *signature[1])
                     || tx_version == TX_V3_ESTIMATE
                     || tx_version == TX_V1_ESTIMATE,
-                'invalid-signature'
+                'escrow/invalid-signature'
             );
             if gift.fee_token == STRK_ADDRESS() {
-                assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'gift-acc/invalid-tx3-version');
+                assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'escrow/invalid-tx3-version');
                 let tx_fee = compute_max_fee_v3(tx_info, tx_info.tip);
-                assert(tx_fee <= gift.fee_amount, 'gift-acc/max-fee-too-high-v3');
+                assert(tx_fee <= gift.fee_amount, 'escrow/max-fee-too-high-v3');
             } else if gift.fee_token == ETH_ADDRESS() {
-                assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'gift-acc/invalid-tx1-version');
-                assert(tx_info.max_fee <= gift.fee_amount, 'gift-acc/max-fee-too-high-v1');
+                assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'escrow/invalid-tx1-version');
+                assert(tx_info.max_fee <= gift.fee_amount, 'escrow/max-fee-too-high-v1');
             } else {
-                core::panic_with_felt252('gift-acc/invalid-token');
+                core::panic_with_felt252('escrow/invalid-token-fee');
             }
             VALIDATED
         }
 
         fn __execute__(ref self: ContractState, calls: Array<Call>) -> Array<Span<felt252>> {
             let execution_info = get_execution_info().unbox();
-            assert(execution_info.caller_address.is_zero(), 'gift-acc/only-protocol');
+            assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol');
             let tx_version = execution_info.tx_info.unbox().version;
             assert(
                 tx_version == TX_V3
                     || tx_version == TX_V1
                     || tx_version == TX_V3_ESTIMATE
                     || tx_version == TX_V1_ESTIMATE,
-                'gift-acc/invalid-tx-version'
+                'escrow/invalid-tx-version'
             );
             let Call { .., calldata }: @Call = calls[0];
             let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
-                .expect('gift-acc/invalid-calldata');
+                .expect('escrow/invalid-calldata');
             // The __validate__ function already ensures the claim is valid
             let library_class_hash: ClassHash = IGiftFactoryDispatcher { contract_address: gift.factory }
                 .get_escrow_lib_class_hash(gift.escrow_class_hash);
@@ -133,7 +132,7 @@ mod EscrowAccount {
 
         fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
             let mut signature_span = signature.span();
-            let gift: GiftData = Serde::deserialize(ref signature_span).expect('gift-acc/invalid-gift');
+            let gift: GiftData = Serde::deserialize(ref signature_span).expect('escrow/invalid-gift');
             get_validated_lib(gift).is_valid_account_signature(gift, hash, signature_span)
         }
 
@@ -148,7 +147,7 @@ mod EscrowAccount {
     impl GiftAccountImpl of IEscrowAccount<ContractState> {
         fn execute_action(ref self: ContractState, selector: felt252, calldata: Array<felt252>) -> Span<felt252> {
             let mut calldata_span = calldata.span();
-            let gift: GiftData = Serde::deserialize(ref calldata_span).expect('gift-acc/invalid-gift');
+            let gift: GiftData = Serde::deserialize(ref calldata_span).expect('escrow/invalid-gift');
             let lib = get_validated_lib(gift);
             lib.execute_action(lib.class_hash, selector, calldata.span())
         }
@@ -159,7 +158,7 @@ mod EscrowAccount {
         fn execute_from_outside_v2(
             ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            let gift: GiftData = Serde::deserialize(ref signature).expect('gift-acc/invalid-gift');
+            let gift: GiftData = Serde::deserialize(ref signature).expect('escrow/invalid-gift');
             get_validated_lib(gift).execute_from_outside_v2(gift, outside_execution, signature)
         }
 
@@ -177,7 +176,7 @@ mod EscrowAccount {
 
     fn assert_valid_claim(gift: GiftData) {
         let calculated_address = calculate_escrow_account_address(gift);
-        assert(calculated_address == get_contract_address(), 'gift-acc/invalid-escrow-address');
+        assert(calculated_address == get_contract_address(), 'escrow/invalid-escrow-address');
     }
 
     fn compute_max_fee_v3(tx_info: TxInfo, tip: u128) -> u128 {

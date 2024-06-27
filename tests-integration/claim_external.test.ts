@@ -88,7 +88,9 @@ describe("Claim External", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = "0x0";
 
-    await expectRevertWithErrorMessage("gift/zero-receiver", () => claimExternal({ gift, receiver, giftPrivateKey }));
+    await expectRevertWithErrorMessage("escr-lib/zero-receiver", () =>
+      claimExternal({ gift, receiver, giftPrivateKey }),
+    );
   });
 
   it(`Cannot call claim external twice`, async function () {
@@ -97,7 +99,7 @@ describe("Claim External", function () {
     const receiver = randomReceiver();
 
     await claimExternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
       claimExternal({ gift, receiver, giftPrivateKey }),
     );
   });
@@ -106,7 +108,7 @@ describe("Claim External", function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
-    await expectRevertWithErrorMessage("gift/invalid-ext-signature", () =>
+    await expectRevertWithErrorMessage("escr-lib/invalid-ext-signature", () =>
       claimExternal({ gift: gift, receiver, giftPrivateKey: "0x1234" }),
     );
   });
@@ -127,7 +129,7 @@ describe("Claim External", function () {
     // Check balance gift address address == 0
     await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
 
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
       claimExternal({ gift, receiver, giftPrivateKey }),
     );
   });

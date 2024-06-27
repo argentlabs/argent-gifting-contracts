@@ -78,7 +78,7 @@ mod EscrowLibrary {
         // This prevents creating instances of this classhash by mistake, as it's not needed. 
         // While it is technically possible to create instances by replacing classhashes, this practice is not recommended. 
         // This contract is intended to be used exclusively through library calls.
-        panic_with_felt252('instances-not-recommended')
+        panic_with_felt252('escr-lib/instance-not-recommend')
     }
 
     #[abi(embed_v0)]
@@ -91,10 +91,12 @@ mod EscrowLibrary {
         fn execute_action(
             ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
         ) -> Span<felt252> {
+            // This is needed to make sure no arbitrary methods can be called directly using `execute_action` in the escrow account
+            // Some methods like `claim_internal` should only be called after some checks are performed in the escrow account
             let is_whitelisted = selector == selector!("claim_external")
                 || selector == selector!("claim_dust")
                 || selector == selector!("cancel");
-            assert(is_whitelisted, 'gift/invalid-selector');
+            assert(is_whitelisted, 'escr-lib/invalid-selector');
             library_call_syscall(this_class_hash, selector, args).unwrap()
         }
 
@@ -109,17 +111,16 @@ mod EscrowLibrary {
                 .get_message_hash_rev_1(get_contract_address());
             assert(
                 check_ecdsa_signature(claim_external_hash, gift.gift_pubkey, signature.r, signature.s),
-                'gift/invalid-ext-signature'
+                'escr-lib/invalid-ext-signature'
             );
             self.proceed_with_claim(gift, receiver, dust_receiver);
         }
 
         fn cancel(ref self: ContractState, gift: GiftData) {
             let contract_address = get_contract_address();
-            assert(get_caller_address() == gift.sender, 'gift/wrong-sender');
-
+            assert(get_caller_address() == gift.sender, 'escr-lib/wrong-sender');
             let gift_balance = balance_of(gift.gift_token, contract_address);
-            assert(gift_balance > 0, 'gift/already-claimed');
+            assert(gift_balance > 0, 'escr-lib/already-claimed');
             if gift.gift_token == gift.fee_token {
                 // Sender also gets the dust
                 transfer_from_account(gift.gift_token, gift.sender, gift_balance);
@@ -135,9 +136,9 @@ mod EscrowLibrary {
         fn claim_dust(ref self: ContractState, gift: GiftData, receiver: ContractAddress) {
             let contract_address = get_contract_address();
             let factory_owner = IOwnableDispatcher { contract_address: gift.factory }.owner();
-            assert(factory_owner == get_caller_address(), 'gift/only-factory-owner');
+            assert(factory_owner == get_caller_address(), 'escr-lib/only-factory-owner');
             let gift_balance = balance_of(gift.gift_token, contract_address);
-            assert(gift_balance < gift.gift_amount, 'gift/not-yet-claimed');
+            assert(gift_balance < gift.gift_amount, 'escr-lib/not-yet-claimed');
             if gift.gift_token == gift.fee_token {
                 transfer_from_account(gift.gift_token, receiver, gift_balance);
             } else {
@@ -155,7 +156,7 @@ mod EscrowLibrary {
         fn execute_from_outside_v2(
             ref self: ContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            panic_with_felt252('not-allowed-yet')
+            panic_with_felt252('escr-lib/not-allowed-yet')
         }
     }
 
@@ -164,10 +165,10 @@ mod EscrowLibrary {
         fn proceed_with_claim(
             ref self: ContractState, gift: GiftData, receiver: ContractAddress, dust_receiver: ContractAddress
         ) {
-            assert(receiver.is_non_zero(), 'gift/zero-receiver');
+            assert(receiver.is_non_zero(), 'escr-lib/zero-receiver');
             let contract_address = get_contract_address();
             let gift_balance = balance_of(gift.gift_token, contract_address);
-            assert(gift_balance >= gift.gift_amount, 'gift/already-claimed-or-cancel');
+            assert(gift_balance >= gift.gift_amount, 'escr-lib/claimed-or-cancel');
 
             // could be optimized to 1 transfer only when the receiver is also the dust receiver,
             // and the fee token is the same as the gift token
@@ -181,7 +182,6 @@ mod EscrowLibrary {
                 let dust = if gift.gift_token == gift.fee_token {
                     gift_balance - gift.gift_amount
                 } else {
-                    // TODO Double check reentrancy here
                     balance_of(gift.fee_token, contract_address)
                 };
                 if dust > 0 {
@@ -193,7 +193,7 @@ mod EscrowLibrary {
     }
 
     fn transfer_from_account(token: ContractAddress, receiver: ContractAddress, amount: u256,) {
-        assert(IERC20Dispatcher { contract_address: token }.transfer(receiver, amount), 'gift/transfer-failed');
+        assert(IERC20Dispatcher { contract_address: token }.transfer(receiver, amount), 'escr-lib/transfer-failed');
     }
 
     fn balance_of(token: ContractAddress, account: ContractAddress) -> u256 {

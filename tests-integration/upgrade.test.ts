@@ -62,7 +62,7 @@ describe("Test Factory Upgrade", function () {
     await factory.propose_upgrade(oldFactoryClassHash, calldata);
 
     await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD + 1n);
-    await expectRevertWithErrorMessage("downgrade-not-allowed", () => factory.upgrade([]));
+    await expectRevertWithErrorMessage("gift-fac/downgrade-not-allowed", () => factory.upgrade([]));
   });
 
   it("only-owner", async function () {
