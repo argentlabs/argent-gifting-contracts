@@ -150,7 +150,7 @@ describe("Test Factory Upgrade", function () {
       factory.connect(deployer);
       const { transaction_hash: tx1 } = await factory.propose_upgrade(newClassHash, calldata);
 
-      let expectedPendingUpgrade = {
+      const expectedPendingUpgrade = {
         ready_at: CURRENT_TIME + MIN_SECURITY_PERIOD,
         implementation: num.toBigInt(newClassHash),
         calldata_hash: BigInt(hash.computePoseidonHashOnElements(calldata)),
