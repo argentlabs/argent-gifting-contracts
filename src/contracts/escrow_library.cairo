@@ -183,7 +183,6 @@ mod EscrowLibrary {
                 let dust = if gift.gift_token == gift.fee_token {
                     gift_balance - gift.gift_amount
                 } else {
-                    // TODO Double check reentrancy here
                     balance_of(gift.fee_token, contract_address)
                 };
                 if dust > 0 {
