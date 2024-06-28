@@ -1,9 +1,13 @@
+import { CallData } from "starknet";
 import {
+  buildGiftCallData,
+  calculateEscrowAddress,
   claimDust,
   claimExternal,
   claimInternal,
   defaultDepositTestSetup,
   deployer,
+  executeActionOnAccount,
   manager,
   randomReceiver,
   setDefaultTransactionVersionV3,
@@ -38,11 +42,11 @@ await profiler.profile(
   await strkContract.transfer(randomReceiver(), 1),
 );
 
+const receiver = "0x42";
+const { factory } = await setupGiftProtocol();
+
 for (const { giftTokenContract, unit } of tokens) {
   for (const useTxV3 of [false, true]) {
-    const receiver = "0x42";
-    const { factory } = await setupGiftProtocol();
-
     // Profiling deposit
     const { txReceipt, gift, giftPrivateKey } = await defaultDepositTestSetup({
       factory,
@@ -84,6 +88,30 @@ for (const { giftTokenContract, unit } of tokens) {
       await claimDust({ gift, receiver: deployer.address }),
     );
   }
+}
+
+const limits = [2, 3, 4, 5];
+for (const limit of limits) {
+  const claimDustCalls = [];
+  for (let i = 0; i < limit; i++) {
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({
+      factory,
+      overrides: {
+        giftTokenAddress: ethContract.address,
+      },
+    });
+
+    await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
+    const claimDustCallData = CallData.compile([buildGiftCallData(gift), receiver]);
+    const call = executeActionOnAccount("claim_dust", calculateEscrowAddress(gift), claimDustCallData);
+
+    claimDustCalls.push(call);
+  }
+
+  await profiler.profile(
+    `Get dust ${limit} (FeeToken: ${manager.tokens.unitTokenContract(false)})`,
+    await deployer.execute(claimDustCalls),
+  );
 }
 
 profiler.printSummary();
