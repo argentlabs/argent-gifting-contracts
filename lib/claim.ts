@@ -148,10 +148,10 @@ export async function claimInternal(args: {
   gift: Gift;
   receiver: string;
   giftPrivateKey: string;
-  overrides?: { EscrowAccountAddress?: string; callToAddress?: string };
+  overrides?: { escrowAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
-  const escrowAddress = args.overrides?.EscrowAccountAddress || calculateEscrowAddress(args.gift);
+  const escrowAddress = args.overrides?.escrowAccountAddress || calculateEscrowAddress(args.gift);
   const escrowAccount = getEscrowAccount(args.gift, args.giftPrivateKey, escrowAddress);
   const response = await escrowAccount.execute(
     [

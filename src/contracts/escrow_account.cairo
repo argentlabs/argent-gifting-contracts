@@ -108,7 +108,6 @@ mod EscrowAccount {
                 assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'escrow/invalid-tx1-version');
                 assert(tx_info.max_fee <= gift.fee_amount, 'escrow/max-fee-too-high-v1');
             } else {
-                // Not tested
                 core::panic_with_felt252('escrow/invalid-token-fee');
             }
             VALIDATED
@@ -182,7 +181,6 @@ mod EscrowAccount {
 
     fn assert_valid_claim(gift: GiftData) {
         let calculated_address = calculate_escrow_account_address(gift);
-        // Not tested
         assert(calculated_address == get_contract_address(), 'escrow/invalid-escrow-address');
     }
 

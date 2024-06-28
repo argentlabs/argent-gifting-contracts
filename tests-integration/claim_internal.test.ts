@@ -3,10 +3,13 @@ import { num } from "starknet";
 import {
   ETH_GIFT_MAX_FEE,
   STRK_GIFT_MAX_FEE,
+  buildGiftCallData,
   calculateEscrowAddress,
   claimInternal,
   defaultDepositTestSetup,
+  deployMockERC20,
   expectRevertWithErrorMessage,
+  getEscrowAccount,
   manager,
   randomReceiver,
   setupGiftProtocol,
@@ -25,6 +28,26 @@ describe("Claim Internal", function () {
       const finalBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
       expect(finalBalance < gift.fee_amount).to.be.true;
       await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
+    });
+
+    it(`fee token not ETH nor STRK using txV3: ${useTxV3}`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const receiver = randomReceiver();
+      const escrowAddress = calculateEscrowAddress(gift);
+
+      const escrowAccount = getEscrowAccount(gift, giftPrivateKey, escrowAddress);
+      const mockERC20 = await deployMockERC20();
+      gift.fee_token = mockERC20.address;
+      await expectRevertWithErrorMessage("escrow/invalid-escrow-address", () =>
+        escrowAccount.execute([
+          {
+            contractAddress: escrowAddress,
+            calldata: [buildGiftCallData(gift), receiver],
+            entrypoint: "claim_internal",
+          },
+        ]),
+      );
     });
 
     it(`Can't claim if no fee amount deposited (fee token == gift token) using txV3: ${useTxV3}`, async function () {
