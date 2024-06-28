@@ -17,7 +17,7 @@ import {
 import {
   LegacyStarknetKeyPair,
   StarknetSignature,
-  calculateClaimAddress,
+  calculateEscrowAddress,
   deployer,
   ethAddress,
   manager,
@@ -70,36 +70,36 @@ export interface AccountConstructorArguments {
   gift_amount: bigint;
   fee_token: string;
   fee_amount: bigint;
-  claim_pubkey: bigint;
+  gift_pubkey: bigint;
 }
 
-export interface Claim extends AccountConstructorArguments {
+export interface Gift extends AccountConstructorArguments {
   factory: string;
-  class_hash: string;
+  escrow_class_hash: string;
 }
 
-export function buildCallDataClaim(claim: Claim) {
+export function buildGiftCallData(gift: Gift) {
   return {
-    ...claim,
-    gift_amount: uint256.bnToUint256(claim.gift_amount),
+    ...gift,
+    gift_amount: uint256.bnToUint256(gift.gift_amount),
   };
 }
 
 export async function signExternalClaim(signParams: {
-  claim: Claim;
+  gift: Gift;
   receiver: string;
-  claimPrivateKey: string;
+  giftPrivateKey: string;
   dustReceiver?: string;
-  forceClaimAddress?: string;
+  forceEscrowAddress?: string;
 }): Promise<StarknetSignature> {
-  const giftSigner = new LegacyStarknetKeyPair(signParams.claimPrivateKey);
+  const giftSigner = new LegacyStarknetKeyPair(signParams.giftPrivateKey);
   const claimExternalData = await getClaimExternalData({
     receiver: signParams.receiver,
     dustReceiver: signParams.dustReceiver,
   });
   const stringArray = (await giftSigner.signMessage(
     claimExternalData,
-    signParams.forceClaimAddress || calculateClaimAddress(signParams.claim),
+    signParams.forceEscrowAddress || calculateEscrowAddress(signParams.gift),
   )) as string[];
   if (stringArray.length !== 2) {
     throw new Error("Invalid signature");
@@ -108,54 +108,54 @@ export async function signExternalClaim(signParams: {
 }
 
 export async function claimExternal(args: {
-  claim: Claim;
+  gift: Gift;
   receiver: string;
-  claimPrivateKey: string;
+  giftPrivateKey: string;
   useTxV3?: boolean;
   dustReceiver?: string;
 }): Promise<TransactionReceipt> {
   const account = args.useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer;
   const signature = await signExternalClaim({
-    claim: args.claim,
+    gift: args.gift,
     receiver: args.receiver,
-    claimPrivateKey: args.claimPrivateKey,
+    giftPrivateKey: args.giftPrivateKey,
     dustReceiver: args.dustReceiver,
   });
 
   const claimExternalCallData = CallData.compile([
-    buildCallDataClaim(args.claim),
+    buildGiftCallData(args.gift),
     args.receiver,
     args.dustReceiver || "0x0",
     signature,
   ]);
   const response = await account.execute(
-    executeActionOnAccount("claim_external", calculateClaimAddress(args.claim), claimExternalCallData),
+    executeActionOnAccount("claim_external", calculateEscrowAddress(args.gift), claimExternalCallData)
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
 
-function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
+export function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
   return {
     contractAddress: accountAddress,
-    calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
     entrypoint: "execute_action",
+    calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
   };
 }
 
 export async function claimInternal(args: {
-  claim: Claim;
+  gift: Gift;
   receiver: string;
-  claimPrivateKey: string;
-  overrides?: { claimAccountAddress?: string; callToAddress?: string };
+  giftPrivateKey: string;
+  overrides?: { EscrowAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
-  const claimAddress = args.overrides?.claimAccountAddress || calculateClaimAddress(args.claim);
-  const claimAccount = getClaimAccount(args.claim, args.claimPrivateKey, claimAddress);
-  const response = await claimAccount.execute(
+  const escrowAddress = args.overrides?.EscrowAccountAddress || calculateEscrowAddress(args.gift);
+  const escrowAccount = getEscrowAccount(args.gift, args.giftPrivateKey, escrowAddress);
+  const response = await escrowAccount.execute(
     [
       {
-        contractAddress: args.overrides?.callToAddress ?? claimAddress,
-        calldata: [buildCallDataClaim(args.claim), args.receiver],
+        contractAddress: args.overrides?.callToAddress ?? escrowAddress,
+        calldata: [buildGiftCallData(args.gift), args.receiver],
         entrypoint: "claim_internal",
       },
     ],
@@ -165,24 +165,24 @@ export async function claimInternal(args: {
   return manager.waitForTransaction(response.transaction_hash);
 }
 
-export async function cancelGift(args: { claim: Claim; senderAccount?: Account }): Promise<TransactionReceipt> {
-  const cancelCallData = CallData.compile([buildCallDataClaim(args.claim)]);
+export async function cancelGift(args: { gift: Gift; senderAccount?: Account }): Promise<TransactionReceipt> {
+  const cancelCallData = CallData.compile([buildGiftCallData(args.gift)]);
   const account = args.senderAccount || deployer;
   const response = await account.execute(
-    executeActionOnAccount("cancel", calculateClaimAddress(args.claim), cancelCallData),
+    executeActionOnAccount("cancel", calculateEscrowAddress(args.gift), cancelCallData),
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
 
-export async function getDust(args: {
-  claim: Claim;
+export async function claimDust(args: {
+  gift: Gift;
   receiver: string;
   factoryOwner?: Account;
 }): Promise<TransactionReceipt> {
-  const getDustCallData = CallData.compile([buildCallDataClaim(args.claim), args.receiver]);
+  const claimDustCallData = CallData.compile([buildGiftCallData(args.gift), args.receiver]);
   const account = args.factoryOwner || deployer;
   const response = await account.execute(
-    executeActionOnAccount("get_dust", calculateClaimAddress(args.claim), getDustCallData),
+    executeActionOnAccount("claim_dust", calculateEscrowAddress(args.gift), claimDustCallData),
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
@@ -200,12 +200,12 @@ export const randomReceiver = (): string => {
   return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
 };
 
-export function getClaimAccount(claim: Claim, claimPrivateKey: string, forceClaimAddress?: string): Account {
+export function getEscrowAccount(gift: Gift, giftPrivateKey: string, forceEscrowAddress?: string): Account {
   return new Account(
     manager,
-    forceClaimAddress || num.toHex(calculateClaimAddress(claim)),
-    claimPrivateKey,
+    forceEscrowAddress || num.toHex(calculateEscrowAddress(gift)),
+    giftPrivateKey,
     undefined,
-    useTxv3(claim.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2,
+    useTxv3(gift.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2,
   );
 }

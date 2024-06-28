@@ -8,10 +8,10 @@ const account0 = new Account(provider, process.env.ACCOUNT, process.env.PRIVATE_
 
 // Declare Test contract in devnet
 const compiledTestSierra = json.parse(
-  fs.readFileSync("./target/dev/starknet_gifting_EscrowAccount.contract_class.json").toString("ascii"),
+  fs.readFileSync("./target/dev/argent_gifting_EscrowAccount.contract_class.json").toString("ascii"),
 );
 const compiledTestCasm = json.parse(
-  fs.readFileSync("./target/dev/starknet_gifting_EscrowAccount.compiled_contract_class.json").toString("ascii"),
+  fs.readFileSync("./target/dev/argent_gifting_EscrowAccount.compiled_contract_class.json").toString("ascii"),
 );
 const declareResponse = await account0.declare({
   contract: compiledTestSierra,
