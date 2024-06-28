@@ -8,6 +8,7 @@ import {
   executeActionOnAccount,
   expectRevertWithErrorMessage,
   getEscrowAccount,
+  manager,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
@@ -99,5 +100,11 @@ describe("Escrow Account", function () {
     await expectRevertWithErrorMessage("escrow/invalid-gift-nonce", () =>
       claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey, details: { skipValidate: false } }),
     );
+  });
+
+  it(`Shouldn't be possible to instantiate the library account`, async function () {
+    const classHash = await manager.declareLocalContract("EscrowLibrary");
+
+    await expectRevertWithErrorMessage("escr-lib/instance-not-recommend", () => deployer.deployContract({ classHash }));
   });
 });
