@@ -1,6 +1,7 @@
 import { CallData } from "starknet";
 import {
   LongSigner,
+  WrongSigner,
   buildGiftCallData,
   calculateEscrowAddress,
   claimInternal,
@@ -111,6 +112,24 @@ describe("Escrow Account", function () {
     const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
     escrowAccount.signer = new LongSigner();
     await expectRevertWithErrorMessage("escrow/invalid-signature-len", () =>
+      escrowAccount.execute([
+        {
+          contractAddress: escrowAccount.address,
+          calldata: [buildGiftCallData(gift), receiver],
+          entrypoint: "claim_internal",
+        },
+      ]),
+    );
+  });
+
+  it(`Wrong signature shouldn't be accepted`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const receiver = randomReceiver();
+
+    const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
+    escrowAccount.signer = new WrongSigner();
+    await expectRevertWithErrorMessage("escrow/invalid-signature", () =>
       escrowAccount.execute([
         {
           contractAddress: escrowAccount.address,

@@ -91,7 +91,6 @@ mod EscrowAccount {
             assert(signature.len() == 2, 'escrow/invalid-signature-len');
 
             let tx_version = tx_info.version;
-            // Not tested
             assert(
                 check_ecdsa_signature(execution_hash, gift.gift_pubkey, *signature[0], *signature[1])
                     || tx_version == TX_V3_ESTIMATE
