@@ -1,14 +1,17 @@
 pub mod contracts {
-    mod claim_account;
     pub mod claim_hash;
-    mod gift_factory;
-    pub mod interface;
-    mod timelock_upgrade;
+    pub mod escrow_account;
+    pub mod escrow_library;
+    pub mod gift_data;
+    pub mod gift_factory;
+    pub mod outside_execution;
+    pub mod timelock_upgrade;
     pub mod utils;
 }
 
 mod mocks {
     mod broken_erc20;
     mod erc20;
+    mod future_factory;
     mod reentrant_erc20;
 }

@@ -1,11 +1,11 @@
+use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+
+use argent_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
 use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin::utils::serde::SerializedAppend;
 
 use snforge_std::{declare, ContractClassTrait, ContractClass, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ClassHash;
-
-use starknet_gifting::contracts::interface::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
-use starknet_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
 
 use super::constants::{OWNER, DEPOSITOR, CLAIMER};
 
@@ -13,7 +13,7 @@ pub struct GiftingSetup {
     pub mock_eth: IERC20Dispatcher,
     pub mock_strk: IERC20Dispatcher,
     pub gift_factory: IGiftFactoryDispatcher,
-    pub claim_class_hash: ClassHash,
+    pub escrow_class_hash: ClassHash,
 }
 
 pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
@@ -24,20 +24,20 @@ pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
         .expect('Failed to deploy broken ERC20');
     let broken_erc20 = IERC20Dispatcher { contract_address: broken_erc20_address };
 
-    // claim contract
-    let claim_contract = declare("ClaimAccount").expect('Failed to declare claim');
+    // escrow contract
+    let escrow_contract = declare("EscrowAccount").expect('Failed to declare escrow');
 
     // gift factory
     let factory_contract = declare("GiftFactory").expect('Failed to declare factory');
     let mut factory_calldata: Array<felt252> = array![
-        claim_contract.class_hash.try_into().unwrap(), OWNER().try_into().unwrap()
+        escrow_contract.class_hash.try_into().unwrap(), OWNER().try_into().unwrap()
     ];
     let (factory_contract_address, _) = factory_contract.deploy(@factory_calldata).expect('Failed to deploy factory');
     let gift_factory = IGiftFactoryDispatcher { contract_address: factory_contract_address };
-    assert(gift_factory.get_latest_claim_class_hash() == claim_contract.class_hash, 'Incorrect factory setup');
+    assert(gift_factory.get_latest_escrow_class_hash() == escrow_contract.class_hash, 'Incorrect factory setup');
 
     GiftingSetup {
-        mock_eth: broken_erc20, mock_strk: broken_erc20, gift_factory, claim_class_hash: claim_contract.class_hash
+        mock_eth: broken_erc20, mock_strk: broken_erc20, gift_factory, escrow_class_hash: escrow_contract.class_hash
     }
 }
 
@@ -73,17 +73,17 @@ pub fn deploy_gifting_normal() -> GiftingSetup {
     let mock_strk = IERC20Dispatcher { contract_address: mock_strk_address };
     assert(mock_strk.balance_of(OWNER()) == erc20_supply, 'Failed to mint STRK');
 
-    // claim contract
-    let claim_contract = declare("ClaimAccount").expect('Failed to declare claim');
+    // escrow contract
+    let escrow_contract = declare("EscrowAccount").expect('Failed to declare escrow');
 
     // gift factory
     let factory_contract = declare("GiftFactory").expect('Failed to declare factory');
     let mut factory_calldata: Array<felt252> = array![
-        claim_contract.class_hash.try_into().unwrap(), OWNER().try_into().unwrap()
+        escrow_contract.class_hash.try_into().unwrap(), OWNER().try_into().unwrap()
     ];
     let (factory_contract_address, _) = factory_contract.deploy(@factory_calldata).expect('Failed to deploy factory');
     let gift_factory = IGiftFactoryDispatcher { contract_address: factory_contract_address };
-    assert(gift_factory.get_latest_claim_class_hash() == claim_contract.class_hash, 'Incorrect factory setup');
+    assert(gift_factory.get_latest_escrow_class_hash() == escrow_contract.class_hash, 'Incorrect factory setup');
 
     start_cheat_caller_address(mock_eth_address, OWNER());
     start_cheat_caller_address(mock_strk.contract_address, OWNER());
@@ -101,5 +101,5 @@ pub fn deploy_gifting_normal() -> GiftingSetup {
     assert(mock_eth.allowance(DEPOSITOR(), factory_contract_address) == 1000, 'Failed to approve ETH');
     assert(mock_strk.allowance(DEPOSITOR(), factory_contract_address) == 1000, 'Failed to approve STRK');
 
-    GiftingSetup { mock_eth, mock_strk, gift_factory, claim_class_hash: claim_contract.class_hash }
+    GiftingSetup { mock_eth, mock_strk, gift_factory, escrow_class_hash: escrow_contract.class_hash }
 }

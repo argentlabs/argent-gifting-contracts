@@ -1,5 +1,64 @@
+use starknet::{ContractAddress, ClassHash};
+
+#[starknet::interface]
+pub trait IGiftFactory<TContractState> {
+    /// @notice Creates a new gift
+    /// @dev This function can be paused by the owner of the factory and prevent any further deposits
+    /// @param escrow_class_hash The class hash of the escrow account (needed in FE to have an optimistic UI)
+    /// @param gift_token The ERC-20 token address of the gift
+    /// @param gift_amount The amount of the gift
+    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift through claim_internal
+    /// @param fee_amount The amount of the fee
+    /// @param gift_pubkey The public key associated with the gift
+    fn deposit(
+        ref self: TContractState,
+        escrow_class_hash: ClassHash,
+        gift_token: ContractAddress,
+        gift_amount: u256,
+        fee_token: ContractAddress,
+        fee_amount: u128,
+        gift_pubkey: felt252
+    );
+
+    /// @notice Retrieves the current clash hash used for creating an escrow account
+    fn get_latest_escrow_class_hash(self: @TContractState) -> ClassHash;
+
+    /// @notice Retrieves the current class hash of the escrow account's library
+    fn get_escrow_lib_class_hash(self: @TContractState, escrow_class_hash: ClassHash) -> ClassHash;
+
+    /// @notice Get the address of the escrow account contract given all parameters
+    /// @param escrow_class_hash The class hash of the escrow account
+    /// @param sender The address of the sender
+    /// @param gift_token The ERC-20 token address of the gift
+    /// @param gift_amount The amount of the gift
+    /// @param fee_token The ERC-20 token address of the fee
+    /// @param fee_amount The amount of the fee
+    /// @param gift_pubkey The public key associated with the gift
+    fn get_escrow_address(
+        self: @TContractState,
+        escrow_class_hash: ClassHash,
+        sender: ContractAddress,
+        gift_token: ContractAddress,
+        gift_amount: u256,
+        fee_token: ContractAddress,
+        fee_amount: u128,
+        gift_pubkey: felt252
+    ) -> ContractAddress;
+}
+
+
 #[starknet::contract]
 mod GiftFactory {
+    use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
+    use argent_gifting::contracts::escrow_account::{
+        IEscrowAccount, IEscrowAccountDispatcher, AccountConstructorArguments
+    };
+    use argent_gifting::contracts::gift_data::GiftData;
+    use argent_gifting::contracts::gift_factory::IGiftFactory;
+    use argent_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
+    use argent_gifting::contracts::utils::{
+        calculate_escrow_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
+    };
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
@@ -9,15 +68,6 @@ mod GiftFactory {
     use starknet::{
         ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
         get_block_timestamp
-    };
-    use starknet_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
-    use starknet_gifting::contracts::interface::{
-        IGiftAccountDispatcherTrait, IGiftFactory, ClaimData, AccountConstructorArguments, IGiftAccountDispatcher,
-        OutsideExecution, GiftStatus, StarknetSignature
-    };
-    use starknet_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
-    use starknet_gifting::contracts::utils::{
-        calculate_claim_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
     };
 
     // Ownable 
@@ -46,14 +96,8 @@ mod GiftFactory {
         pausable: PausableComponent::Storage,
         #[substorage(v0)]
         timelock_upgrade: TimelockUpgradeComponent::Storage,
-        claim_class_hash: ClassHash,
-    }
-
-    #[derive(Drop, Copy)]
-    struct TransferFromAccount {
-        token: ContractAddress,
-        amount: u256,
-        receiver: ContractAddress,
+        escrow_class_hash: ClassHash,
+        escrow_lib_class_hash: ClassHash,
     }
 
     #[event]
@@ -66,41 +110,28 @@ mod GiftFactory {
         #[flat]
         TimelockUpgradeEvent: TimelockUpgradeComponent::Event,
         GiftCreated: GiftCreated,
-        GiftClaimed: GiftClaimed,
-        GiftCancelled: GiftCancelled,
     }
 
     #[derive(Drop, starknet::Event)]
     struct GiftCreated {
-        #[key] // If you have the ContractAddress you can find back the claim 
-        gift_address: ContractAddress,
+        #[key] // If you have the ContractAddress you can find back the gift 
+        escrow_address: ContractAddress,
         #[key] // Find all gifts from a specific sender
         sender: ContractAddress,
-        class_hash: ClassHash,
+        escrow_class_hash: ClassHash,
         gift_token: ContractAddress,
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
-        claim_pubkey: felt252
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct GiftClaimed {
-        #[key]
-        gift_address: ContractAddress,
-        receiver: ContractAddress,
-        dust_receiver: ContractAddress
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct GiftCancelled {
-        #[key]
-        gift_address: ContractAddress,
+        gift_pubkey: felt252
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, claim_class_hash: ClassHash, owner: ContractAddress) {
-        self.claim_class_hash.write(claim_class_hash);
+    fn constructor(
+        ref self: ContractState, escrow_class_hash: ClassHash, escrow_lib_class_hash: ClassHash, owner: ContractAddress
+    ) {
+        self.escrow_class_hash.write(escrow_class_hash);
+        self.escrow_lib_class_hash.write(escrow_lib_class_hash);
         self.ownable.initializer(owner);
     }
 
@@ -108,198 +139,99 @@ mod GiftFactory {
     impl GiftFactoryImpl of IGiftFactory<ContractState> {
         fn deposit(
             ref self: ContractState,
+            escrow_class_hash: ClassHash,
             gift_token: ContractAddress,
             gift_amount: u256,
             fee_token: ContractAddress,
             fee_amount: u128,
-            claim_pubkey: felt252
+            gift_pubkey: felt252
         ) {
             self.pausable.assert_not_paused();
             assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
             if gift_token == fee_token {
-                // This is needed so we can tell if an gift has been claimed or not just by looking at the balances
+                // This is needed so we can tell if a gift has been claimed or not just by looking at the balances
                 assert(fee_amount.into() < gift_amount, 'gift-fac/fee-too-high');
             }
 
             let sender = get_caller_address();
-            // TODO We could manually serialize for better performance but then we loose the type safety
-            let class_hash = self.claim_class_hash.read();
+            let escrow_class_hash_storage = self.escrow_class_hash.read();
+            assert(escrow_class_hash_storage == escrow_class_hash, 'gift-fac/invalid-class-hash');
             let constructor_arguments = AccountConstructorArguments {
-                sender, gift_token, gift_amount, fee_token, fee_amount, claim_pubkey
+                sender, gift_token, gift_amount, fee_token, fee_amount, gift_pubkey
             };
-            let (claim_contract, _) = deploy_syscall(
-                class_hash, // class_hash
-                0, // salt
-                serialize(@constructor_arguments).span(), // constructor data
-                false // deploy_from_zero
+            let (escrow_contract, _) = deploy_syscall(
+                escrow_class_hash, 0, // salt
+                 serialize(@constructor_arguments).span(), false // deploy_from_zero
             )
                 .expect('gift-fac/deploy-failed');
             self
                 .emit(
                     GiftCreated {
-                        gift_address: claim_contract,
+                        escrow_address: escrow_contract,
                         sender,
-                        class_hash,
+                        escrow_class_hash,
                         gift_token,
                         gift_amount,
                         fee_token,
                         fee_amount,
-                        claim_pubkey
+                        gift_pubkey
                     }
                 );
 
             if (gift_token == fee_token) {
                 let transfer_status = IERC20Dispatcher { contract_address: gift_token }
-                    .transfer_from(get_caller_address(), claim_contract, gift_amount + fee_amount.into());
+                    .transfer_from(get_caller_address(), escrow_contract, gift_amount + fee_amount.into());
                 assert(transfer_status, 'gift-fac/transfer-failed');
             } else {
                 let transfer_gift_status = IERC20Dispatcher { contract_address: gift_token }
-                    .transfer_from(get_caller_address(), claim_contract, gift_amount);
+                    .transfer_from(get_caller_address(), escrow_contract, gift_amount);
                 assert(transfer_gift_status, 'gift-fac/transfer-gift-failed');
                 let transfer_fee_status = IERC20Dispatcher { contract_address: fee_token }
-                    .transfer_from(get_caller_address(), claim_contract, fee_amount.into());
+                    .transfer_from(get_caller_address(), escrow_contract, fee_amount.into());
                 assert(transfer_fee_status, 'gift-fac/transfer-fee-failed');
             }
         }
 
-        fn claim_internal(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            assert(get_caller_address() == claim_address, 'gift/only-claim-account');
-            self.proceed_with_claim(claim_address, claim, receiver, Zero::zero());
+        fn get_escrow_lib_class_hash(self: @ContractState, escrow_class_hash: ClassHash) -> ClassHash {
+            self.escrow_lib_class_hash.read()
         }
 
-        fn claim_external(
-            ref self: ContractState,
-            claim: ClaimData,
-            receiver: ContractAddress,
-            dust_receiver: ContractAddress,
-            signature: StarknetSignature
-        ) {
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            let claim_external_hash = ClaimExternal { receiver, dust_receiver }.get_message_hash_rev_1(claim_address);
-            assert(
-                check_ecdsa_signature(claim_external_hash, claim.claim_pubkey, signature.r, signature.s),
-                'gift/invalid-ext-signature'
-            );
-            self.proceed_with_claim(claim_address, claim, receiver, dust_receiver);
+        fn get_latest_escrow_class_hash(self: @ContractState) -> ClassHash {
+            self.escrow_class_hash.read()
         }
 
-        fn is_valid_account_signature(
-            self: @ContractState, claim: ClaimData, hash: felt252, mut remaining_signature: Span<felt252>
-        ) -> felt252 {
-            0 // Accounts don't support offchain signatures now, but it could
-        }
-
-        fn perform_execute_from_outside(
-            ref self: ContractState,
-            claim: ClaimData,
-            original_caller: ContractAddress,
-            outside_execution: OutsideExecution,
-            remaining_signature: Span<felt252>
-        ) -> Array<Span<felt252>> {
-            panic_with_felt252('outside-execution-not-allowed');
-            array![]
-        }
-
-        fn cancel(ref self: ContractState, claim: ClaimData) {
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            assert(get_caller_address() == claim.sender, 'gift/wrong-sender');
-
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
-            assert(gift_balance > 0, 'gift/already-claimed');
-            if claim.gift_token == claim.fee_token {
-                // Sender also gets the dust
-                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, claim.sender);
-            } else {
-                // Transfer both tokens in a multicall
-                let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
-                self
-                    .transfers_from_account(
-                        claim,
-                        claim_address,
-                        array![
-                            TransferFromAccount {
-                                token: claim.gift_token, amount: gift_balance, receiver: claim.sender
-                            },
-                            TransferFromAccount { token: claim.fee_token, amount: fee_balance, receiver: claim.sender }
-                        ]
-                            .span()
-                    );
-            }
-            self.emit(GiftCancelled { gift_address: claim_address });
-        }
-
-        fn get_dust(ref self: ContractState, claim: ClaimData, receiver: ContractAddress) {
-            self.ownable.assert_only_owner();
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
-            assert(gift_balance < claim.gift_amount, 'gift/not-yet-claimed');
-            if claim.gift_token == claim.fee_token {
-                self.transfer_from_account(claim, claim_address, claim.gift_token, gift_balance, receiver);
-            } else {
-                let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
-                self.transfer_from_account(claim, claim_address, claim.fee_token, fee_balance, claim.sender);
-            }
-        }
-
-        fn get_latest_claim_class_hash(self: @ContractState) -> ClassHash {
-            self.claim_class_hash.read()
-        }
-
-        fn get_gift_status(self: @ContractState, claim: ClaimData) -> GiftStatus {
-            let claim_address = self.check_claim_and_get_account_address(claim);
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(claim_address);
-            if gift_balance < claim.gift_amount {
-                return GiftStatus::ClaimedOrCancelled;
-            }
-            if (claim.gift_token == claim.fee_token) {
-                if gift_balance < claim.gift_amount + claim.fee_amount.into() {
-                    return GiftStatus::ReadyExternalOnly;
-                } else {
-                    return GiftStatus::Ready;
-                }
-            } else {
-                let fee_balance = IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(claim_address);
-                if fee_balance < claim.fee_amount.into() {
-                    return GiftStatus::ReadyExternalOnly;
-                } else {
-                    return GiftStatus::Ready;
-                }
-            }
-        }
-
-        fn get_claim_address(
+        fn get_escrow_address(
             self: @ContractState,
-            class_hash: ClassHash,
+            escrow_class_hash: ClassHash,
             sender: ContractAddress,
             gift_token: ContractAddress,
             gift_amount: u256,
             fee_token: ContractAddress,
             fee_amount: u128,
-            claim_pubkey: felt252
+            gift_pubkey: felt252
         ) -> ContractAddress {
-            calculate_claim_account_address(
-                ClaimData {
+            calculate_escrow_account_address(
+                GiftData {
                     factory: get_contract_address(),
-                    class_hash,
+                    escrow_class_hash,
                     sender,
                     gift_amount,
                     gift_token,
                     fee_token,
                     fee_amount,
-                    claim_pubkey,
+                    gift_pubkey,
                 }
             )
         }
     }
 
-
+    #[abi(embed_v0)]
     impl TimelockUpgradeCallbackImpl of ITimelockUpgradeCallback<ContractState> {
         fn perform_upgrade(ref self: ContractState, new_implementation: ClassHash, data: Span<felt252>) {
             // This should do some sanity checks 
             // We should check that the new implementation is a valid implementation
             // Execute the upgrade using replace_class_syscall(...)
-            panic_with_felt252('downgrade-not-allowed');
+            panic_with_felt252('gift-fac/downgrade-not-allowed');
         }
     }
 
@@ -313,93 +245,5 @@ mod GiftFactory {
     fn unpause(ref self: ContractState) {
         self.ownable.assert_only_owner();
         self.pausable._unpause();
-    }
-
-    #[generate_trait]
-    impl Private of PrivateTrait {
-        fn proceed_with_claim(
-            ref self: ContractState,
-            gift_address: ContractAddress,
-            claim: ClaimData,
-            receiver: ContractAddress,
-            dust_receiver: ContractAddress
-        ) {
-            assert(receiver.is_non_zero(), 'gift/zero-receiver');
-            let gift_balance = IERC20Dispatcher { contract_address: claim.gift_token }.balance_of(gift_address);
-            assert(gift_balance >= claim.gift_amount, 'gift/already-claimed-or-cancel');
-
-            // could be optimized to 1 transfer only when the receiver is also the dust receiver, and the fee token is the same as the gift token
-            // but will increase the complexity of the code for a small performance
-
-            // Transfer the gift
-            let mut calls = array![
-                TransferFromAccount { token: claim.gift_token, amount: claim.gift_amount, receiver: receiver }
-            ];
-
-            // Transfer the dust
-            if dust_receiver.is_non_zero() {
-                let dust = if claim.gift_token == claim.fee_token {
-                    gift_balance - claim.gift_amount
-                } else {
-                    IERC20Dispatcher { contract_address: claim.fee_token }.balance_of(gift_address)
-                };
-                if dust > 0 {
-                    calls
-                        .append(
-                            TransferFromAccount { token: claim.fee_token, amount: dust.into(), receiver: dust_receiver }
-                        );
-                }
-            }
-            self.transfers_from_account(claim, gift_address, calls.span());
-            self.emit(GiftClaimed { gift_address, receiver, dust_receiver });
-        }
-
-        fn check_claim_and_get_account_address(self: @ContractState, claim: ClaimData) -> ContractAddress {
-            assert(claim.factory == get_contract_address(), 'gift/invalid-factory-address');
-            assert(claim.class_hash == self.claim_class_hash.read(), 'gift/invalid-class-hash');
-            calculate_claim_account_address(claim)
-        }
-
-        fn transfer_from_account(
-            self: @ContractState,
-            claim: ClaimData,
-            claim_address: ContractAddress,
-            token: ContractAddress,
-            amount: u256,
-            receiver: ContractAddress,
-        ) {
-            self
-                .transfers_from_account(
-                    claim, claim_address, array![TransferFromAccount { token, amount, receiver }].span()
-                );
-        }
-
-        fn transfers_from_account(
-            self: @ContractState,
-            claim: ClaimData,
-            claim_address: ContractAddress,
-            mut transfers: Span<TransferFromAccount>,
-        ) {
-            let mut calls: Array<Call> = array![];
-            while let Option::Some(transfer) = transfers
-                .pop_front() {
-                    calls.append(build_transfer_call(*transfer.token, *transfer.amount, *transfer.receiver));
-                };
-            let calls_len = calls.len();
-
-            let mut results = IGiftAccountDispatcher { contract_address: claim_address }
-                .execute_factory_calls(claim, calls);
-            assert(results.len() == calls_len, 'gift/invalid-result-length');
-            while let Option::Some(result) = results
-                .pop_front() {
-                    let transfer_status = full_deserialize::<bool>(result).expect('gift/invalid-result-calldata');
-                    assert(transfer_status, 'gift/transfer-failed');
-                }
-        }
-    }
-
-
-    fn build_transfer_call(token: ContractAddress, amount: u256, receiver: ContractAddress,) -> Call {
-        Call { to: token, selector: selector!("transfer"), calldata: serialize(@(receiver, amount)).span() }
     }
 }

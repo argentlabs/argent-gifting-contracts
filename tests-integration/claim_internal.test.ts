@@ -1,8 +1,9 @@
 import { expect } from "chai";
 import { num } from "starknet";
 import {
-  GIFT_MAX_FEE,
-  calculateClaimAddress,
+  ETH_GIFT_MAX_FEE,
+  STRK_GIFT_MAX_FEE,
+  calculateEscrowAddress,
   claimInternal,
   defaultDepositTestSetup,
   expectRevertWithErrorMessage,
@@ -15,58 +16,65 @@ describe("Claim Internal", function () {
   for (const useTxV3 of [false, true]) {
     it(`gift token == fee token using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
-      const claimAddress = calculateClaimAddress(claim);
+      const escrowAddress = calculateEscrowAddress(gift);
 
-      await claimInternal({ claim, receiver, claimPrivateKey });
+      await claimInternal({ gift, receiver, giftPrivateKey });
 
-      const finalBalance = await manager.tokens.tokenBalance(claimAddress, claim.gift_token);
-      expect(finalBalance < claim.fee_amount).to.be.true;
-      await manager.tokens.tokenBalance(receiver, claim.gift_token).should.eventually.equal(claim.gift_amount);
+      const finalBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
+      expect(finalBalance < gift.fee_amount).to.be.true;
+      await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
     });
 
     it(`Can't claim if no fee amount deposited (fee token == gift token) using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const receiver = randomReceiver();
 
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup({
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({
         factory,
         useTxV3,
-        overrides: { giftAmount: 100n, feeAmount: 0n },
+        overrides: { feeAmount: 0n },
       });
 
-      await expect(claimInternal({ claim, receiver, claimPrivateKey })).to.be.rejectedWith(
-        "Account balance is smaller than the transaction's max_fee: undefined",
-      );
+      const errorMsg = useTxV3 ? "escrow/max-fee-too-high-v3" : "escrow/max-fee-too-high-v1";
+      await expectRevertWithErrorMessage(errorMsg, () => claimInternal({ gift, receiver, giftPrivateKey }));
     });
 
     it(`Test max fee too high using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
-      const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       if (useTxV3) {
+        // If you run this test on testnet, it'll fail
+        // You can then take the value from the error message and replace 1n (given some extra iff the price rises)
+        const gasPrice = manager.isDevnet ? 36000000000n : 1n;
         const newResourceBounds = {
           l2_gas: {
-            max_amount: num.toHexString(GIFT_MAX_FEE),
-            max_price_per_unit: num.toHexString(1),
-          },
-          l1_gas: {
             max_amount: "0x0",
             max_price_per_unit: "0x0",
           },
+          l1_gas: {
+            max_amount: num.toHexString(STRK_GIFT_MAX_FEE / gasPrice + 1n),
+            max_price_per_unit: num.toHexString(gasPrice),
+          },
         };
-        await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
-          claimInternal({ claim, receiver, claimPrivateKey, details: { resourceBounds: newResourceBounds, tip: 1 } }),
+        await expectRevertWithErrorMessage("escrow/max-fee-too-high-v3", () =>
+          claimInternal({
+            gift,
+            receiver,
+            giftPrivateKey,
+            details: { resourceBounds: newResourceBounds, tip: 1 },
+          }),
         );
       } else {
-        await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
+        await expectRevertWithErrorMessage("escrow/max-fee-too-high-v1", () =>
           claimInternal({
-            claim,
+            gift,
             receiver,
-            claimPrivateKey,
+            giftPrivateKey,
             details: {
-              maxFee: GIFT_MAX_FEE + 1n,
+              maxFee: ETH_GIFT_MAX_FEE + 1n,
             },
           }),
         );
@@ -74,14 +82,14 @@ describe("Claim Internal", function () {
     });
   }
 
-  it(`Cant call claim internal twice`, async function () {
+  it(`Cant call gift internal twice`, async function () {
     const { factory } = await setupGiftProtocol();
-    const { claim, claimPrivateKey } = await defaultDepositTestSetup({ factory });
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
 
-    await claimInternal({ claim, receiver, claimPrivateKey });
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
-      claimInternal({ claim, receiver, claimPrivateKey }),
+    await claimInternal({ gift, receiver, giftPrivateKey });
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
+      claimInternal({ gift, receiver, giftPrivateKey }),
     );
   });
 });

@@ -1,6 +1,7 @@
+use argent_gifting::contracts::escrow_account::{AccountConstructorArguments};
+use argent_gifting::contracts::gift_data::{GiftData};
 use openzeppelin::utils::deployments::calculate_contract_address_from_deploy_syscall;
 use starknet::{ContractAddress, account::Call, contract_address::contract_address_const};
-use starknet_gifting::contracts::interface::{ClaimData, AccountConstructorArguments};
 
 pub const TX_V1: felt252 = 1; // INVOKE
 pub const TX_V1_ESTIMATE: felt252 = consteval_int!(0x100000000000000000000000000000000 + 1); // 2**128 + TX_V1
@@ -13,6 +14,12 @@ pub fn STRK_ADDRESS() -> ContractAddress {
 
 pub fn ETH_ADDRESS() -> ContractAddress {
     contract_address_const::<0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7>()
+}
+
+#[derive(Serde, Drop, Copy, starknet::Store)]
+pub struct StarknetSignature {
+    pub r: felt252,
+    pub s: felt252,
 }
 
 // Tries to deserialize the given data into.
@@ -32,24 +39,24 @@ pub fn serialize<E, impl ESerde: Serde<E>>(value: @E) -> Array<felt252> {
     output
 }
 
-/// @notice Computes the ContractAddress of an account for a given claim
-/// @dev The salt used is fixed to 0 to ensure there's only one contract for a given claim.
+/// @notice Computes the ContractAddress of an account for a given gift
+/// @dev The salt used is fixed to 0 to ensure there's only one contract for a given gift.
 /// @dev The deployer_address is the factory address, as the account contract is deployed by the factory
-/// @param claim The claim data for which you need to calculate the account contract address
-/// @return The ContractAddress of the account contract corresponding to the claim
-pub fn calculate_claim_account_address(claim: ClaimData) -> ContractAddress {
+/// @param gift The gift data for which you need to calculate the account contract address
+/// @return The ContractAddress of the account contract corresponding to the gift
+pub fn calculate_escrow_account_address(gift: GiftData) -> ContractAddress {
     let constructor_arguments = AccountConstructorArguments {
-        sender: claim.sender,
-        gift_token: claim.gift_token,
-        gift_amount: claim.gift_amount,
-        fee_token: claim.fee_token,
-        fee_amount: claim.fee_amount,
-        claim_pubkey: claim.claim_pubkey
+        sender: gift.sender,
+        gift_token: gift.gift_token,
+        gift_amount: gift.gift_amount,
+        fee_token: gift.fee_token,
+        fee_amount: gift.fee_amount,
+        gift_pubkey: gift.gift_pubkey
     };
     calculate_contract_address_from_deploy_syscall(
         0, // salt
-        claim.class_hash, // class_hash
+        gift.escrow_class_hash, // escrow_class_hash
         serialize(@constructor_arguments).span(), // constructor_data
-        claim.factory
+        gift.factory
     )
 }
