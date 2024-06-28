@@ -78,7 +78,6 @@ mod EscrowLibrary {
         // This prevents creating instances of this classhash by mistake, as it's not needed. 
         // While it is technically possible to create instances by replacing classhashes, this practice is not recommended. 
         // This contract is intended to be used exclusively through library calls.
-        // Not tested
         panic_with_felt252('escr-lib/instance-not-recommend')
     }
 
@@ -92,10 +91,11 @@ mod EscrowLibrary {
         fn execute_action(
             ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
         ) -> Span<felt252> {
+            // This is needed to make sure no arbitrary methods can be called directly using `execute_action` in the escrow account
+            // Some methods like `claim_internal` should only be called after some checks are performed in the escrow account
             let is_whitelisted = selector == selector!("claim_external")
                 || selector == selector!("claim_dust")
                 || selector == selector!("cancel");
-            // not tested
             assert(is_whitelisted, 'escr-lib/invalid-selector');
             library_call_syscall(this_class_hash, selector, args).unwrap()
         }
@@ -138,7 +138,6 @@ mod EscrowLibrary {
             let factory_owner = IOwnableDispatcher { contract_address: gift.factory }.owner();
             assert(factory_owner == get_caller_address(), 'escr-lib/only-factory-owner');
             let gift_balance = balance_of(gift.gift_token, contract_address);
-            // Not tested
             assert(gift_balance < gift.gift_amount, 'escr-lib/not-yet-claimed');
             if gift.gift_token == gift.fee_token {
                 transfer_from_account(gift.gift_token, receiver, gift_balance);
@@ -157,7 +156,6 @@ mod EscrowLibrary {
         fn execute_from_outside_v2(
             ref self: ContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            // Not tested
             panic_with_felt252('escr-lib/not-allowed-yet')
         }
     }
@@ -184,7 +182,6 @@ mod EscrowLibrary {
                 let dust = if gift.gift_token == gift.fee_token {
                     gift_balance - gift.gift_amount
                 } else {
-                    // TODO Double check reentrancy here
                     balance_of(gift.fee_token, contract_address)
                 };
                 if dust > 0 {
@@ -196,7 +193,6 @@ mod EscrowLibrary {
     }
 
     fn transfer_from_account(token: ContractAddress, receiver: ContractAddress, amount: u256,) {
-        // Not tested
         assert(IERC20Dispatcher { contract_address: token }.transfer(receiver, amount), 'escr-lib/transfer-failed');
     }
 

@@ -89,7 +89,7 @@ mod EscrowAccount {
             assert(tx_info.nonce == 0, 'escrow/invalid-gift-nonce');
             let execution_hash = tx_info.transaction_hash;
             let signature = tx_info.signature;
-            assert(signature.len() == 2, 'escrow/invalid-signature-len'); // Not tested
+            assert(signature.len() == 2, 'escrow/invalid-signature-len');
 
             let tx_version = tx_info.version;
             assert(
@@ -97,18 +97,15 @@ mod EscrowAccount {
                     || tx_version == TX_V3_ESTIMATE
                     || tx_version == TX_V1_ESTIMATE,
                 'escrow/invalid-signature'
-            ); // Not tested
+            );
             if gift.fee_token == STRK_ADDRESS() {
-                // Not tested
                 assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'escrow/invalid-tx3-version');
                 let tx_fee = compute_max_fee_v3(tx_info, tx_info.tip);
                 assert(tx_fee <= gift.fee_amount, 'escrow/max-fee-too-high-v3');
             } else if gift.fee_token == ETH_ADDRESS() {
-                // Not tested
                 assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'escrow/invalid-tx1-version');
                 assert(tx_info.max_fee <= gift.fee_amount, 'escrow/max-fee-too-high-v1');
             } else {
-                // Not tested
                 core::panic_with_felt252('escrow/invalid-token-fee');
             }
             VALIDATED
@@ -118,7 +115,6 @@ mod EscrowAccount {
             let execution_info = get_execution_info().unbox();
             assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol');
             let tx_version = execution_info.tx_info.unbox().version;
-            // Not tested
             assert(
                 tx_version == TX_V3
                     || tx_version == TX_V1
@@ -181,7 +177,6 @@ mod EscrowAccount {
 
     fn assert_valid_claim(gift: GiftData) {
         let calculated_address = calculate_escrow_account_address(gift);
-        // Not tested
         assert(calculated_address == get_contract_address(), 'escrow/invalid-escrow-address');
     }
 
