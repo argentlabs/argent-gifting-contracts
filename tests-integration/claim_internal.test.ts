@@ -54,15 +54,12 @@ describe("Claim Internal", function () {
       const { factory } = await setupGiftProtocol();
       const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
-      const escrowAddress = calculateEscrowAddress(gift);
 
-      const escrowAccount = getEscrowAccount(gift, giftPrivateKey, escrowAddress);
-      const mockERC20 = await deployMockERC20();
-      gift.fee_token = mockERC20.address;
+      const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
       await expectRevertWithErrorMessage("escrow/invalid-calldata", () =>
         escrowAccount.execute([
           {
-            contractAddress: escrowAddress,
+            contractAddress: escrowAccount.address,
             calldata: [buildGiftCallData(gift), receiver, 1],
             entrypoint: "claim_internal",
           },
