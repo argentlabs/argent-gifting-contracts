@@ -147,7 +147,6 @@ mod GiftFactory {
             gift_pubkey: felt252
         ) {
             self.pausable.assert_not_paused();
-            // Not tested
             assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
             if gift_token == fee_token {
                 // This is needed so we can tell if a gift has been claimed or not just by looking at the balances
@@ -160,7 +159,6 @@ mod GiftFactory {
             let constructor_arguments = AccountConstructorArguments {
                 sender, gift_token, gift_amount, fee_token, fee_amount, gift_pubkey
             };
-            // Not tested
             let (escrow_contract, _) = deploy_syscall(
                 escrow_class_hash, 0, // salt
                  serialize(@constructor_arguments).span(), false // deploy_from_zero
