@@ -193,7 +193,6 @@ mod EscrowLibrary {
     }
 
     fn transfer_from_account(token: ContractAddress, receiver: ContractAddress, amount: u256,) {
-        // Not tested
         assert(IERC20Dispatcher { contract_address: token }.transfer(receiver, amount), 'escr-lib/transfer-failed');
     }
 
