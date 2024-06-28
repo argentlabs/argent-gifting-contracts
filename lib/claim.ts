@@ -129,7 +129,7 @@ export async function claimExternal(args: {
     signature,
   ]);
   const response = await account.execute(
-    executeActionOnAccount("claim_external", calculateEscrowAddress(args.gift), claimExternalCallData)
+    executeActionOnAccount("claim_external", calculateEscrowAddress(args.gift), claimExternalCallData),
   );
   return manager.waitForTransaction(response.transaction_hash);
 }

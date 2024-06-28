@@ -1,9 +1,9 @@
 import {
+  claimDust,
   claimExternal,
   claimInternal,
   defaultDepositTestSetup,
   deployer,
-  claimDust,
   manager,
   randomReceiver,
   setDefaultTransactionVersionV3,
