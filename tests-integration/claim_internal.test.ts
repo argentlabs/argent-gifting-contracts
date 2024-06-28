@@ -50,6 +50,26 @@ describe("Claim Internal", function () {
       );
     });
 
+    it(`Invalid calldata using txV3: ${useTxV3}`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const receiver = randomReceiver();
+      const escrowAddress = calculateEscrowAddress(gift);
+
+      const escrowAccount = getEscrowAccount(gift, giftPrivateKey, escrowAddress);
+      const mockERC20 = await deployMockERC20();
+      gift.fee_token = mockERC20.address;
+      await expectRevertWithErrorMessage("escrow/invalid-calldata", () =>
+        escrowAccount.execute([
+          {
+            contractAddress: escrowAddress,
+            calldata: [buildGiftCallData(gift), receiver, 1],
+            entrypoint: "claim_internal",
+          },
+        ]),
+      );
+    });
+
     it(`Can't claim if no fee amount deposited (fee token == gift token) using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const receiver = randomReceiver();
