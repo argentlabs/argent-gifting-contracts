@@ -89,9 +89,11 @@ mod EscrowAccount {
             assert(tx_info.nonce == 0, 'escrow/invalid-gift-nonce');
             let execution_hash = tx_info.transaction_hash;
             let signature = tx_info.signature;
+            // Not tested
             assert(signature.len() == 2, 'escrow/invalid-signature-len');
 
             let tx_version = tx_info.version;
+            // Not tested
             assert(
                 check_ecdsa_signature(execution_hash, gift.gift_pubkey, *signature[0], *signature[1])
                     || tx_version == TX_V3_ESTIMATE
@@ -106,6 +108,7 @@ mod EscrowAccount {
                 assert(tx_version == TX_V1 || tx_version == TX_V1_ESTIMATE, 'escrow/invalid-tx1-version');
                 assert(tx_info.max_fee <= gift.fee_amount, 'escrow/max-fee-too-high-v1');
             } else {
+                // Not tested
                 core::panic_with_felt252('escrow/invalid-token-fee');
             }
             VALIDATED
@@ -115,6 +118,7 @@ mod EscrowAccount {
             let execution_info = get_execution_info().unbox();
             assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol');
             let tx_version = execution_info.tx_info.unbox().version;
+            // Not tested
             assert(
                 tx_version == TX_V3
                     || tx_version == TX_V1
@@ -123,6 +127,7 @@ mod EscrowAccount {
                 'escrow/invalid-tx-version'
             );
             let Call { .., calldata }: @Call = calls[0];
+            // Not tested
             let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('escrow/invalid-calldata');
             // The __validate__ function already ensures the claim is valid
@@ -177,6 +182,7 @@ mod EscrowAccount {
 
     fn assert_valid_claim(gift: GiftData) {
         let calculated_address = calculate_escrow_account_address(gift);
+        // Not tested
         assert(calculated_address == get_contract_address(), 'escrow/invalid-escrow-address');
     }
 
