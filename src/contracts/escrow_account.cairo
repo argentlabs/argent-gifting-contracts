@@ -88,7 +88,6 @@ mod EscrowAccount {
             assert(tx_info.nonce == 0, 'escrow/invalid-gift-nonce');
             let execution_hash = tx_info.transaction_hash;
             let signature = tx_info.signature;
-            // Not tested
             assert(signature.len() == 2, 'escrow/invalid-signature-len');
 
             let tx_version = tx_info.version;
@@ -116,7 +115,6 @@ mod EscrowAccount {
             let execution_info = get_execution_info().unbox();
             assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol');
             let tx_version = execution_info.tx_info.unbox().version;
-            // Not tested
             assert(
                 tx_version == TX_V3
                     || tx_version == TX_V1
@@ -125,7 +123,6 @@ mod EscrowAccount {
                 'escrow/invalid-tx-version'
             );
             let Call { .., calldata }: @Call = calls[0];
-            // Not tested
             let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
                 .expect('escrow/invalid-calldata');
             // The __validate__ function already ensures the claim is valid

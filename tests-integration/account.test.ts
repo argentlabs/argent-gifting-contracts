@@ -1,5 +1,6 @@
 import { CallData } from "starknet";
 import {
+  LongSigner,
   buildGiftCallData,
   calculateEscrowAddress,
   claimInternal,
@@ -99,6 +100,24 @@ describe("Escrow Account", function () {
     await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
     await expectRevertWithErrorMessage("escrow/invalid-gift-nonce", () =>
       claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey, details: { skipValidate: false } }),
+    );
+  });
+
+  it(`Long signature shouldn't be accepted`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const receiver = randomReceiver();
+
+    const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
+    escrowAccount.signer = new LongSigner();
+    await expectRevertWithErrorMessage("escrow/invalid-signature-len", () =>
+      escrowAccount.execute([
+        {
+          contractAddress: escrowAccount.address,
+          calldata: [buildGiftCallData(gift), receiver],
+          entrypoint: "claim_internal",
+        },
+      ]),
     );
   });
 

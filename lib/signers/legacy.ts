@@ -46,3 +46,9 @@ export class LegacyStarknetKeyPair extends LegacyKeyPair {
     return [r.toString(), s.toString()];
   }
 }
+
+export class LongSigner extends LegacyStarknetKeyPair {
+  public async signRaw(messageHash: string): Promise<string[]> {
+    return ["", ...(await super.signRaw(messageHash))];
+  }
+}
