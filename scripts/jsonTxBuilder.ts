@@ -1,9 +1,5 @@
-interface Transaction {
-  contractAddress: string;
-  entrypoint: string;
-  calldata: (string | number | undefined)[];
-}
+import { Call } from "starknet";
 
-export function logTransactionJson(transaction: Transaction[]) {
+export function logTransactionJson(transaction: Call[]) {
   console.log(JSON.stringify(transaction, null, 2));
 }
