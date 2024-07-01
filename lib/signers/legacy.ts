@@ -55,6 +55,6 @@ export class LongSigner extends LegacyStarknetKeyPair {
 
 export class WrongSigner extends LegacyStarknetKeyPair {
   public async signRaw(messageHash: string): Promise<string[]> {
-    return ["", ""];
+    return ["0x1", "0x1"];
   }
 }

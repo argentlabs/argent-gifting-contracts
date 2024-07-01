@@ -7,7 +7,6 @@ import {
   calculateEscrowAddress,
   claimInternal,
   defaultDepositTestSetup,
-  deployMockERC20,
   expectRevertWithErrorMessage,
   getEscrowAccount,
   manager,
@@ -30,23 +29,16 @@ describe("Claim Internal", function () {
       await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
     });
 
-    it(`fee token not ETH nor STRK using txV3: ${useTxV3}`, async function () {
+    it(`Invalid gift data txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
       const receiver = randomReceiver();
       const escrowAddress = calculateEscrowAddress(gift);
 
-      const escrowAccount = getEscrowAccount(gift, giftPrivateKey, escrowAddress);
-      const mockERC20 = await deployMockERC20();
-      gift.fee_token = mockERC20.address;
+      const escrowAccountAddress = getEscrowAccount(gift, giftPrivateKey, escrowAddress).address;
+      gift.fee_amount = 42n;
       await expectRevertWithErrorMessage("escrow/invalid-escrow-address", () =>
-        escrowAccount.execute([
-          {
-            contractAddress: escrowAddress,
-            calldata: [buildGiftCallData(gift), receiver],
-            entrypoint: "claim_internal",
-          },
-        ]),
+        claimInternal({ gift, receiver, giftPrivateKey, overrides: { escrowAccountAddress } }),
       );
     });
 
