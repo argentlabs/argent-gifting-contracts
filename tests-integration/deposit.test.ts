@@ -98,6 +98,20 @@ describe("Deposit", function () {
         return txReceipt;
       });
     });
+
+    it(`Fee not ETH nor STRK`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const mockERC20 = await deployMockERC20();
+
+      await expectRevertWithErrorMessage("gift-fac/invalid-fee-token", async () => {
+        const { txReceipt } = await defaultDepositTestSetup({
+          factory,
+          useTxV3,
+          overrides: { feeTokenAddress: mockERC20.address },
+        });
+        return txReceipt;
+      });
+    });
   }
 
   it("Deposit fails class hash passed != class hash in factory storage", async function () {
