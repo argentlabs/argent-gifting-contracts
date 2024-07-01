@@ -32,8 +32,8 @@ mod ReentrantERC20 {
         IEscrowAccount, IEscrowAccountDispatcher, IEscrowAccountDispatcherTrait
     };
     use argent_gifting::contracts::gift_data::GiftData;
-    use argent_gifting::contracts::utils::{calculate_escrow_account_address, serialize};
     use argent_gifting::contracts::utils::{ETH_ADDRESS, StarknetSignature};
+    use argent_gifting::contracts::utils::{calculate_escrow_account_address, serialize};
     use openzeppelin::token::erc20::erc20::ERC20Component::InternalTrait;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
@@ -121,11 +121,9 @@ mod ReentrantERC20 {
                     gift_pubkey: test_gift.gift_pubkey,
                 };
                 let escrow_account_address = calculate_escrow_account_address(gift);
-                let calldata = serialize(@(
-                    gift,
-                    self.receiver.read(),
-                    self.dust_receiver.read(),
-                    self.signature.read()));
+                let calldata = serialize(
+                    @(gift, self.receiver.read(), self.dust_receiver.read(), self.signature.read())
+                );
                 IEscrowAccountDispatcher { contract_address: escrow_account_address }
                     .execute_action(selector!("claim_external"), calldata);
             }
