@@ -4,7 +4,10 @@ use argent_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
 use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin::utils::serde::SerializedAppend;
 
-use snforge_std::{declare, ContractClassTrait, ContractClass, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    declare, ContractClassTrait, ContractClass, cheat_caller_address_global, start_cheat_caller_address,
+    stop_cheat_caller_address, stop_cheat_caller_address_global
+};
 use starknet::ClassHash;
 
 use super::constants::{OWNER, DEPOSITOR, CLAIMER};
@@ -27,10 +30,15 @@ pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
     // escrow contract
     let escrow_contract = declare("EscrowAccount").expect('Failed to declare escrow');
 
+    // escrow lib contract
+    let escrow_lib_contract = declare("EscrowLibrary").expect('Failed to declare escrow lib');
+
     // gift factory
     let factory_contract = declare("GiftFactory").expect('Failed to declare factory');
     let mut factory_calldata: Array<felt252> = array![
-        escrow_contract.class_hash.try_into().unwrap(), OWNER().try_into().unwrap()
+        escrow_contract.class_hash.try_into().unwrap(),
+        escrow_lib_contract.class_hash.try_into().unwrap(),
+        OWNER().try_into().unwrap()
     ];
     let (factory_contract_address, _) = factory_contract.deploy(@factory_calldata).expect('Failed to deploy factory');
     let gift_factory = IGiftFactoryDispatcher { contract_address: factory_contract_address };
@@ -59,16 +67,16 @@ pub fn deploy_gifting_normal() -> GiftingSetup {
     assert(mock_eth.balance_of(OWNER()) == erc20_supply, 'Failed to mint ETH');
 
     // mock STRK contract
-    let mut mock_eth_calldata: Array<felt252> = array![];
+    let mut mock_strk_calldata: Array<felt252> = array![];
     let name: ByteArray = "STARK";
     let symbol: ByteArray = "STRK";
-    mock_eth_calldata.append_serde(name);
-    mock_eth_calldata.append_serde(symbol);
-    mock_eth_calldata.append_serde(erc20_supply);
-    mock_eth_calldata.append_serde(OWNER());
-    mock_eth_calldata.append_serde(OWNER());
+    mock_strk_calldata.append_serde(name);
+    mock_strk_calldata.append_serde(symbol);
+    mock_strk_calldata.append_serde(erc20_supply);
+    mock_strk_calldata.append_serde(OWNER());
+    mock_strk_calldata.append_serde(OWNER());
     let (mock_strk_address, _) = mock_erc20
-        .deploy_at(@mock_eth_calldata, STRK_ADDRESS())
+        .deploy_at(@mock_strk_calldata, STRK_ADDRESS())
         .expect('Failed to deploy STRK');
     let mock_strk = IERC20Dispatcher { contract_address: mock_strk_address };
     assert(mock_strk.balance_of(OWNER()) == erc20_supply, 'Failed to mint STRK');
@@ -76,25 +84,27 @@ pub fn deploy_gifting_normal() -> GiftingSetup {
     // escrow contract
     let escrow_contract = declare("EscrowAccount").expect('Failed to declare escrow');
 
+    // escrow lib contract
+    let escrow_lib_contract = declare("EscrowLibrary").expect('Failed to declare escrow lib');
+
     // gift factory
     let factory_contract = declare("GiftFactory").expect('Failed to declare factory');
     let mut factory_calldata: Array<felt252> = array![
-        escrow_contract.class_hash.try_into().unwrap(), OWNER().try_into().unwrap()
+        escrow_contract.class_hash.try_into().unwrap(),
+        escrow_lib_contract.class_hash.try_into().unwrap(),
+        OWNER().try_into().unwrap()
     ];
     let (factory_contract_address, _) = factory_contract.deploy(@factory_calldata).expect('Failed to deploy factory');
     let gift_factory = IGiftFactoryDispatcher { contract_address: factory_contract_address };
     assert(gift_factory.get_latest_escrow_class_hash() == escrow_contract.class_hash, 'Incorrect factory setup');
 
-    start_cheat_caller_address(mock_eth_address, OWNER());
-    start_cheat_caller_address(mock_strk.contract_address, OWNER());
+    cheat_caller_address_global(OWNER());
     mock_eth.transfer(DEPOSITOR(), 1000);
     mock_strk.transfer(DEPOSITOR(), 1000);
-    start_cheat_caller_address(mock_eth_address, DEPOSITOR());
-    start_cheat_caller_address(mock_strk_address, DEPOSITOR());
+    cheat_caller_address_global(DEPOSITOR());
     mock_eth.approve(factory_contract_address, 1000);
     mock_strk.approve(factory_contract_address, 1000);
-    stop_cheat_caller_address(mock_eth_address);
-    stop_cheat_caller_address(mock_strk_address);
+    stop_cheat_caller_address_global();
 
     assert(mock_eth.balance_of(DEPOSITOR()) == 1000, 'Failed to transfer ETH');
     assert(mock_strk.balance_of(DEPOSITOR()) == 1000, 'Failed to transfer STRK');
