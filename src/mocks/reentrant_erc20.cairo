@@ -28,10 +28,11 @@ trait IMalicious<TContractState> {
 
 #[starknet::contract]
 mod ReentrantERC20 {
-    use argent_gifting::contracts::gift_data::{GiftData};
-
-    use argent_gifting::contracts::escrow_account::{IEscrowAccount, IEscrowAccountDispatcher, IEscrowDispatcherTrait};
-
+    use argent_gifting::contracts::escrow_account::{
+        IEscrowAccount, IEscrowAccountDispatcher, IEscrowAccountDispatcherTrait
+    };
+    use argent_gifting::contracts::gift_data::GiftData;
+    use argent_gifting::contracts::utils::calculate_escrow_account_address;
     use argent_gifting::contracts::utils::{ETH_ADDRESS, StarknetSignature};
     use openzeppelin::token::erc20::erc20::ERC20Component::InternalTrait;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
@@ -120,8 +121,14 @@ mod ReentrantERC20 {
                     fee_amount: test_gift.fee_amount,
                     gift_pubkey: test_gift.gift_pubkey,
                 };
-            IEscr { contract_address: self.factory.read() }
-                .claim_external(gift, self.receiver.read(), self.dust_receiver.read(), self.signature.read());
+                let escrow_account_address = calculate_escrow_account_address(gift);
+                let mut calldata: Array<felt252> = array![];
+                calldata.append_serde(gift);
+                calldata.append_serde(self.receiver.read());
+                calldata.append_serde(self.dust_receiver.read());
+                calldata.append_serde(self.signature.read());
+                IEscrowAccountDispatcher { contract_address: escrow_account_address }
+                    .execute_action(selector!("claim_external"), calldata);
             }
 
             self.erc20.transfer(recipient, amount)
