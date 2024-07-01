@@ -21,6 +21,7 @@ import {
   deployer,
   ethAddress,
   manager,
+  setDefaultTransactionVersionV3,
   strkAddress,
 } from ".";
 
@@ -110,11 +111,10 @@ export async function claimExternal(args: {
   gift: Gift;
   receiver: string;
   giftPrivateKey: string;
+  useTxV3?: boolean;
   dustReceiver?: string;
-  overrides?: { account?: Account };
-  details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
-  const account = args.overrides?.account || deployer;
+  const account = args.useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer;
   const signature = await signExternalClaim({
     gift: args.gift,
     receiver: args.receiver,
@@ -130,8 +130,6 @@ export async function claimExternal(args: {
   ]);
   const response = await account.execute(
     executeActionOnAccount("claim_external", calculateEscrowAddress(args.gift), claimExternalCallData),
-    undefined,
-    { ...args.details },
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
