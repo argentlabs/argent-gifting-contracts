@@ -1,0 +1,7 @@
+
+# Sepolia Deployment
+
+GiftFactory classhash: 0x6240992fd28e14bf2757a2b7320831220ffa7816cf962403b13f94aec95d7da
+GiftFactory address: 0x7e0f5a5364e197200461a18d695082848b3d4d1e90d3349492263f4c913ae3c
+EscrowAccount class hash: 0x4e2ac27f56cf97077cf43788c831acdc8734e447a5ec676e93101b9dd22eace
+EscrowLibrary class hash: 0x4ee1fc3650c515e0c30705c326dbda34a07ebe32bddf39be43b5110dd4ead16
