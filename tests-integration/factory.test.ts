@@ -63,6 +63,14 @@ describe("Test Core Factory Functions", function () {
       await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
       await manager.tokens.tokenBalance(dustReceiver, gift.gift_token).should.eventually.equal(dustBalance);
     });
+
+    it(`Shouldn't be possible to claim_dust for an unclaimed gift: ${useTxV3}`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const { gift } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const dustReceiver = randomReceiver();
+
+      await expectRevertWithErrorMessage("escr-lib/not-yet-claimed", () => claimDust({ gift, receiver: dustReceiver }));
+    });
   }
 
   it(`Pausable`, async function () {
