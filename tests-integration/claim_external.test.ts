@@ -137,7 +137,7 @@ describe("Claim External", function () {
   });
 
   // Commented out to pass CI temporarily
-  it(`Not possible to gift more via reentrancy`, async function () {
+  it(`Not possible to claim more via reentrancy`, async function () {
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
 
