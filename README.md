@@ -15,6 +15,9 @@ As the fee should be larger than the claiming transaction cost, there might be a
 ## Deposits
 
 Deposits follow the flow described in the first 3 steps above.
+
+![Sessions diagram](/docs/deposit_diagram.png)
+
 For more details please see the `deposit` function at [Deposit example](./lib/deposit.ts).
 
 ## Claiming
@@ -24,6 +27,8 @@ Claiming can be done in two ways:
 ### Internal claim
 
 The recipient uses the private key to craft a transaction to claim the gift. The `fee_amount` will be used to cover the transaction fees, so the recipient only gets the `gift_amount`. The recipient doesn’t need to have any funds in their wallet or even a deployed wallet to claim the gift using this method.
+
+![Sessions diagram](/docs/internal_claim.png)
 
 Edge cases:
 
@@ -38,6 +43,8 @@ For more details about how to trigger it please see the `claimInternal` function
 It is also possible for someone else to pay for the claim fees. This can be useful if the funds deposited to pay for the claim transaction are not enough, or if someone wants to subsidize the claim.
 
 The receiver can use the private key sign a message containing the address receiving the address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so, they should call `claim_external` on the escrow account (through the `execute_action` entrypoint).
+
+![Sessions diagram](/docs/external_claim.png)
 
 For more details please see the `claimExternal` function at [Claim External Example](./lib/claim.ts).
 
