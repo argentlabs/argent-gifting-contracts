@@ -21,6 +21,7 @@ import {
   deployer,
   ethAddress,
   manager,
+  setDefaultTransactionVersionV3,
   strkAddress,
 } from ".";
 
@@ -110,11 +111,10 @@ export async function claimExternal(args: {
   gift: Gift;
   receiver: string;
   giftPrivateKey: string;
+  useTxV3?: boolean;
   dustReceiver?: string;
-  overrides?: { account?: Account };
-  details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
-  const account = args.overrides?.account || deployer;
+  const account = args.useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer;
   const signature = await signExternalClaim({
     gift: args.gift,
     receiver: args.receiver,
@@ -130,13 +130,11 @@ export async function claimExternal(args: {
   ]);
   const response = await account.execute(
     executeActionOnAccount("claim_external", calculateEscrowAddress(args.gift), claimExternalCallData),
-    undefined,
-    { ...args.details },
   );
   return manager.waitForTransaction(response.transaction_hash);
 }
 
-function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
+export function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
   return {
     contractAddress: accountAddress,
     entrypoint: "execute_action",
@@ -148,10 +146,10 @@ export async function claimInternal(args: {
   gift: Gift;
   receiver: string;
   giftPrivateKey: string;
-  overrides?: { EscrowAccountAddress?: string; callToAddress?: string };
+  overrides?: { escrowAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
-  const escrowAddress = args.overrides?.EscrowAccountAddress || calculateEscrowAddress(args.gift);
+  const escrowAddress = args.overrides?.escrowAccountAddress || calculateEscrowAddress(args.gift);
   const escrowAccount = getEscrowAccount(args.gift, args.giftPrivateKey, escrowAddress);
   const response = await escrowAccount.execute(
     [

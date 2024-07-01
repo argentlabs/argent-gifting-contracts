@@ -3,10 +3,12 @@ import { num } from "starknet";
 import {
   ETH_GIFT_MAX_FEE,
   STRK_GIFT_MAX_FEE,
+  buildGiftCallData,
   calculateEscrowAddress,
   claimInternal,
   defaultDepositTestSetup,
   expectRevertWithErrorMessage,
+  getEscrowAccount,
   manager,
   randomReceiver,
   setupGiftProtocol,
@@ -27,6 +29,36 @@ describe("Claim Internal", function () {
       await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
     });
 
+    it(`Invalid gift data txV3: ${useTxV3}`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const receiver = randomReceiver();
+      const escrowAddress = calculateEscrowAddress(gift);
+
+      const escrowAccountAddress = getEscrowAccount(gift, giftPrivateKey, escrowAddress).address;
+      gift.fee_amount = 42n;
+      await expectRevertWithErrorMessage("escrow/invalid-escrow-address", () =>
+        claimInternal({ gift, receiver, giftPrivateKey, overrides: { escrowAccountAddress } }),
+      );
+    });
+
+    it(`Invalid calldata using txV3: ${useTxV3}`, async function () {
+      const { factory } = await setupGiftProtocol();
+      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
+      const receiver = randomReceiver();
+
+      const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
+      await expectRevertWithErrorMessage("escrow/invalid-calldata", () =>
+        escrowAccount.execute([
+          {
+            contractAddress: escrowAccount.address,
+            calldata: [buildGiftCallData(gift), receiver, 1],
+            entrypoint: "claim_internal",
+          },
+        ]),
+      );
+    });
+
     it(`Can't claim if no fee amount deposited (fee token == gift token) using txV3: ${useTxV3}`, async function () {
       const { factory } = await setupGiftProtocol();
       const receiver = randomReceiver();
@@ -37,7 +69,7 @@ describe("Claim Internal", function () {
         overrides: { feeAmount: 0n },
       });
 
-      const errorMsg = useTxV3 ? "gift-acc/max-fee-too-high-v3" : "gift-acc/max-fee-too-high-v1";
+      const errorMsg = useTxV3 ? "escrow/max-fee-too-high-v3" : "escrow/max-fee-too-high-v1";
       await expectRevertWithErrorMessage(errorMsg, () => claimInternal({ gift, receiver, giftPrivateKey }));
     });
 
@@ -59,7 +91,7 @@ describe("Claim Internal", function () {
             max_price_per_unit: num.toHexString(gasPrice),
           },
         };
-        await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v3", () =>
+        await expectRevertWithErrorMessage("escrow/max-fee-too-high-v3", () =>
           claimInternal({
             gift,
             receiver,
@@ -68,7 +100,7 @@ describe("Claim Internal", function () {
           }),
         );
       } else {
-        await expectRevertWithErrorMessage("gift-acc/max-fee-too-high-v1", () =>
+        await expectRevertWithErrorMessage("escrow/max-fee-too-high-v1", () =>
           claimInternal({
             gift,
             receiver,
@@ -88,7 +120,7 @@ describe("Claim Internal", function () {
     const receiver = randomReceiver();
 
     await claimInternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("gift/already-claimed-or-cancel", () =>
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
       claimInternal({ gift, receiver, giftPrivateKey }),
     );
   });
