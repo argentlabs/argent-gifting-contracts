@@ -20,7 +20,7 @@ describe("Claim External", function () {
       const receiver = randomReceiver();
       const escrowAddress = calculateEscrowAddress(gift);
 
-      await claimExternal({ gift, receiver, giftPrivateKey });
+      await claimExternal({ gift, receiver, useTxV3, giftPrivateKey });
 
       const finalBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
       expect(finalBalance).to.equal(gift.fee_amount);
@@ -36,7 +36,7 @@ describe("Claim External", function () {
       const escrowAddress = calculateEscrowAddress(gift);
 
       const balanceBefore = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
-      await claimExternal({ gift, receiver, giftPrivateKey, dustReceiver });
+      await claimExternal({ gift, receiver, giftPrivateKey, useTxV3, dustReceiver });
 
       await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
       await manager.tokens
