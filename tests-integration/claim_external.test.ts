@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { byteArray, uint256 } from "starknet";
 import {
   calculateEscrowAddress,
   cancelGift,
@@ -10,6 +11,7 @@ import {
   manager,
   randomReceiver,
   setupGiftProtocol,
+  signExternalClaim,
 } from "../lib";
 
 describe("Claim External", function () {
@@ -135,33 +137,33 @@ describe("Claim External", function () {
   });
 
   // Commented out to pass CI temporarily
-  // it.skip(`Not possible to gift more via reentrancy`, async function () {
-  //   const { factory } = await setupGiftProtocol();
-  //   const receiver = randomReceiver();
+  it.only(`Not possible to gift more via reentrancy`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const receiver = randomReceiver();
 
-  //   const reentrant = await manager.deployContract("ReentrantERC20", {
-  //     unique: true,
-  //     constructorCalldata: [
-  //       byteArray.byteArrayFromString("ReentrantUSDC"),
-  //       byteArray.byteArrayFromString("RUSDC"),
-  //       uint256.bnToUint256(100e18),
-  //       deployer.address,
-  //       factory.address,
-  //     ],
-  //   });
-  //   const { gift, giftPrivateKey } = await defaultDepositTestSetup({
-  //     factory,
-  //     overrides: { giftTokenAddress: reentrant.address },
-  //   });
+    const reentrant = await manager.deployContract("ReentrantERC20", {
+      unique: true,
+      constructorCalldata: [
+        byteArray.byteArrayFromString("ReentrantUSDC"),
+        byteArray.byteArrayFromString("RUSDC"),
+        uint256.bnToUint256(100e18),
+        deployer.address,
+        factory.address,
+      ],
+    });
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({
+      factory,
+      overrides: { giftTokenAddress: reentrant.address },
+    });
 
-  //   const claimSig = await signExternalClaim({ gift, receiver, giftPrivateKey });
+    const claimSig = await signExternalClaim({ gift, receiver, giftPrivateKey });
 
-  //   reentrant.connect(deployer);
-  //   const { transaction_hash } = await reentrant.set_gift_data(gift, receiver, "0x0", claimSig);
-  //   await manager.waitForTransaction(transaction_hash);
+    reentrant.connect(deployer);
+    const { transaction_hash } = await reentrant.set_gift_data(gift, receiver, "0x0", claimSig);
+    await manager.waitForTransaction(transaction_hash);
 
-  //   await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
-  //     claimExternal({ gift, receiver, giftPrivateKey }),
-  //   );
-  // });
+    await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
+      claimExternal({ gift, receiver, giftPrivateKey }),
+    );
+  });
 });
