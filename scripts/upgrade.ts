@@ -1,5 +1,5 @@
 import { CallData } from "starknet";
-import { logTransactionJson } from "./jsonTxBuilder";
+import { logTransactionJson } from "./json_tx_builder";
 
 /// To use this script, fill in the following value:
 /// - factoryAddress: the address of the factory contract
