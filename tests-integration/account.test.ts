@@ -1,5 +1,7 @@
 import { CallData } from "starknet";
 import {
+  LongSigner,
+  WrongSigner,
   buildGiftCallData,
   calculateEscrowAddress,
   claimInternal,
@@ -8,6 +10,7 @@ import {
   executeActionOnAccount,
   expectRevertWithErrorMessage,
   getEscrowAccount,
+  manager,
   randomReceiver,
   setupGiftProtocol,
 } from "../lib";
@@ -99,5 +102,47 @@ describe("Escrow Account", function () {
     await expectRevertWithErrorMessage("escrow/invalid-gift-nonce", () =>
       claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey, details: { skipValidate: false } }),
     );
+  });
+
+  it(`Long signature shouldn't be accepted`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const receiver = randomReceiver();
+
+    const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
+    escrowAccount.signer = new LongSigner();
+    await expectRevertWithErrorMessage("escrow/invalid-signature-len", () =>
+      escrowAccount.execute([
+        {
+          contractAddress: escrowAccount.address,
+          calldata: [buildGiftCallData(gift), receiver],
+          entrypoint: "claim_internal",
+        },
+      ]),
+    );
+  });
+
+  it(`Wrong signature shouldn't be accepted`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const receiver = randomReceiver();
+
+    const escrowAccount = getEscrowAccount(gift, giftPrivateKey);
+    escrowAccount.signer = new WrongSigner();
+    await expectRevertWithErrorMessage("escrow/invalid-signature", () =>
+      escrowAccount.execute([
+        {
+          contractAddress: escrowAccount.address,
+          calldata: [buildGiftCallData(gift), receiver],
+          entrypoint: "claim_internal",
+        },
+      ]),
+    );
+  });
+
+  it(`Shouldn't be possible to instantiate the library account`, async function () {
+    const classHash = await manager.declareLocalContract("EscrowLibrary");
+
+    await expectRevertWithErrorMessage("escr-lib/instance-not-recommend", () => deployer.deployContract({ classHash }));
   });
 });
