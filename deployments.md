@@ -1,3 +1,0 @@
-## Sepolia
-
-// TODO Update those
