@@ -81,7 +81,7 @@ mod EscrowAccount {
             // When paymaster is implemented on startkent it might break the logic in this method
             assert(tx_info.paymaster_data.is_empty(), 'escrow/unsupported-paymaster');
             // No need to allow deployment
-            assert(tx_info.account_deployment_data.is_empty(), 'argent/invalid-deployment-data');
+            assert(tx_info.account_deployment_data.is_empty(), 'escrow/invalid-deployment-data');
 
             assert(calls.len() == 1, 'escrow/invalid-call-len');
             let Call { to, selector, calldata } = calls.at(0);
