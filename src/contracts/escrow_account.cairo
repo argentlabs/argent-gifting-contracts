@@ -78,7 +78,7 @@ mod EscrowAccount {
             let execution_info = get_execution_info().unbox();
             assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol');
             let tx_info = execution_info.tx_info.unbox();
-            // When paymaster is implemented on startkent it might break the logic in this method
+            // When paymaster is implemented on starknet it might break the logic in this method
             assert(tx_info.paymaster_data.is_empty(), 'escrow/unsupported-paymaster');
             // No need to allow deployment
             assert(tx_info.account_deployment_data.is_empty(), 'escrow/invalid-deployment-data');
