@@ -77,6 +77,12 @@ mod EscrowAccount {
         fn __validate__(ref self: ContractState, calls: Array<Call>) -> felt252 {
             let execution_info = get_execution_info().unbox();
             assert(execution_info.caller_address.is_zero(), 'escrow/only-protocol');
+            let tx_info = execution_info.tx_info.unbox();
+            // When paymaster is implemented on starknet it might break the logic in this method
+            assert(tx_info.paymaster_data.is_empty(), 'escrow/unsupported-paymaster');
+            // No need to allow deployment
+            assert(tx_info.account_deployment_data.is_empty(), 'escrow/invalid-deployment-data');
+
             assert(calls.len() == 1, 'escrow/invalid-call-len');
             let Call { to, selector, calldata } = calls.at(0);
             assert(*to == get_contract_address(), 'escrow/invalid-call-to');
@@ -84,7 +90,6 @@ mod EscrowAccount {
             let (gift, _): (GiftData, ContractAddress) = full_deserialize(*calldata).expect('escrow/invalid-calldata');
             assert_valid_claim(gift);
 
-            let tx_info = execution_info.tx_info.unbox();
             assert(tx_info.nonce == 0, 'escrow/invalid-gift-nonce');
             let execution_hash = tx_info.transaction_hash;
             let signature = tx_info.signature;
