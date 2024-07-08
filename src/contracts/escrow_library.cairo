@@ -120,7 +120,7 @@ mod EscrowLibrary {
             let contract_address = get_contract_address();
             assert(get_caller_address() == gift.sender, 'escr-lib/wrong-sender');
             let gift_balance = balance_of(gift.gift_token, contract_address);
-            assert(gift_balance > 0, 'escr-lib/already-claimed');
+            assert(gift_balance >= gift.gift_amount, 'escr-lib/claimed-or-cancel');
             if gift.gift_token == gift.fee_token {
                 // Sender also gets the dust
                 transfer_from_account(gift.gift_token, gift.sender, gift_balance);
