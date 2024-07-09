@@ -75,33 +75,15 @@ describe("Cancel Gift", function () {
     );
   });
 
-  it(`owner reclaim dust (gift_token == fee_token)`, async function () {
+  it(`already claimed (gift_token == fee_token)`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
-
-    const { transaction_hash: transaction_hash_claim } = await claimInternal({
-      gift,
-      receiver,
-      giftPrivateKey,
-    });
-    const txFeeCancelGift = BigInt((await manager.getTransactionReceipt(transaction_hash_claim)).actual_fee.amount);
-
-    const escrowAddress = calculateEscrowAddress(gift);
-
-    const balanceSenderBefore = await manager.tokens.tokenBalance(deployer.address, gift.gift_token);
-    const { transaction_hash } = await cancelGift({ gift });
-
-    const txFeeCancel = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
-    // Check balance of the sender is correct
-    await manager.tokens
-      .tokenBalance(deployer.address, gift.gift_token)
-      .should.eventually.equal(balanceSenderBefore + gift.fee_amount - txFeeCancel - txFeeCancelGift);
-    // Check balance gift address address == 0
-    await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
+    await claimInternal({ gift, receiver, giftPrivateKey });
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () => cancelGift({ gift }));
   });
 
-  it(`escr-lib/already-claimed (gift_token != fee_token)`, async function () {
+  it(`already claimed (gift_token != fee_token)`, async function () {
     const mockERC20 = await deployMockERC20();
     const { factory } = await setupGiftProtocol();
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({
@@ -111,6 +93,6 @@ describe("Cancel Gift", function () {
     const receiver = randomReceiver();
 
     await claimInternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("escr-lib/already-claimed", () => cancelGift({ gift }));
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () => cancelGift({ gift }));
   });
 });
