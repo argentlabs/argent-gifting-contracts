@@ -49,6 +49,11 @@ describe("Test Factory Upgrade", function () {
     newFactory.connect(deployer);
     await newFactory.get_num().should.eventually.equal(1n);
 
+    // we can't call the perform_upgrade method directly
+    await expectRevertWithErrorMessage("upgrade/only-during-upgrade", () =>
+      factory.perform_upgrade(newFactoryClassHash, []),
+    );
+
     // clear deployment cache
     delete protocolCache["GiftFactory"];
   });
@@ -77,6 +82,14 @@ describe("Test Factory Upgrade", function () {
     await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD + 1n);
     factory.connect(devnetAccount());
     await expectRevertWithErrorMessage("Caller is not the owner", () => factory.upgrade([]));
+  });
+
+  it("no calls to perform_upgrade", async function () {
+    const { factory } = await setupGiftProtocol();
+    const newFactoryClassHash = "0x1";
+    await expectRevertWithErrorMessage("upgrade/only-during-upgrade", () =>
+      factory.perform_upgrade(newFactoryClassHash, []),
+    );
   });
 
   it("Invalid Calldata", async function () {

@@ -157,11 +157,10 @@ pub mod TimelockUpgradeComponent {
     }
 
     #[generate_trait]
-    // #[embeddable_as(TimelockUpgradeInternalImpl)]
     pub impl TimelockUpgradeInternalImpl<
-        TContractState, impl Ownable: OwnableComponent::HasComponent<TContractState>, +HasComponent<TContractState>
+        TContractState, +HasComponent<TContractState>
     > of ITimelockUpgradeInternal<TContractState> {
-        /// @notice Should be called but the `perform_upgrade` method to make sure this method can only by called when upgrading
+        /// @notice Should be called by the `perform_upgrade` method to make sure this method can only by called when upgrading
         fn assert_and_reset_lock(ref self: ComponentState<TContractState>) {
             assert(self.upgrade_lock.read(), 'upgrade/only-during-upgrade');
             self.upgrade_lock.write(false);

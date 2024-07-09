@@ -231,8 +231,10 @@ mod GiftFactory {
         fn perform_upgrade(ref self: ContractState, new_implementation: ClassHash, data: Array<felt252>) {
             self.timelock_upgrade.assert_and_reset_lock();
             // This should do some sanity checks and ensure that the new implementation is a valid implementation,
-            // then it will replace_class_syscall
-            panic_with_felt252('gift-fac/downgrade-not-allowed');
+            // then it can call replace_class_syscall and emit the UpgradeExecuted event
+            panic_with_felt252(
+                'gift-fac/downgrade-not-allowed'
+            ); // since this is the first version nobody should be calling this method
         }
     }
 
