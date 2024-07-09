@@ -75,6 +75,7 @@ mod GiftFactory {
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl InternalImpl = OwnableComponent::InternalImpl<ContractState>;
+    impl TimelockUpgradeInternalImpl = TimelockUpgradeComponent::TimelockUpgradeInternalImpl<ContractState>;
 
     // Pausable
     component!(path: PausableComponent, storage: pausable, event: PausableEvent);
@@ -227,10 +228,10 @@ mod GiftFactory {
 
     #[abi(embed_v0)]
     impl TimelockUpgradeCallbackImpl of ITimelockUpgradeCallback<ContractState> {
-        fn perform_upgrade(ref self: ContractState, new_implementation: ClassHash, data: Span<felt252>) {
-            // This should do some sanity checks 
-            // We should check that the new implementation is a valid implementation
-            // Execute the upgrade using replace_class_syscall(...)
+        fn perform_upgrade(ref self: ContractState, new_implementation: ClassHash, data: Array<felt252>) {
+            self.timelock_upgrade.assert_and_reset_lock();
+            // This should do some sanity checks and ensure that the new implementation is a valid implementation,
+            // then it will replace_class_syscall
             panic_with_felt252('gift-fac/downgrade-not-allowed');
         }
     }

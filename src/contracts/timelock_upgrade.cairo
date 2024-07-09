@@ -40,7 +40,7 @@ pub trait ITimelockUpgradeCallback<TContractState> {
     /// @dev Currently empty as the upgrade logic will be handled in the contract we upgrade to
     /// @param new_implementation The class hash of the new implementation
     /// @param data The data to be used for the upgrade
-    fn perform_upgrade(ref self: TContractState, new_implementation: ClassHash, data: Span<felt252>);
+    fn perform_upgrade(ref self: TContractState, new_implementation: ClassHash, data: Array<felt252>);
 }
 
 #[starknet::component]
@@ -62,7 +62,9 @@ pub mod TimelockUpgradeComponent {
 
     #[storage]
     pub struct Storage {
-        pending_upgrade: PendingUpgrade
+        pending_upgrade: PendingUpgrade,
+        /// true only during the upgrade call
+        upgrade_lock: bool,
     }
 
     #[event]
@@ -141,14 +143,37 @@ pub mod TimelockUpgradeComponent {
             assert(current_timestamp < ready_at + VALID_WINDOW_PERIOD, 'upgrade/upgrade-too-late');
 
             self.pending_upgrade.write(Default::default());
+
+            self.upgrade_lock.write(true);
             ITimelockUpgradeCallbackLibraryDispatcher { class_hash: implementation }
-                .perform_upgrade(implementation, calldata.span());
+                .perform_upgrade(implementation, calldata);
+            self.upgrade_lock.write(false);
         }
+
 
         fn get_pending_upgrade(self: @ComponentState<TContractState>) -> PendingUpgrade {
             self.pending_upgrade.read()
         }
     }
+
+    #[generate_trait]
+    // #[embeddable_as(TimelockUpgradeInternalImpl)]
+    pub impl TimelockUpgradeInternalImpl<
+        TContractState, impl Ownable: OwnableComponent::HasComponent<TContractState>, +HasComponent<TContractState>
+    > of ITimelockUpgradeInternal<TContractState> {
+        /// @notice Should be called but the `perform_upgrade` method to make sure this method can only by called when upgrading
+        fn assert_and_reset_lock(ref self: ComponentState<TContractState>) {
+            assert(self.upgrade_lock.read(), 'upgrade/only-during-upgrade');
+            self.upgrade_lock.write(false);
+        }
+        fn emit_upgrade_executed(
+            ref self: ComponentState<TContractState>, new_implementation: ClassHash, calldata: Array<felt252>
+        ) {
+            self.emit(UpgradeExecuted { new_implementation, calldata });
+        }
+    }
+
+
     #[generate_trait]
     impl PrivateImpl<
         TContractState, impl Ownable: OwnableComponent::HasComponent<TContractState>, +HasComponent<TContractState>
@@ -158,6 +183,7 @@ pub mod TimelockUpgradeComponent {
         }
     }
 }
+
 
 impl DefaultClassHash of Default<ClassHash> {
     fn default() -> ClassHash {
