@@ -19,6 +19,7 @@ mod FutureFactory {
     component!(path: TimelockUpgradeComponent, storage: timelock_upgrade, event: TimelockUpgradeEvent);
     #[abi(embed_v0)]
     impl TimelockUpgradeImpl = TimelockUpgradeComponent::TimelockUpgradeImpl<ContractState>;
+    impl TimelockUpgradeInternalImpl = TimelockUpgradeComponent::TimelockUpgradeInternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -48,8 +49,11 @@ mod FutureFactory {
 
     #[abi(embed_v0)]
     impl TimelockUpgradeCallbackImpl of ITimelockUpgradeCallback<ContractState> {
-        fn perform_upgrade(ref self: ContractState, new_implementation: ClassHash, data: Span<felt252>) {
+        fn perform_upgrade(ref self: ContractState, new_implementation: ClassHash, data: Array<felt252>) {
+            self.timelock_upgrade.assert_and_reset_lock();
             starknet::syscalls::replace_class_syscall(new_implementation).unwrap();
+            self.timelock_upgrade.emit_upgrade_executed(new_implementation, data);
         }
     }
 }
+
