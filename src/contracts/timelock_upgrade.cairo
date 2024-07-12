@@ -147,7 +147,7 @@ pub mod TimelockUpgradeComponent {
             self.upgrade_lock.write(true);
             ITimelockUpgradeCallbackLibraryDispatcher { class_hash: implementation }
                 .perform_upgrade(implementation, calldata);
-            self.upgrade_lock.write(false);
+            assert(!self.upgrade_lock.read(), 'upgrade/lock-not-reset')
         }
 
 
