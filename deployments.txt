@@ -2,5 +2,7 @@
 # Mainnet && Sepolia Deployment
 
 GiftFactory classhash: 0x7fc7e4c4ec573895f7ea4a332c3bc4a3ddcc91604d53956dcc060b7eb9d0813
+GiftFactory address: 0x42a18d85a621332f749947a96342ba682f08e499b9f1364325903a37c5def60 # Deployed only on Sepolia
+GiftFactory owner: 0x6b054e8dbc5756e3f43b70cf1bfa4639c560898a3c70b2f753ba53bef549a1c
 EscrowAccount class hash: 0x661aad3c9812f0dc0a78f320a58bdd8fed18ef601245c20e4bf43667bfd0289
 EscrowLibrary class hash: 0x7a8cca68e7a1ba75b420623224563f3900662f8b5ea6dc660c84ee665076e8d
