@@ -44,18 +44,22 @@ mod EscrowLibrary {
     use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use argent_gifting::contracts::gift_data::GiftData;
     use argent_gifting::contracts::outside_execution::OutsideExecution;
-    use argent_gifting::contracts::utils::StarknetSignature;
+    use argent_gifting::contracts::utils::{StarknetSignature, serialize, full_deserialize};
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
     use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
     use starknet::{
-        ClassHash, ContractAddress, get_caller_address, get_contract_address, syscalls::library_call_syscall
+        ClassHash, ContractAddress, get_caller_address, get_contract_address, syscalls::library_call_syscall,
+        get_block_timestamp
     };
 
     #[storage]
-    struct Storage {}
+    struct Storage {
+        /// Keeps track of used nonces for outside transactions (`execute_from_outside`)
+        outside_nonces: LegacyMap<felt252, bool>,
+    }
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -156,7 +160,57 @@ mod EscrowLibrary {
         fn execute_from_outside_v2(
             ref self: ContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
         ) -> Array<Span<felt252>> {
-            panic_with_felt252('escr-lib/not-allowed-yet')
+            assert(!self.outside_nonces.read(outside_execution.nonce), 'escr-lib/dup-outside-nonce');
+            self.outside_nonces.write(outside_execution.nonce, true);
+
+            // TODO hashing
+            let claim_external_hash = 0x1236;
+            // let hash = outside_execution.get_message_hash_rev_1(claim_address);
+
+            let (r, s): (felt252, felt252) = full_deserialize(signature).expect('escr-lib/invalid-signature');
+            assert(
+                check_ecdsa_signature(claim_external_hash, gift.gift_pubkey, r, s), 'escr-lib/invalid-out-signature'
+            );
+
+            if outside_execution.caller.into() != 'ANY_CALLER' {
+                assert(get_caller_address() == outside_execution.caller, 'escr-lib/invalid-caller');
+            }
+
+            let block_timestamp = get_block_timestamp();
+            assert(
+                outside_execution.execute_after < block_timestamp && block_timestamp < outside_execution.execute_before,
+                'argent/invalid-timestamp'
+            );
+
+            assert(outside_execution.calls.len() == 2, 'escr-lib/call-len');
+
+            // validate 1st call
+            let refund_call = outside_execution.calls.at(0);
+            assert(*refund_call.selector == selector!("transfer"), 'escr-lib/refcall-selector');
+            assert(*refund_call.to == gift.fee_token, 'escr-lib/refcall-to');
+            let (refund_receiver, refund_amount): (ContractAddress, u256) = full_deserialize(*refund_call.calldata)
+                .expect('escr-lib/invalid-ref-calldata');
+            assert(refund_receiver.is_non_zero(), 'escr-lib/refcall-receiver');
+            assert(refund_amount <= gift.fee_amount.into(), 'escr-lib/refcall-amount');
+
+            // validate 2nd call
+            let claim_call = outside_execution.calls.at(1);
+            assert(*claim_call.to == gift.factory, 'escr-lib/claimcall-to');
+            // TODO ideally the function claim_from_outside actually exists in the factory to help with the gas estimation
+            assert(*claim_call.selector == selector!("claim_from_outside"), 'escr-lib/claimcall-to');
+            let (claim_receiver, dust_receiver): (ContractAddress, ContractAddress) = full_deserialize(
+                *refund_call.calldata
+            )
+                .expect('escr-lib/claimcall-calldata');
+
+            // Proceed with the calls
+            // We could optimize and make only one call to `execute_factory_calls`
+            transfer_from_account(gift.fee_token, refund_receiver, refund_amount);
+            self.proceed_with_claim(gift, claim_receiver, dust_receiver);
+            array![
+                serialize(@(true)).span(), // return from the transfer call
+                array![].span() // return from the claim call
+            ]
         }
     }
 
