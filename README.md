@@ -42,7 +42,7 @@ For more details about how to trigger it please see the `claimInternal` function
 
 It is also possible for someone else to pay for the claim fees. This can be useful if the funds deposited to pay for the claim transaction are not enough, or if someone wants to subsidize the claim.
 
-The receiver can use the private key sign a message containing the address receiving the address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so, they should call `claim_external` on the escrow account (through the `execute_action` entrypoint).
+The receiver can use the private key sign a message containing the receiving address (and optionally some address that will receive the dust). Using this signature, anybody can execute a transaction to perform the claim. To do so, they should call `claim_external` on the escrow account (through the `execute_action` entrypoint).
 
 ![Sessions diagram](/docs/external_claim.png)
 
@@ -87,9 +87,9 @@ The parameters are as follow:
 ## Local development
 
 We recommend you to install scarb through ASDF. Please refer to [these instructions](https://docs.swmansion.com/scarb/download.html#install-via-asdf).  
-Thanks to the [.tool-versions file](./.tool-versions), you don't need to install a specific scarb or starknet foundry version. The correct one will be automatically downloaded and installed.
+Thanks to the [.tool-versions file](./.tool-versions), you can install the correct versions for scarb and starknet-foundry by running `asdf install`.
 
-##@ Test the contracts (Cairo)
+### Test the contracts (Cairo)
 
 ```
 scarb test

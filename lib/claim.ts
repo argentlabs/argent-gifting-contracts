@@ -3,6 +3,7 @@ import {
   Call,
   CallData,
   Calldata,
+  ProviderInterface,
   RPC,
   TransactionReceipt,
   UniversalDetails,
@@ -146,19 +147,18 @@ export async function claimInternal(args: {
   gift: Gift;
   receiver: string;
   giftPrivateKey: string;
+  provider?: ProviderInterface;
   overrides?: { escrowAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
 }): Promise<TransactionReceipt> {
   const escrowAddress = args.overrides?.escrowAccountAddress || calculateEscrowAddress(args.gift);
-  const escrowAccount = getEscrowAccount(args.gift, args.giftPrivateKey, escrowAddress);
+  const escrowAccount = getEscrowAccount(args.gift, args.giftPrivateKey, escrowAddress, args.provider);
   const response = await escrowAccount.execute(
-    [
-      {
-        contractAddress: args.overrides?.callToAddress ?? escrowAddress,
-        calldata: [buildGiftCallData(args.gift), args.receiver],
-        entrypoint: "claim_internal",
-      },
-    ],
+    {
+      contractAddress: args.overrides?.callToAddress ?? escrowAddress,
+      calldata: [buildGiftCallData(args.gift), args.receiver],
+      entrypoint: "claim_internal",
+    },
     undefined,
     { ...args.details },
   );
@@ -200,9 +200,14 @@ export const randomReceiver = (): string => {
   return `0x${encode.buf2hex(ec.starkCurve.utils.randomPrivateKey())}`;
 };
 
-export function getEscrowAccount(gift: Gift, giftPrivateKey: string, forceEscrowAddress?: string): Account {
+export function getEscrowAccount(
+  gift: Gift,
+  giftPrivateKey: string,
+  forceEscrowAddress?: string,
+  provider?: ProviderInterface,
+): Account {
   return new Account(
-    manager,
+    provider ?? manager,
     forceEscrowAddress || num.toHex(calculateEscrowAddress(gift)),
     giftPrivateKey,
     undefined,
