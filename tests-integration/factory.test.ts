@@ -75,7 +75,7 @@ describe("Test Core Factory Functions", function () {
 
   it(`Pausable`, async function () {
     // Deploy factory
-    const { factory } = await setupGiftProtocol();
+    const { factory, escrowAccountClassHash } = await setupGiftProtocol();
     const receiver = randomReceiver();
     const giftSigner = new LegacyStarknetKeyPair();
 
@@ -87,14 +87,14 @@ describe("Test Core Factory Functions", function () {
     await manager.waitForTransaction(txHash1);
 
     await expectRevertWithErrorMessage("Pausable: paused", async () => {
-      const { response } = await deposit({
-        sender: deployer,
+      const { response } = await deposit(deployer, {
         giftAmount: ETH_GIFT_AMOUNT,
         feeAmount: ETH_GIFT_MAX_FEE,
         factoryAddress: factory.address,
         feeTokenAddress: token.address,
         giftTokenAddress: token.address,
         giftSignerPubKey: giftSigner.publicKey,
+        escrowAccountClassHash,
       });
       return response;
     });
