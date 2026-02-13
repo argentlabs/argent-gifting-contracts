@@ -1,23 +1,10 @@
 import { expect } from "chai";
-import { num, RPC } from "starknet";
-import {
-  calculateEscrowAddress,
-  claimDust,
-  claimInternal,
-  defaultDepositTestSetup,
-  deployer,
-  deposit,
-  devnetAccount,
-  ETH_GIFT_AMOUNT,
-  ETH_GIFT_MAX_FEE,
-  expectRevertWithErrorMessage,
-  getGiftAmount,
-  getMaxFee,
-  LegacyStarknetKeyPair,
-  manager,
-  randomReceiver,
-  setupGiftProtocol,
-} from "../lib";
+import { num } from "starknet";
+import type { Erc20Contract } from "starknet-dev-toolkit";
+import { deployer, expectRevertWithErrorMessage, LegacyStarknetKeyPair, manager } from "starknet-dev-toolkit";
+import { claimDust, claimInternal, randomReceiver } from "../lib/claim.js";
+import { defaultDepositTestSetup, deposit, STRK_GIFT_AMOUNT, STRK_GIFT_MAX_FEE } from "../lib/deposit.js";
+import { devnetAccount, setupGiftProtocol } from "../lib/protocol.js";
 
 describe("Test Core Factory Functions", function () {
   it(`Calculate escrow address`, async function () {
@@ -25,53 +12,49 @@ describe("Test Core Factory Functions", function () {
     const { gift } = await defaultDepositTestSetup({ factory });
 
     const escrowAddress = await factory.get_escrow_address(
-      gift.escrow_class_hash,
+      gift.escrowClassHash,
       deployer.address,
-      gift.gift_token,
-      gift.gift_amount,
-      gift.fee_token,
-      gift.fee_amount,
-      gift.gift_pubkey,
+      gift.giftToken,
+      gift.giftAmount,
+      gift.feeToken,
+      gift.feeAmount,
+      gift.giftPubkey,
     );
 
-    const correctAddress = calculateEscrowAddress(gift);
+    const correctAddress = gift.escrowAddress();
     expect(escrowAddress).to.be.equal(num.toBigInt(correctAddress));
   });
 
-  for (const useTxV3 of [false, true]) {
-    it(`claim_dust: ${useTxV3}`, async function () {
-      const { factory } = await setupGiftProtocol();
-      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory, useTxV3 });
-      const receiver = randomReceiver();
-      const dustReceiver = randomReceiver();
+  it(`claim_dust`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const receiver = randomReceiver();
+    const dustReceiver = randomReceiver();
 
-      await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
-      const escrowAddress = calculateEscrowAddress(gift);
+    await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
+    const escrowAddress = gift.escrowAddress();
 
-      // Final check
-      const dustBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
-      const maxFee = getMaxFee(useTxV3);
-      const giftAmount = getGiftAmount(useTxV3);
-      expect(dustBalance < maxFee).to.be.true;
-      await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(giftAmount);
+    // Final check
+    const giftToken: Erc20Contract = await manager.loadContract(gift.giftToken);
+    const dustBalance = await giftToken.balance_of(escrowAddress);
+    expect(dustBalance < STRK_GIFT_MAX_FEE).to.equal(true);
+    expect(await giftToken.balance_of(receiver)).to.equal(STRK_GIFT_AMOUNT);
 
-      // Test dust
-      await manager.tokens.tokenBalance(dustReceiver, gift.gift_token).should.eventually.equal(0n);
+    // Test dust
+    expect(await giftToken.balance_of(dustReceiver)).to.equal(0n);
 
-      await claimDust({ gift, receiver: dustReceiver });
+    await claimDust({ gift, receiver: dustReceiver });
 
-      await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
-      await manager.tokens.tokenBalance(dustReceiver, gift.gift_token).should.eventually.equal(dustBalance);
-    });
+    expect(await giftToken.balance_of(escrowAddress)).to.equal(0n);
+    expect(await giftToken.balance_of(dustReceiver)).to.equal(dustBalance);
+  });
 
-    it(`Shouldn't be possible to claim_dust for an unclaimed gift: ${useTxV3}`, async function () {
-      const { factory } = await setupGiftProtocol();
-      const { gift } = await defaultDepositTestSetup({ factory, useTxV3 });
-      const dustReceiver = randomReceiver();
-
-      await expectRevertWithErrorMessage("escr-lib/not-yet-claimed", () => claimDust({ gift, receiver: dustReceiver }));
-    });
-  }
+  it(`Shouldn't be possible to claim_dust for an unclaimed gift`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift } = await defaultDepositTestSetup({ factory });
+    const dustReceiver = randomReceiver();
+    await expectRevertWithErrorMessage("escr-lib/not-yet-claimed", claimDust({ gift, receiver: dustReceiver }));
+  });
 
   it(`Pausable`, async function () {
     // Deploy factory
@@ -79,25 +62,28 @@ describe("Test Core Factory Functions", function () {
     const receiver = randomReceiver();
     const giftSigner = new LegacyStarknetKeyPair();
 
-    const token = await manager.tokens.feeTokenContract(false);
+    const token = await manager.tokens.strkContract();
 
     // pause / unpause
-    factory.connect(deployer);
+    factory.providerOrAccount = deployer;
     const { transaction_hash: txHash1 } = await factory.pause();
     await manager.waitForTransaction(txHash1);
 
-    await expectRevertWithErrorMessage("Pausable: paused", async () => {
-      const { response } = await deposit({
-        sender: deployer,
-        giftAmount: ETH_GIFT_AMOUNT,
-        feeAmount: ETH_GIFT_MAX_FEE,
-        factoryAddress: factory.address,
-        feeTokenAddress: token.address,
-        giftTokenAddress: token.address,
-        giftSignerPubKey: giftSigner.publicKey,
-      });
-      return response;
-    });
+    await expectRevertWithErrorMessage(
+      "Pausable: paused",
+      (async () => {
+        const { response } = await deposit({
+          sender: deployer,
+          giftAmount: STRK_GIFT_AMOUNT,
+          feeAmount: STRK_GIFT_MAX_FEE,
+          factoryAddress: factory.address,
+          feeTokenAddress: token.address,
+          giftTokenAddress: token.address,
+          giftSignerPubKey: giftSigner.publicKey,
+        });
+        return response;
+      })(),
+    );
 
     const { transaction_hash: txHash2 } = await factory.unpause();
     await manager.waitForTransaction(txHash2);
@@ -105,33 +91,32 @@ describe("Test Core Factory Functions", function () {
       factory,
       overrides: { giftPrivateKey: BigInt(giftSigner.privateKey) },
     });
-    const { execution_status } = await claimInternal({
+    await claimInternal({
       gift,
       receiver,
       giftPrivateKey: giftSigner.privateKey,
     });
-    expect(execution_status).to.be.equal(RPC.ETransactionExecutionStatus.SUCCEEDED);
   });
 
   describe("Ownable", function () {
     it("Pause", async function () {
       const { factory } = await setupGiftProtocol();
 
-      factory.connect(devnetAccount());
-      await expectRevertWithErrorMessage("Caller is not the owner", () => factory.pause());
+      factory.providerOrAccount = devnetAccount();
+      await expectRevertWithErrorMessage("Caller is not the owner", factory.pause());
     });
 
     it("Unpause", async function () {
       const { factory } = await setupGiftProtocol();
 
-      factory.connect(deployer);
+      factory.providerOrAccount = deployer;
       await factory.pause();
 
-      factory.connect(devnetAccount());
-      await expectRevertWithErrorMessage("Caller is not the owner", () => factory.unpause());
+      factory.providerOrAccount = devnetAccount();
+      await expectRevertWithErrorMessage("Caller is not the owner", factory.unpause());
 
       // needed for next tests
-      factory.connect(deployer);
+      factory.providerOrAccount = deployer;
       await factory.unpause();
     });
 
@@ -140,7 +125,8 @@ describe("Test Core Factory Functions", function () {
       const { gift } = await defaultDepositTestSetup({ factory });
       const dustReceiver = randomReceiver();
 
-      await expectRevertWithErrorMessage("escr-lib/only-factory-owner", () =>
+      await expectRevertWithErrorMessage(
+        "escr-lib/only-factory-owner",
         claimDust({ gift, receiver: dustReceiver, factoryOwner: devnetAccount() }),
       );
     });

@@ -1,4 +1,4 @@
-import { logTransactionJson } from "./json_tx_builder";
+import { logTransactionJson } from "./json_tx_builder.js";
 
 /// To use this script, fill in the following value:
 /// - factoryAddress: the address of the factory contract

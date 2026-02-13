@@ -1,39 +1,32 @@
-import {
-  calculateEscrowAddress,
-  cancelGift,
-  claimInternal,
-  defaultDepositTestSetup,
-  deployMockERC20,
-  deployer,
-  devnetAccount,
-  expectRevertWithErrorMessage,
-  manager,
-  randomReceiver,
-  setupGiftProtocol,
-} from "../lib";
+import { expect } from "chai";
+import type { Erc20Contract } from "starknet-dev-toolkit";
+import { deployer, expectRevertWithErrorMessage, manager } from "starknet-dev-toolkit";
+import { cancelGift, claimInternal, randomReceiver, waitForSuccess } from "../lib/claim.js";
+import { defaultDepositTestSetup } from "../lib/deposit.js";
+import { deployMockERC20, devnetAccount, setupGiftProtocol } from "../lib/protocol.js";
 
 describe("Cancel Gift", function () {
   it(`fee_token == gift_token`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
-    const escrowAddress = calculateEscrowAddress(gift);
+    const escrowAddress = gift.escrowAddress();
 
-    const balanceSenderBefore = await manager.tokens.tokenBalance(deployer.address, gift.gift_token);
+    const giftToken: Erc20Contract = await manager.loadContract(gift.giftToken);
+    const feeToken: Erc20Contract = await manager.loadContract(gift.feeToken);
+    const balanceSenderBefore = await giftToken.balance_of(deployer.address);
 
     const { transaction_hash } = await cancelGift({ gift });
 
-    const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
+    const txFee = BigInt((await waitForSuccess(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
-    await manager.tokens
-      .tokenBalance(deployer.address, gift.gift_token)
-      .should.eventually.equal(balanceSenderBefore + gift.gift_amount + gift.fee_amount - txFee);
-    // Check balance gift address address == 0
-    await manager.tokens.tokenBalance(escrowAddress, gift.fee_token).should.eventually.equal(0n);
-
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
-      claimInternal({ gift, receiver, giftPrivateKey }),
+    expect(await giftToken.balance_of(deployer.address)).to.equal(
+      balanceSenderBefore + gift.giftAmount + gift.feeAmount - txFee,
     );
+    // Check balance gift address address == 0
+    expect(await feeToken.balance_of(escrowAddress)).to.equal(0n);
+
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", claimInternal({ gift, receiver, giftPrivateKey }));
   });
 
   it(`fee_token != gift_token`, async function () {
@@ -44,35 +37,30 @@ describe("Cancel Gift", function () {
       overrides: { giftTokenAddress: mockERC20.address },
     });
     const receiver = randomReceiver();
-    const escrowAddress = calculateEscrowAddress(gift);
+    const escrowAddress = gift.escrowAddress();
 
-    const balanceSenderBeforeGiftToken = await manager.tokens.tokenBalance(deployer.address, gift.gift_token);
-    const balanceSenderBeforeFeeToken = await manager.tokens.tokenBalance(deployer.address, gift.fee_token);
+    const giftToken: Erc20Contract = await manager.loadContract(gift.giftToken);
+    const feeToken: Erc20Contract = await manager.loadContract(gift.feeToken);
+    const balanceSenderBeforeGiftToken = await giftToken.balance_of(deployer.address);
+    const balanceSenderBeforeFeeToken = await feeToken.balance_of(deployer.address);
     const { transaction_hash } = await cancelGift({ gift });
 
-    const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
+    const txFee = BigInt((await waitForSuccess(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
-    await manager.tokens
-      .tokenBalance(deployer.address, gift.gift_token)
-      .should.eventually.equal(balanceSenderBeforeGiftToken + gift.gift_amount);
-    await manager.tokens
-      .tokenBalance(deployer.address, gift.fee_token)
-      .should.eventually.equal(balanceSenderBeforeFeeToken + gift.fee_amount - txFee);
+    expect(await giftToken.balance_of(deployer.address)).to.equal(balanceSenderBeforeGiftToken + gift.giftAmount);
+    expect(await feeToken.balance_of(deployer.address)).to.equal(balanceSenderBeforeFeeToken + gift.feeAmount - txFee);
     // Check balance gift address address == 0
-    await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
-    await manager.tokens.tokenBalance(escrowAddress, gift.fee_token).should.eventually.equal(0n);
+    expect(await giftToken.balance_of(escrowAddress)).to.equal(0n);
+    expect(await feeToken.balance_of(escrowAddress)).to.equal(0n);
 
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
-      claimInternal({ gift, receiver, giftPrivateKey }),
-    );
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", claimInternal({ gift, receiver, giftPrivateKey }));
   });
 
   it(`wrong sender`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
-    await expectRevertWithErrorMessage("escr-lib/wrong-sender", () =>
-      cancelGift({ gift, senderAccount: devnetAccount() }),
-    );
+    const senderAccount = devnetAccount();
+    await expectRevertWithErrorMessage("escr-lib/wrong-sender", cancelGift({ gift, senderAccount }));
   });
 
   it(`already claimed (gift_token == fee_token)`, async function () {
@@ -80,7 +68,7 @@ describe("Cancel Gift", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
     await claimInternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () => cancelGift({ gift }));
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", cancelGift({ gift }));
   });
 
   it(`already claimed (gift_token != fee_token)`, async function () {
@@ -93,6 +81,6 @@ describe("Cancel Gift", function () {
     const receiver = randomReceiver();
 
     await claimInternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () => cancelGift({ gift }));
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", cancelGift({ gift }));
   });
 });

@@ -1,53 +1,45 @@
 import { expect } from "chai";
 import { byteArray, uint256 } from "starknet";
-import {
-  calculateEscrowAddress,
-  cancelGift,
-  claimExternal,
-  defaultDepositTestSetup,
-  deployMockERC20,
-  deployer,
-  expectRevertWithErrorMessage,
-  manager,
-  randomReceiver,
-  setupGiftProtocol,
-  signExternalClaim,
-} from "../lib";
+import type { Erc20Contract } from "starknet-dev-toolkit";
+import { deployer, expectRevertWithErrorMessage, manager } from "starknet-dev-toolkit";
+import { cancelGift, claimExternal, randomReceiver, signExternalClaim, waitForSuccess } from "../lib/claim.js";
+import type { ReentrantERC20Contract } from "../lib/contract-types.js";
+import { defaultDepositTestSetup } from "../lib/deposit.js";
+import { deployMockERC20, setupGiftProtocol } from "../lib/protocol.js";
 
 describe("Claim External", function () {
-  for (const useTxV3 of [false, true]) {
-    it(`gift_token == fee_token flow using txV3: ${useTxV3} (no dust receiver)`, async function () {
-      const { factory } = await setupGiftProtocol();
-      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
-      const receiver = randomReceiver();
-      const escrowAddress = calculateEscrowAddress(gift);
+  it(`gift_token == fee_token (no dust receiver)`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const receiver = randomReceiver();
+    const escrowAddress = gift.escrowAddress();
 
-      await claimExternal({ gift, receiver, useTxV3, giftPrivateKey });
+    await claimExternal({ gift, receiver, giftPrivateKey });
 
-      const finalBalance = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
-      expect(finalBalance).to.equal(gift.fee_amount);
-      await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
-      await manager.tokens.tokenBalance(escrowAddress, gift.fee_token).should.eventually.equal(gift.fee_amount);
-    });
+    const giftToken: Erc20Contract = await manager.loadContract(gift.giftToken);
+    const feeToken: Erc20Contract = await manager.loadContract(gift.feeToken);
+    expect(await giftToken.balance_of(escrowAddress)).to.equal(gift.feeAmount);
+    expect(await giftToken.balance_of(receiver)).to.equal(gift.giftAmount);
+    expect(await feeToken.balance_of(escrowAddress)).to.equal(gift.feeAmount);
+  });
 
-    it(`gift_token == fee_token flow using txV3: ${useTxV3}  (w/ dust receiver)`, async function () {
-      const { factory } = await setupGiftProtocol();
-      const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
-      const receiver = randomReceiver();
-      const dustReceiver = randomReceiver();
-      const escrowAddress = calculateEscrowAddress(gift);
+  it(`gift_token == fee_token (w/ dust receiver)`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
+    const receiver = randomReceiver();
+    const dustReceiver = randomReceiver();
+    const escrowAddress = gift.escrowAddress();
 
-      const balanceBefore = await manager.tokens.tokenBalance(escrowAddress, gift.gift_token);
-      await claimExternal({ gift, receiver, giftPrivateKey, useTxV3, dustReceiver });
+    const giftToken: Erc20Contract = await manager.loadContract(gift.giftToken);
+    const feeToken: Erc20Contract = await manager.loadContract(gift.feeToken);
+    const balanceBefore = await giftToken.balance_of(escrowAddress);
+    await claimExternal({ gift, receiver, giftPrivateKey, dustReceiver });
 
-      await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
-      await manager.tokens
-        .tokenBalance(dustReceiver, gift.gift_token)
-        .should.eventually.equal(balanceBefore - gift.gift_amount);
-      await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
-      await manager.tokens.tokenBalance(escrowAddress, gift.fee_token).should.eventually.equal(0n);
-    });
-  }
+    expect(await giftToken.balance_of(receiver)).to.equal(gift.giftAmount);
+    expect(await giftToken.balance_of(dustReceiver)).to.equal(balanceBefore - gift.giftAmount);
+    expect(await giftToken.balance_of(escrowAddress)).to.equal(0n);
+    expect(await feeToken.balance_of(escrowAddress)).to.equal(0n);
+  });
 
   it(`gift_token != fee_token (w/ dust receiver)`, async function () {
     const { factory } = await setupGiftProtocol();
@@ -58,14 +50,16 @@ describe("Claim External", function () {
     });
     const receiver = randomReceiver();
     const dustReceiver = randomReceiver();
-    const escrowAddress = calculateEscrowAddress(gift);
+    const escrowAddress = gift.escrowAddress();
 
     await claimExternal({ gift, receiver, giftPrivateKey, dustReceiver });
 
-    await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
-    await manager.tokens.tokenBalance(dustReceiver, gift.fee_token).should.eventually.equal(gift.fee_amount);
-    await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
-    await manager.tokens.tokenBalance(escrowAddress, gift.fee_token).should.eventually.equal(0n);
+    const giftTokenContract: Erc20Contract = await manager.loadContract(gift.giftToken);
+    const feeToken: Erc20Contract = await manager.loadContract(gift.feeToken);
+    expect(await giftTokenContract.balance_of(receiver)).to.equal(gift.giftAmount);
+    expect(await feeToken.balance_of(dustReceiver)).to.equal(gift.feeAmount);
+    expect(await giftTokenContract.balance_of(escrowAddress)).to.equal(0n);
+    expect(await feeToken.balance_of(escrowAddress)).to.equal(0n);
   });
 
   it(`gift_token != fee_token (no dust receiver)`, async function () {
@@ -76,13 +70,15 @@ describe("Claim External", function () {
       overrides: { giftTokenAddress: giftToken.address },
     });
     const receiver = randomReceiver();
-    const escrowAddress = calculateEscrowAddress(gift);
+    const escrowAddress = gift.escrowAddress();
 
     await claimExternal({ gift, receiver, giftPrivateKey });
 
-    await manager.tokens.tokenBalance(receiver, gift.gift_token).should.eventually.equal(gift.gift_amount);
-    await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
-    await manager.tokens.tokenBalance(escrowAddress, gift.fee_token).should.eventually.equal(gift.fee_amount);
+    const giftTokenContract: Erc20Contract = await manager.loadContract(gift.giftToken);
+    const feeToken: Erc20Contract = await manager.loadContract(gift.feeToken);
+    expect(await giftTokenContract.balance_of(receiver)).to.equal(gift.giftAmount);
+    expect(await giftTokenContract.balance_of(escrowAddress)).to.equal(0n);
+    expect(await feeToken.balance_of(escrowAddress)).to.equal(gift.feeAmount);
   });
 
   it(`Zero Receiver`, async function () {
@@ -90,9 +86,7 @@ describe("Claim External", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = "0x0";
 
-    await expectRevertWithErrorMessage("escr-lib/zero-receiver", () =>
-      claimExternal({ gift, receiver, giftPrivateKey }),
-    );
+    await expectRevertWithErrorMessage("escr-lib/zero-receiver", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
   it(`Cannot call claim external twice`, async function () {
@@ -101,16 +95,15 @@ describe("Claim External", function () {
     const receiver = randomReceiver();
 
     await claimExternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
-      claimExternal({ gift, receiver, giftPrivateKey }),
-    );
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
   it(`Invalid Signature`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
-    await expectRevertWithErrorMessage("escr-lib/invalid-ext-signature", () =>
+    await expectRevertWithErrorMessage(
+      "escr-lib/invalid-ext-signature",
       claimExternal({ gift: gift, receiver, giftPrivateKey: "0x1234" }),
     );
   });
@@ -119,21 +112,20 @@ describe("Claim External", function () {
     const { factory } = await setupGiftProtocol();
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
-    const escrowAddress = calculateEscrowAddress(gift);
+    const escrowAddress = gift.escrowAddress();
 
-    const balanceSenderBefore = await manager.tokens.tokenBalance(deployer.address, gift.gift_token);
+    const giftToken: Erc20Contract = await manager.loadContract(gift.giftToken);
+    const balanceSenderBefore = await giftToken.balance_of(deployer.address);
     const { transaction_hash } = await cancelGift({ gift });
-    const txFee = BigInt((await manager.getTransactionReceipt(transaction_hash)).actual_fee.amount);
+    const txFee = BigInt((await waitForSuccess(transaction_hash)).actual_fee.amount);
     // Check balance of the sender is correct
-    await manager.tokens
-      .tokenBalance(deployer.address, gift.gift_token)
-      .should.eventually.equal(balanceSenderBefore + gift.gift_amount + gift.fee_amount - txFee);
-    // Check balance gift address address == 0
-    await manager.tokens.tokenBalance(escrowAddress, gift.gift_token).should.eventually.equal(0n);
-
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", () =>
-      claimExternal({ gift, receiver, giftPrivateKey }),
+    expect(await giftToken.balance_of(deployer.address)).to.equal(
+      balanceSenderBefore + gift.giftAmount + gift.feeAmount - txFee,
     );
+    // Check balance gift address address == 0
+    expect(await giftToken.balance_of(escrowAddress)).to.equal(0n);
+
+    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
   // Commented out to pass CI temporarily
@@ -141,7 +133,7 @@ describe("Claim External", function () {
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
 
-    const reentrant = await manager.deployContract("ReentrantERC20", {
+    const reentrant: ReentrantERC20Contract = await manager.deployContract("ReentrantERC20", {
       unique: true,
       constructorCalldata: [
         byteArray.byteArrayFromString("ReentrantUSDC"),
@@ -158,11 +150,12 @@ describe("Claim External", function () {
 
     const claimSig = await signExternalClaim({ gift, receiver, giftPrivateKey });
 
-    reentrant.connect(deployer);
-    const { transaction_hash } = await reentrant.set_gift_data(gift, receiver, "0x0", claimSig);
-    await manager.waitForTransaction(transaction_hash);
+    reentrant.providerOrAccount = deployer;
+    const { transaction_hash } = await reentrant.set_gift_data(gift.toCallData(), receiver, "0x0", claimSig);
+    await waitForSuccess(transaction_hash);
 
-    await expectRevertWithErrorMessage("ERC20: insufficient balance", () =>
+    await expectRevertWithErrorMessage(
+      "ERC20: insufficient balance",
       claimExternal({ gift, receiver, giftPrivateKey }),
     );
   });

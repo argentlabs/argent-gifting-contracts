@@ -1,29 +1,28 @@
 import {
   Account,
-  Call,
+  type Call,
   CallData,
-  Calldata,
-  RPC,
-  TransactionReceipt,
-  UniversalDetails,
+  type Calldata,
   ec,
   encode,
   hash,
   num,
   shortString,
+  type SuccessfulTransactionReceiptResponseHelper,
   uint256,
+  type UniversalDetails,
 } from "starknet";
 
-import {
-  LegacyStarknetKeyPair,
-  StarknetSignature,
-  calculateEscrowAddress,
-  deployer,
-  ethAddress,
-  manager,
-  setDefaultTransactionVersionV3,
-  strkAddress,
-} from ".";
+import { deployer, LegacyStarknetKeyPair, manager } from "starknet-dev-toolkit";
+import type { GiftData } from "./contract-types.js";
+
+export async function waitForSuccess(txHash: string): Promise<SuccessfulTransactionReceiptResponseHelper> {
+  const receipt = await manager.waitForTransaction(txHash);
+  if (!receipt.isSuccess()) {
+    throw new Error("Transaction failed");
+  }
+  return receipt;
+}
 
 const typesRev1 = {
   StarknetDomain: [
@@ -54,7 +53,7 @@ export interface ClaimExternal {
   dustReceiver?: string;
 }
 
-export async function getClaimExternalData(claimExternal: ClaimExternal) {
+async function getClaimExternalData(claimExternal: ClaimExternal) {
   const chainId = await manager.getChainId();
   return {
     types: typesRev1,
@@ -64,25 +63,69 @@ export async function getClaimExternalData(claimExternal: ClaimExternal) {
   };
 }
 
-export interface AccountConstructorArguments {
-  sender: string;
-  gift_token: string;
-  gift_amount: bigint;
-  fee_token: string;
-  fee_amount: bigint;
-  gift_pubkey: bigint;
-}
-
-export interface Gift extends AccountConstructorArguments {
+export class Gift {
   factory: string;
-  escrow_class_hash: string;
+  escrowClassHash: string;
+  sender: string;
+  giftToken: string;
+  giftAmount: bigint;
+  feeToken: string;
+  feeAmount: bigint;
+  giftPubkey: bigint;
+
+  constructor(params: {
+    factory: string;
+    escrowClassHash: string;
+    sender: string;
+    giftToken: string;
+    giftAmount: bigint;
+    feeToken: string;
+    feeAmount: bigint;
+    giftPubkey: bigint;
+  }) {
+    this.factory = params.factory;
+    this.escrowClassHash = params.escrowClassHash;
+    this.sender = params.sender;
+    this.giftToken = params.giftToken;
+    this.giftAmount = params.giftAmount;
+    this.feeToken = params.feeToken;
+    this.feeAmount = params.feeAmount;
+    this.giftPubkey = params.giftPubkey;
+  }
+
+  toCallData(): GiftData {
+    return {
+      factory: this.factory,
+      escrow_class_hash: this.escrowClassHash,
+      sender: this.sender,
+      gift_token: this.giftToken,
+      gift_amount: uint256.bnToUint256(this.giftAmount),
+      fee_token: this.feeToken,
+      fee_amount: this.feeAmount,
+      gift_pubkey: this.giftPubkey,
+    };
+  }
+
+  escrowAddress(): string {
+    return hash.calculateContractAddressFromHash(
+      0,
+      this.escrowClassHash,
+      CallData.compile({
+        sender: this.sender,
+        gift_token: this.giftToken,
+        gift_amount: uint256.bnToUint256(this.giftAmount),
+        fee_token: this.feeToken,
+        fee_amount: this.feeAmount,
+        gift_pubkey: this.giftPubkey,
+      }),
+      this.factory,
+    );
+  }
 }
 
-export function buildGiftCallData(gift: Gift) {
-  return {
-    ...gift,
-    gift_amount: uint256.bnToUint256(gift.gift_amount),
-  };
+export interface StarknetSignature {
+  r: bigint;
+  s: bigint;
 }
 
 export async function signExternalClaim(signParams: {
@@ -97,10 +140,11 @@ export async function signExternalClaim(signParams: {
     receiver: signParams.receiver,
     dustReceiver: signParams.dustReceiver,
   });
-  const stringArray = (await giftSigner.signMessage(
+  const signature = await giftSigner.signMessage(
     claimExternalData,
-    signParams.forceEscrowAddress || calculateEscrowAddress(signParams.gift),
-  )) as string[];
+    signParams.forceEscrowAddress || signParams.gift.escrowAddress(),
+  );
+  const stringArray = signature as string[];
   if (stringArray.length !== 2) {
     throw new Error("Invalid signature");
   }
@@ -111,10 +155,8 @@ export async function claimExternal(args: {
   gift: Gift;
   receiver: string;
   giftPrivateKey: string;
-  useTxV3?: boolean;
   dustReceiver?: string;
-}): Promise<TransactionReceipt> {
-  const account = args.useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer;
+}): Promise<SuccessfulTransactionReceiptResponseHelper> {
   const signature = await signExternalClaim({
     gift: args.gift,
     receiver: args.receiver,
@@ -123,22 +165,29 @@ export async function claimExternal(args: {
   });
 
   const claimExternalCallData = CallData.compile([
-    buildGiftCallData(args.gift),
+    args.gift.toCallData(),
     args.receiver,
     args.dustReceiver || "0x0",
     signature,
   ]);
-  const response = await account.execute(
-    executeActionOnAccount("claim_external", calculateEscrowAddress(args.gift), claimExternalCallData),
+  const response = await deployer.execute(
+    executeActionOnAccount(EscrowAction.ClaimExternal, args.gift.escrowAddress(), claimExternalCallData),
   );
-  return manager.waitForTransaction(response.transaction_hash);
+  return waitForSuccess(response.transaction_hash);
 }
 
-export function executeActionOnAccount(functionName: string, accountAddress: string, args: Calldata): Call {
+export enum EscrowAction {
+  ClaimExternal = "claim_external",
+  ClaimDust = "claim_dust",
+  Cancel = "cancel",
+  ClaimInternal = "claim_internal",
+}
+
+export function executeActionOnAccount(action: EscrowAction, accountAddress: string, args: Calldata): Call {
   return {
     contractAddress: accountAddress,
     entrypoint: "execute_action",
-    calldata: { selector: hash.getSelectorFromName(functionName), calldata: args },
+    calldata: { selector: hash.getSelectorFromName(action), calldata: args },
   };
 }
 
@@ -148,52 +197,47 @@ export async function claimInternal(args: {
   giftPrivateKey: string;
   overrides?: { escrowAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
-}): Promise<TransactionReceipt> {
-  const escrowAddress = args.overrides?.escrowAccountAddress || calculateEscrowAddress(args.gift);
+}): Promise<SuccessfulTransactionReceiptResponseHelper> {
+  const escrowAddress = args.overrides?.escrowAccountAddress || args.gift.escrowAddress();
   const escrowAccount = getEscrowAccount(args.gift, args.giftPrivateKey, escrowAddress);
+  // Compile gift separately to control serialization in v9
+  const giftCallData = CallData.compile(args.gift.toCallData());
   const response = await escrowAccount.execute(
     [
       {
         contractAddress: args.overrides?.callToAddress ?? escrowAddress,
-        calldata: [buildGiftCallData(args.gift), args.receiver],
+        calldata: [...giftCallData, args.receiver],
         entrypoint: "claim_internal",
       },
     ],
-    undefined,
     { ...args.details },
   );
-  return manager.waitForTransaction(response.transaction_hash);
+  return waitForSuccess(response.transaction_hash);
 }
 
-export async function cancelGift(args: { gift: Gift; senderAccount?: Account }): Promise<TransactionReceipt> {
-  const cancelCallData = CallData.compile([buildGiftCallData(args.gift)]);
+export async function cancelGift(args: {
+  gift: Gift;
+  senderAccount?: Account;
+}): Promise<SuccessfulTransactionReceiptResponseHelper> {
+  const cancelCallData = CallData.compile([args.gift.toCallData()]);
   const account = args.senderAccount || deployer;
   const response = await account.execute(
-    executeActionOnAccount("cancel", calculateEscrowAddress(args.gift), cancelCallData),
+    executeActionOnAccount(EscrowAction.Cancel, args.gift.escrowAddress(), cancelCallData),
   );
-  return manager.waitForTransaction(response.transaction_hash);
+  return waitForSuccess(response.transaction_hash);
 }
 
 export async function claimDust(args: {
   gift: Gift;
   receiver: string;
   factoryOwner?: Account;
-}): Promise<TransactionReceipt> {
-  const claimDustCallData = CallData.compile([buildGiftCallData(args.gift), args.receiver]);
+}): Promise<SuccessfulTransactionReceiptResponseHelper> {
+  const claimDustCallData = CallData.compile([args.gift.toCallData(), args.receiver]);
   const account = args.factoryOwner || deployer;
   const response = await account.execute(
-    executeActionOnAccount("claim_dust", calculateEscrowAddress(args.gift), claimDustCallData),
+    executeActionOnAccount(EscrowAction.ClaimDust, args.gift.escrowAddress(), claimDustCallData),
   );
-  return manager.waitForTransaction(response.transaction_hash);
-}
-
-function useTxv3(tokenAddress: string): boolean {
-  if (tokenAddress === ethAddress) {
-    return false;
-  } else if (tokenAddress === strkAddress) {
-    return true;
-  }
-  throw new Error(`Unsupported token`);
+  return waitForSuccess(response.transaction_hash);
 }
 
 export const randomReceiver = (): string => {
@@ -201,11 +245,9 @@ export const randomReceiver = (): string => {
 };
 
 export function getEscrowAccount(gift: Gift, giftPrivateKey: string, forceEscrowAddress?: string): Account {
-  return new Account(
-    manager,
-    forceEscrowAddress || num.toHex(calculateEscrowAddress(gift)),
-    giftPrivateKey,
-    undefined,
-    useTxv3(gift.fee_token) ? RPC.ETransactionVersion.V3 : RPC.ETransactionVersion.V2,
-  );
+  return new Account({
+    provider: manager,
+    address: forceEscrowAddress || num.toHex(gift.escrowAddress()),
+    signer: giftPrivateKey,
+  });
 }

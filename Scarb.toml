@@ -20,9 +20,9 @@ sort-module-level-items = true
 
 [scripts]
 test = "snforge test"
-start-devnet = "docker build -t devnet . && docker run -d -p 127.0.0.1:5050:5050 devnet"
-kill-devnet = "docker ps -q --filter 'ancestor=devnet' | xargs docker stop"
-test-ts = "scarb --profile release build && yarn tsc && yarn mocha tests-integration/*.test.ts"
-profile = "scarb --profile release build && node --loader ts-node/esm scripts/profile.ts"
-format = "scarb fmt && yarn prettier --write ."
-deploy = "scarb --profile release build && node --loader ts-node/esm scripts/deploy.ts"
+start-devnet = "pnpm exec tsc && pnpm exec tsx scripts/ensure-devnet.ts"
+kill-devnet = "docker stop devnet"
+test-ts = "scarb --profile release build && pnpm exec tsc && pnpm exec tsx scripts/ensure-devnet.ts && pnpm exec mocha --spec \"tests-integration/**/*.test.ts\""
+profile = "scarb --profile release build && pnpm exec tsc && pnpm exec tsx scripts/ensure-devnet.ts && pnpm exec tsx scripts/profile.ts"
+format = "scarb fmt && pnpm exec prettier --write ."
+deploy = "scarb --profile release build &&  pnpm exec tsx scripts/deploy.ts"

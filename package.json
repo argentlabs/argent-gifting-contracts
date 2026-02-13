@@ -1,32 +1,49 @@
 {
-  "name": "scripts_and_tests",
+  "name": "scripts-and-tests",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
+  "engines": {
+    "node": "24.x",
+    "pnpm": "10.x"
+  },
   "author": "",
   "license": "ISC",
-  "type": "module",
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "mocha --config .mocharc.json"
+  },
   "dependencies": {
     "ethers": "6.8.1",
-    "starknet": "6.5.0"
+    "starknet": "9.2.1",
+    "starknet-dev-toolkit": "argentlabs/starknet-dev-toolkit#main"
   },
   "devDependencies": {
-    "@types/node": "^20.11.30",
-    "typescript": "^5.4.3",
-    "ts-node": "^10.9.1",
-    "dotenv": "^16.3.1",
-    "@tsconfig/node18": "^2.0.0",
-    "@types/chai": "^4.3.4",
-    "@types/chai-as-promised": "^7.1.5",
-    "@types/lodash-es": "^4.17.8",
-    "@types/mocha": "^10.0.1",
-    "@typescript-eslint/eslint-plugin": "^5.61.0",
-    "@typescript-eslint/parser": "^5.61.0",
-    "chai": "^4.3.7",
-    "chai-as-promised": "^7.1.1",
-    "eslint": "^8.44.0",
-    "lodash-es": "^4.17.21",
-    "mocha": "^10.2.0",
-    "prettier": "^3.0.0",
-    "prettier-plugin-organize-imports": "^3.2.2"
-  }
+    "@eslint/js": "9.39.2",
+    "@tsconfig/node24": "24.0.4",
+    "@types/chai": "5.2.3",
+    "@types/chai-as-promised": "8.0.2",
+    "@types/lodash-es": "4.17.12",
+    "@types/mocha": "10.0.10",
+    "@types/node": "25.2.0",
+    "chai": "5.1.1",
+    "chai-as-promised": "8.0.2",
+    "eslint": "9.39.2",
+    "globals": "17.3.0",
+    "mocha": "11.7.5",
+    "prettier": "3.8.1",
+    "prettier-plugin-organize-imports": "4.3.0",
+    "ts-node": "10.9.2",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.54.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "starknet-dev-toolkit"
+    ]
+  },
+  "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }

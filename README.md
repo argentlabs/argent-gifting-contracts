@@ -108,7 +108,7 @@ scarb run start-devnet
 Install all packages:
 
 ```shell
-yarn
+pnpm install
 ```
 
 Run all integration tests:
