@@ -1,6 +1,8 @@
 name: Integration CI
 
-on: push
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
   integration-tests:
@@ -9,41 +11,65 @@ jobs:
       - name: Check out main branch
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Scarb
         uses: software-mansion/setup-scarb@v1.6.0
           
       - name: Install project
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Start devnet in background
         run: scarb run start-devnet
 
       - name: Run integration tests
-        run: scarb --release build && tsc && yarn mocha tests-integration/*.test.ts --forbid-only --forbid-pending
+        run: scarb run test-ts
 
   format:
     runs-on: ubuntu-latest
     steps:
-      - name: Step 1 - Check out main branch
+      - name: Check out main branch
         uses: actions/checkout@v4
 
-      - name: Step 2 - Install project
-        run: yarn install --frozen-lockfile
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
 
-      - name: Step 3 - Check correct formatting
-        run: yarn prettier --check .
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install project
+        run: pnpm install --frozen-lockfile
+
+      - name: Check correct formatting
+        run: pnpm format
 
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Step 1 - Check out main branch
+      - name: Check out main branch
         uses: actions/checkout@v4
 
-      - name: Step 2 - Install project
-        run: yarn install --frozen-lockfile
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
 
-      - name: Step 3 - Check correct linting
-        run: yarn eslint .
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install project
+        run: pnpm install --frozen-lockfile
+
+      - name: Check correct linting
+        run: pnpm lint
 
   gas-report:
     runs-on: ubuntu-latest
@@ -51,14 +77,25 @@ jobs:
       - name: Check out main branch
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Scarb
         uses: software-mansion/setup-scarb@v1.6.0
           
       - name: Install project
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Start devnet in background
         run: scarb run start-devnet
+
+      - name: Installing USC
+        run: curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh -s -- v2.4.0
 
       - name: Gas report
         run: scarb run profile --check
