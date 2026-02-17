@@ -133,7 +133,7 @@ describe("Claim External", function () {
     const { factory } = await setupGiftProtocol();
     const receiver = randomReceiver();
 
-    const reentrant: ReentrantERC20Contract = await manager.deployContract("ReentrantERC20", {
+    const reentrant: ReentrantERC20Contract = await manager.declareAndDeployContract("ReentrantERC20", {
       unique: true,
       constructorCalldata: [
         byteArray.byteArrayFromString("ReentrantUSDC"),

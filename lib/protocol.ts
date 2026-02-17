@@ -15,7 +15,7 @@ export async function deployMockERC20(): Promise<Erc20Contract> {
   if (cachedMockERC20) return cachedMockERC20;
 
   // manager.deployContract returns Contract, cast once here
-  cachedMockERC20 = (await manager.deployContract("MockERC20", {
+  cachedMockERC20 = (await manager.declareAndDeployContract("MockERC20", {
     unique: true,
     constructorCalldata: [
       byteArray.byteArrayFromString("USDC"),
@@ -41,7 +41,7 @@ export async function setupGiftProtocol(): Promise<{
   }
 
   // manager.deployContract returns Contract, cast once here
-  cachedFactory = (await manager.deployContract("GiftFactory", {
+  cachedFactory = (await manager.declareAndDeployContract("GiftFactory", {
     unique: true,
     constructorCalldata: [escrowAccountClassHash, escrowLibraryClassHash, deployer.address],
   })) as GiftFactoryContract;

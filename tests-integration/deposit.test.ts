@@ -129,7 +129,7 @@ describe("Deposit", function () {
   });
 
   it("Deposit fails if erc reverts", async function () {
-    const brokenERC20 = await manager.deployContract("BrokenERC20", {
+    const brokenERC20 = await manager.declareAndDeployContract("BrokenERC20", {
       unique: true,
     });
     const { factory } = await setupGiftProtocol();
