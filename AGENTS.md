@@ -17,6 +17,7 @@ See `Scarb.toml` for available scripts.
 ## TypeScript guidance
 
 - Prefer left-hand side type declaration (`const x: Type = ...`) over `as Type` or `<Type>` casts
+- When loading or deploying contracts, prefer typing the left-hand side of the assignment: `const contract: GiftFactoryContract = await manager.loadContract(...)`
 - Use `import type` for type-only imports
 - To skip fee estimation, provide explicit `resourceBounds`
 
