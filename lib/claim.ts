@@ -8,7 +8,6 @@ import {
   hash,
   num,
   shortString,
-  type SuccessfulTransactionReceiptResponseHelper,
   type TransactionReceipt,
   uint256,
   type UniversalDetails,
@@ -208,10 +207,7 @@ export async function claimInternal(args: {
   return manager.ensureSuccess(response);
 }
 
-export async function cancelGift(args: {
-  gift: Gift;
-  senderAccount?: Account;
-}): Promise<TransactionReceipt> {
+export async function cancelGift(args: { gift: Gift; senderAccount?: Account }): Promise<TransactionReceipt> {
   const cancelCallData = CallData.compile([args.gift.toCallData()]);
   const account = args.senderAccount || deployer;
   const response = await account.execute(
