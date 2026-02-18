@@ -97,7 +97,7 @@ mod EscrowLibrary {
                 || selector == selector!("claim_dust")
                 || selector == selector!("cancel");
             assert(is_whitelisted, 'escr-lib/invalid-selector');
-            library_call_syscall(this_class_hash, selector, args).unwrap() 
+            library_call_syscall(this_class_hash, selector, args).unwrap()
         }
 
         fn claim_external(
