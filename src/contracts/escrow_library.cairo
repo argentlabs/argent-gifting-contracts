@@ -97,11 +97,7 @@ mod EscrowLibrary {
                 || selector == selector!("claim_dust")
                 || selector == selector!("cancel");
             assert(is_whitelisted, 'escr-lib/invalid-selector');
-            // TODO Fails with Result::unwrap failed, without error message, so some tests are failing, this fixes the tests.
-            match library_call_syscall(this_class_hash, selector, args) {
-                Result::Ok(result) => result,
-                Result::Err(revert_reason) => panic(revert_reason),
-            }
+            library_call_syscall(this_class_hash, selector, args).unwrap() 
         }
 
         fn claim_external(

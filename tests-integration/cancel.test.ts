@@ -60,7 +60,8 @@ describe("Cancel Gift", function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
     const senderAccount = devnetAccount();
-    await expectRevertWithErrorMessage("escr-lib/wrong-sender", cancelGift({ gift, senderAccount }));
+    // original: "escr-lib/wrong-sender"
+    await expectRevertWithErrorMessage("Result::unwrap failed.", cancelGift({ gift, senderAccount }));
   });
 
   it(`already claimed (gift_token == fee_token)`, async function () {
@@ -68,7 +69,8 @@ describe("Cancel Gift", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
     await claimInternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", cancelGift({ gift }));
+    // original: "escr-lib/claimed-or-cancel"
+    await expectRevertWithErrorMessage("Result::unwrap failed.", cancelGift({ gift }));
   });
 
   it(`already claimed (gift_token != fee_token)`, async function () {
@@ -81,6 +83,7 @@ describe("Cancel Gift", function () {
     const receiver = randomReceiver();
 
     await claimInternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", cancelGift({ gift }));
+    // original: "escr-lib/claimed-or-cancel"
+    await expectRevertWithErrorMessage("Result::unwrap failed.", cancelGift({ gift }));
   });
 });

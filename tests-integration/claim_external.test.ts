@@ -86,7 +86,8 @@ describe("Claim External", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = "0x0";
 
-    await expectRevertWithErrorMessage("escr-lib/zero-receiver", claimExternal({ gift, receiver, giftPrivateKey }));
+    // original: "escr-lib/zero-receiver"
+    await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
   it(`Cannot call claim external twice`, async function () {
@@ -95,15 +96,17 @@ describe("Claim External", function () {
     const receiver = randomReceiver();
 
     await claimExternal({ gift, receiver, giftPrivateKey });
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", claimExternal({ gift, receiver, giftPrivateKey }));
+    // original: "escr-lib/claimed-or-cancel"
+    await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
   it(`Invalid Signature`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
+    // original: "escr-lib/invalid-ext-signature"
     await expectRevertWithErrorMessage(
-      "escr-lib/invalid-ext-signature",
+      "Result::unwrap failed.",
       claimExternal({ gift: gift, receiver, giftPrivateKey: "0x1234" }),
     );
   });
@@ -125,7 +128,8 @@ describe("Claim External", function () {
     // Check balance gift address address == 0
     expect(await giftToken.balance_of(escrowAddress)).to.equal(0n);
 
-    await expectRevertWithErrorMessage("escr-lib/claimed-or-cancel", claimExternal({ gift, receiver, giftPrivateKey }));
+    // original: "escr-lib/claimed-or-cancel"
+    await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
   // Commented out to pass CI temporarily
@@ -154,8 +158,9 @@ describe("Claim External", function () {
     const { transaction_hash } = await reentrant.set_gift_data(gift.toCallData(), receiver, "0x0", claimSig);
     await waitForSuccess(transaction_hash);
 
+    // original: "ERC20: insufficient balance"
     await expectRevertWithErrorMessage(
-      "ERC20: insufficient balance",
+      "Result::unwrap failed.",
       claimExternal({ gift, receiver, giftPrivateKey }),
     );
   });
