@@ -12,8 +12,8 @@ importers:
         specifier: 9.2.1
         version: 9.2.1(typescript@5.9.3)
       starknet-dev-toolkit:
-        specifier: link:../starknet-dev-toolkit
-        version: link:../starknet-dev-toolkit
+        specifier: argentlabs/starknet-dev-toolkit#main
+        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/cff28a54bd5c7179934635c8d709d1daa2de8bc8(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3))
     devDependencies:
       '@eslint/js':
         specifier: 9.39.2
@@ -68,6 +68,9 @@ importers:
         version: 8.54.0(eslint@9.39.2)(typescript@5.9.3)
 
 packages:
+
+  '@adraffy/ens-normalize@1.10.1':
+    resolution: {integrity: sha512-96Z2IP3mYmF1Xg2cDm8f1gWGf/HUVedQ3FMifV4kG/PQ4yEP51xDtRAEfhVNt5f/uzpNkZHwWQuUcu6D6K+Ekw==}
 
   '@adraffy/ens-normalize@1.11.1':
     resolution: {integrity: sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ==}
@@ -300,6 +303,9 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
+  '@noble/curves@1.2.0':
+    resolution: {integrity: sha512-oYclrNgRaM9SsBUBVbb8M6DTV7ZHRTKugureoYEncY5c65HOmRzvSiTE3y5CYaPYJA/GVkrhXEoF0M3Ya9PMnw==}
+
   '@noble/curves@1.7.0':
     resolution: {integrity: sha512-UTMhXK9SeDhFJVrHeUJ5uZlI6ajXg10O6Ddocf9S6GjbSBVZsJo88HzKwXznNfGpMTRDyJkqMjNDPYgf0qFWnw==}
     engines: {node: ^14.21.3 || >=16}
@@ -307,6 +313,10 @@ packages:
   '@noble/curves@1.9.7':
     resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
     engines: {node: ^14.21.3 || >=16}
+
+  '@noble/hashes@1.3.2':
+    resolution: {integrity: sha512-MVC8EAQp7MvEcm30KWENFjgR+Mkmf+D189XJTkFIlwohU5hcBbn1ZkKq7KVTi2Hme3PMGF390DaL52beVrIihQ==}
+    engines: {node: '>= 16'}
 
   '@noble/hashes@1.6.0':
     resolution: {integrity: sha512-YUULf0Uk4/mAA89w+k3+yUYh6NrEvxZa5T6SY3wlMvE2chHkxFUUIDI8/XW1QSC357iA5pSnqt7XEhvFOqmDyQ==}
@@ -380,6 +390,9 @@ packages:
 
   '@types/mocha@10.0.10':
     resolution: {integrity: sha512-xPyYSz1cMPnJQhl0CLMH68j3gprKZaTjG3s5Vi+fDgx+uhG9NOXwbVt52eFS8ECyXhyKcjDLCBEqBExKuiZb7Q==}
+
+  '@types/node@22.7.5':
+    resolution: {integrity: sha512-jML7s2NAzMWc//QSJ1a3prpk78cOPchGvXJsC3C6R6PSMoooztvRVQEz89gmBTBY1SPMaqo5teB4uNHPdetShQ==}
 
   '@types/node@25.2.0':
     resolution: {integrity: sha512-DZ8VwRFUNzuqJ5khrvwMXHmvPe+zGayJhr2CDNiKB1WBE1ST8Djl00D0IC4vvNmHMdj6DlbYRIaFE7WHjlDl5w==}
@@ -479,6 +492,9 @@ packages:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  aes-js@4.0.0-beta.5:
+    resolution: {integrity: sha512-G965FqalsNyrPqgEGON7nIx1e/OVENSgiEIzyC63haUMuvNnwIgIjMs52hlTCKhkBny7A2ORNlfY9Zu+jmGk1Q==}
 
   ajv@6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
@@ -675,6 +691,10 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
+  ethers@6.16.0:
+    resolution: {integrity: sha512-U1wulmetNymijEhpSEQ7Ct/P/Jw9/e7R1j5XIbPRydgV2DjLVMsULDlNksq3RQnFgKoLlZf88ijYtWEXcPa07A==}
+    engines: {node: '>=14.0.0'}
+
   eventemitter3@5.0.1:
     resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
 
@@ -835,6 +855,9 @@ packages:
   locate-path@6.0.0:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
+
+  lodash-es@4.17.23:
+    resolution: {integrity: sha512-kVI48u3PZr38HdYz98UmfPnXl2DXrpdctLrFLCd3kOx1xUkOmpFPx7gCWWM5MPkL/fD8zb+Ph0QzjGFs4+hHWg==}
 
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
@@ -997,6 +1020,15 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/cff28a54bd5c7179934635c8d709d1daa2de8bc8:
+    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/cff28a54bd5c7179934635c8d709d1daa2de8bc8}
+    version: 0.1.0
+    engines: {node: 24.x, pnpm: 10.x}
+    peerDependencies:
+      chai: 5.1.1
+      chai-as-promised: 8.0.2
+      starknet: 9.2.1
+
   starknet@9.2.1:
     resolution: {integrity: sha512-bFJY2sMZ9tsLBhPCm719MWjoz+doabXIwPX/xtW56EHwAJMRAS6mICF6H2dCwOQHJmCMKpOSFBwW0SaiHzcioQ==}
     engines: {node: '>=22'}
@@ -1056,6 +1088,9 @@ packages:
       '@swc/wasm':
         optional: true
 
+  tslib@2.7.0:
+    resolution: {integrity: sha512-gLXCKdN1/j47AiHiOkJN69hJmcbGTHI0ImLmbYLHykhgeN0jVGola9yVjFgzCUklsZQMW55o+dW7IXv3RCXDzA==}
+
   tsx@4.21.0:
     resolution: {integrity: sha512-5C1sg4USs1lfG0GFb2RLXsdpXqBSEhAaA/0kPL01wxzpMqLILNxIxIOKiILz+cdg/pLnOUxFYOR5yhHU666wbw==}
     engines: {node: '>=18.0.0'}
@@ -1076,6 +1111,9 @@ packages:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  undici-types@6.19.8:
+    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
 
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
@@ -1110,6 +1148,18 @@ packages:
     resolution: {integrity: sha512-si7QWI6zUMq56bESFvagtmzMdGOtoxfR+Sez11Mobfc7tm+VkUckk9bW2UeffTGVUbOksxmSw0AA2gs8g71NCQ==}
     engines: {node: '>=12'}
 
+  ws@8.17.1:
+    resolution: {integrity: sha512-6XQFvXTkbfUOZOKKILFG1PDK2NDQs4azKQl26T0YS5CxqWLgXajbPZ+h4gZekJyRqFU8pvnbAbbs/3TgRPy+GQ==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
@@ -1135,6 +1185,8 @@ packages:
     engines: {node: '>=10'}
 
 snapshots:
+
+  '@adraffy/ens-normalize@1.10.1': {}
 
   '@adraffy/ens-normalize@1.11.1': {}
 
@@ -1295,6 +1347,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  '@noble/curves@1.2.0':
+    dependencies:
+      '@noble/hashes': 1.3.2
+
   '@noble/curves@1.7.0':
     dependencies:
       '@noble/hashes': 1.6.0
@@ -1302,6 +1358,8 @@ snapshots:
   '@noble/curves@1.9.7':
     dependencies:
       '@noble/hashes': 1.8.0
+
+  '@noble/hashes@1.3.2': {}
 
   '@noble/hashes@1.6.0': {}
 
@@ -1372,6 +1430,10 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/mocha@10.0.10': {}
+
+  '@types/node@22.7.5':
+    dependencies:
+      undici-types: 6.19.8
 
   '@types/node@25.2.0':
     dependencies:
@@ -1494,6 +1556,8 @@ snapshots:
       acorn: 8.15.0
 
   acorn@8.15.0: {}
+
+  aes-js@4.0.0-beta.5: {}
 
   ajv@6.12.6:
     dependencies:
@@ -1711,6 +1775,19 @@ snapshots:
 
   esutils@2.0.3: {}
 
+  ethers@6.16.0:
+    dependencies:
+      '@adraffy/ens-normalize': 1.10.1
+      '@noble/curves': 1.2.0
+      '@noble/hashes': 1.3.2
+      '@types/node': 22.7.5
+      aes-js: 4.0.0-beta.5
+      tslib: 2.7.0
+      ws: 8.17.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   eventemitter3@5.0.1: {}
 
   fast-deep-equal@3.1.3: {}
@@ -1846,6 +1923,8 @@ snapshots:
     dependencies:
       p-locate: 5.0.0
 
+  lodash-es@4.17.23: {}
+
   lodash.merge@4.6.2: {}
 
   log-symbols@4.1.0:
@@ -1911,8 +1990,8 @@ snapshots:
   ox@0.4.4(typescript@5.9.3):
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
-      '@noble/curves': 1.7.0
-      '@noble/hashes': 1.6.1
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
       abitype: 1.2.3(typescript@5.9.3)
@@ -1996,6 +2075,18 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/cff28a54bd5c7179934635c8d709d1daa2de8bc8(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3)):
+    dependencies:
+      '@noble/curves': 1.7.0
+      chai: 5.1.1
+      chai-as-promised: 8.0.2(chai@5.1.1)
+      ethers: 6.16.0
+      lodash-es: 4.17.23
+      starknet: 9.2.1(typescript@5.9.3)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   starknet@9.2.1(typescript@5.9.3):
     dependencies:
       '@noble/curves': 1.7.0
@@ -2072,6 +2163,8 @@ snapshots:
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
 
+  tslib@2.7.0: {}
+
   tsx@4.21.0:
     dependencies:
       esbuild: 0.27.3
@@ -2095,6 +2188,8 @@ snapshots:
       - supports-color
 
   typescript@5.9.3: {}
+
+  undici-types@6.19.8: {}
 
   undici-types@7.16.0: {}
 
@@ -2125,6 +2220,8 @@ snapshots:
       ansi-styles: 6.2.3
       string-width: 5.1.2
       strip-ansi: 7.1.2
+
+  ws@8.17.1: {}
 
   y18n@5.0.8: {}
 
