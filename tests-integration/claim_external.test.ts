@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { byteArray, uint256 } from "starknet";
 import type { Erc20Contract } from "starknet-dev-toolkit";
 import { deployer, expectRevertWithErrorMessage, manager } from "starknet-dev-toolkit";
-import { cancelGift, claimExternal, randomReceiver, signExternalClaim, waitForSuccess } from "../lib/claim.js";
+import { cancelGift, claimExternal, randomReceiver, signExternalClaim } from "../lib/claim.js";
 import type { ReentrantERC20Contract } from "../lib/contract-types.js";
 import { defaultDepositTestSetup } from "../lib/deposit.js";
 import { deployMockERC20, setupGiftProtocol } from "../lib/protocol.js";
@@ -119,8 +119,8 @@ describe("Claim External", function () {
 
     const giftToken: Erc20Contract = await manager.loadContract(gift.giftToken);
     const balanceSenderBefore = await giftToken.balance_of(deployer.address);
-    const { transaction_hash } = await cancelGift({ gift });
-    const txFee = BigInt((await waitForSuccess(transaction_hash)).actual_fee.amount);
+    const response = await cancelGift({ gift });
+    const txFee = BigInt((await manager.ensureSuccess(response)).actual_fee.amount);
     // Check balance of the sender is correct
     expect(await giftToken.balance_of(deployer.address)).to.equal(
       balanceSenderBefore + gift.giftAmount + gift.feeAmount - txFee,
@@ -155,8 +155,8 @@ describe("Claim External", function () {
     const claimSig = await signExternalClaim({ gift, receiver, giftPrivateKey });
 
     reentrant.providerOrAccount = deployer;
-    const { transaction_hash } = await reentrant.set_gift_data(gift.toCallData(), receiver, "0x0", claimSig);
-    await waitForSuccess(transaction_hash);
+    const response = await reentrant.set_gift_data(gift.toCallData(), receiver, "0x0", claimSig);
+    await manager.ensureSuccess(response);
 
     // original: "ERC20: insufficient balance"
     await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));

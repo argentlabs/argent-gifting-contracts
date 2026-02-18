@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import type { Erc20Contract } from "starknet-dev-toolkit";
 import { deployer, expectRevertWithErrorMessage, manager } from "starknet-dev-toolkit";
-import { cancelGift, claimInternal, randomReceiver, waitForSuccess } from "../lib/claim.js";
+import { cancelGift, claimInternal, randomReceiver } from "../lib/claim.js";
 import { defaultDepositTestSetup } from "../lib/deposit.js";
 import { deployMockERC20, devnetAccount, setupGiftProtocol } from "../lib/protocol.js";
 
@@ -16,9 +16,9 @@ describe("Cancel Gift", function () {
     const feeToken: Erc20Contract = await manager.loadContract(gift.feeToken);
     const balanceSenderBefore = await giftToken.balance_of(deployer.address);
 
-    const { transaction_hash } = await cancelGift({ gift });
+    const response = await cancelGift({ gift });
 
-    const txFee = BigInt((await waitForSuccess(transaction_hash)).actual_fee.amount);
+    const txFee = BigInt((await manager.ensureSuccess(response)).actual_fee.amount);
     // Check balance of the sender is correct
     expect(await giftToken.balance_of(deployer.address)).to.equal(
       balanceSenderBefore + gift.giftAmount + gift.feeAmount - txFee,
@@ -43,9 +43,9 @@ describe("Cancel Gift", function () {
     const feeToken: Erc20Contract = await manager.loadContract(gift.feeToken);
     const balanceSenderBeforeGiftToken = await giftToken.balance_of(deployer.address);
     const balanceSenderBeforeFeeToken = await feeToken.balance_of(deployer.address);
-    const { transaction_hash } = await cancelGift({ gift });
+    const response = await cancelGift({ gift });
 
-    const txFee = BigInt((await waitForSuccess(transaction_hash)).actual_fee.amount);
+    const txFee = BigInt((await manager.ensureSuccess(response)).actual_fee.amount);
     // Check balance of the sender is correct
     expect(await giftToken.balance_of(deployer.address)).to.equal(balanceSenderBeforeGiftToken + gift.giftAmount);
     expect(await feeToken.balance_of(deployer.address)).to.equal(balanceSenderBeforeFeeToken + gift.feeAmount - txFee);

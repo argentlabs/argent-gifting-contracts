@@ -1,6 +1,6 @@
-import type { Account, Call, InvokeFunctionResponse, SuccessfulTransactionReceiptResponseHelper } from "starknet";
+import type { Account, Call, InvokeFunctionResponse, TransactionReceipt } from "starknet";
 import { LegacyStarknetKeyPair, deployer, manager } from "starknet-dev-toolkit";
-import { Gift, waitForSuccess } from "./claim.js";
+import { Gift } from "./claim.js";
 import type { GiftFactoryContract } from "./contract-types.js";
 
 export const STRK_GIFT_MAX_FEE = 200000000000000000n; // 0.2 STRK
@@ -72,7 +72,7 @@ export async function defaultDepositTestSetup(args: {
 }): Promise<{
   gift: Gift;
   giftPrivateKey: string;
-  txReceipt: SuccessfulTransactionReceiptResponseHelper;
+  txReceipt: TransactionReceipt;
 }> {
   const escrowAccountClassHash =
     args.overrides?.escrowAccountClassHash || (await args.factory.get_latest_escrow_class_hash());
@@ -95,6 +95,6 @@ export async function defaultDepositTestSetup(args: {
     giftTokenAddress,
     giftSignerPubKey: giftPubKey,
   });
-  const txReceipt = await waitForSuccess(response.transaction_hash);
+  const txReceipt = await manager.ensureSuccess(response);
   return { gift, giftPrivateKey: giftSigner.privateKey, txReceipt };
 }

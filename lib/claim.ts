@@ -9,20 +9,13 @@ import {
   num,
   shortString,
   type SuccessfulTransactionReceiptResponseHelper,
+  type TransactionReceipt,
   uint256,
   type UniversalDetails,
 } from "starknet";
 
 import { deployer, LegacyStarknetKeyPair, manager } from "starknet-dev-toolkit";
 import type { GiftData } from "./contract-types.js";
-
-export async function waitForSuccess(txHash: string): Promise<SuccessfulTransactionReceiptResponseHelper> {
-  const receipt = await manager.waitForTransaction(txHash);
-  if (!receipt.isSuccess()) {
-    throw new Error("Transaction failed");
-  }
-  return receipt;
-}
 
 const typesRev1 = {
   StarknetDomain: [
@@ -156,7 +149,7 @@ export async function claimExternal(args: {
   receiver: string;
   giftPrivateKey: string;
   dustReceiver?: string;
-}): Promise<SuccessfulTransactionReceiptResponseHelper> {
+}): Promise<TransactionReceipt> {
   const signature = await signExternalClaim({
     gift: args.gift,
     receiver: args.receiver,
@@ -173,7 +166,7 @@ export async function claimExternal(args: {
   const response = await deployer.execute(
     executeActionOnAccount(EscrowAction.ClaimExternal, args.gift.escrowAddress(), claimExternalCallData),
   );
-  return waitForSuccess(response.transaction_hash);
+  return manager.ensureSuccess(response);
 }
 
 export enum EscrowAction {
@@ -197,7 +190,7 @@ export async function claimInternal(args: {
   giftPrivateKey: string;
   overrides?: { escrowAccountAddress?: string; callToAddress?: string };
   details?: UniversalDetails;
-}): Promise<SuccessfulTransactionReceiptResponseHelper> {
+}): Promise<TransactionReceipt> {
   const escrowAddress = args.overrides?.escrowAccountAddress || args.gift.escrowAddress();
   const escrowAccount = getEscrowAccount(args.gift, args.giftPrivateKey, escrowAddress);
   // Compile gift separately to control serialization in v9
@@ -212,32 +205,32 @@ export async function claimInternal(args: {
     ],
     { ...args.details },
   );
-  return waitForSuccess(response.transaction_hash);
+  return manager.ensureSuccess(response);
 }
 
 export async function cancelGift(args: {
   gift: Gift;
   senderAccount?: Account;
-}): Promise<SuccessfulTransactionReceiptResponseHelper> {
+}): Promise<TransactionReceipt> {
   const cancelCallData = CallData.compile([args.gift.toCallData()]);
   const account = args.senderAccount || deployer;
   const response = await account.execute(
     executeActionOnAccount(EscrowAction.Cancel, args.gift.escrowAddress(), cancelCallData),
   );
-  return waitForSuccess(response.transaction_hash);
+  return manager.ensureSuccess(response);
 }
 
 export async function claimDust(args: {
   gift: Gift;
   receiver: string;
   factoryOwner?: Account;
-}): Promise<SuccessfulTransactionReceiptResponseHelper> {
+}): Promise<TransactionReceipt> {
   const claimDustCallData = CallData.compile([args.gift.toCallData(), args.receiver]);
   const account = args.factoryOwner || deployer;
   const response = await account.execute(
     executeActionOnAccount(EscrowAction.ClaimDust, args.gift.escrowAddress(), claimDustCallData),
   );
-  return waitForSuccess(response.transaction_hash);
+  return manager.ensureSuccess(response);
 }
 
 export const randomReceiver = (): string => {
