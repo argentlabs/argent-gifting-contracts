@@ -61,6 +61,7 @@ Operations that go through the `execute_action` entrypoint (`cancel`, `claim_ext
 `claim_internal` is not affected because it goes through `__validate__`/`__execute__`, which propagates panic data directly.
 
 The underlying error could be any of:
+
 - `escr-lib/claimed-or-cancel`: the gift has already been claimed or cancelled
 - `escr-lib/wrong-sender`: the caller is not the original sender (cancel only)
 - `escr-lib/only-factory-owner`: the caller is not the factory owner (claim dust only)

@@ -159,9 +159,6 @@ describe("Claim External", function () {
     await waitForSuccess(transaction_hash);
 
     // original: "ERC20: insufficient balance"
-    await expectRevertWithErrorMessage(
-      "Result::unwrap failed.",
-      claimExternal({ gift, receiver, giftPrivateKey }),
-    );
+    await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 });
