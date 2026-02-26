@@ -13,7 +13,7 @@ importers:
         version: 9.2.1(typescript@5.9.3)
       starknet-dev-toolkit:
         specifier: argentlabs/starknet-dev-toolkit#main
-        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/a8a46e47099ee89e717a8c3214bd8012d858db83(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3))
+        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/9ad9871841099bc1227ee86c45aea9870108af28(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3))
     devDependencies:
       '@eslint/js':
         specifier: 9.39.2
@@ -1029,8 +1029,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/a8a46e47099ee89e717a8c3214bd8012d858db83:
-    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/a8a46e47099ee89e717a8c3214bd8012d858db83}
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/9ad9871841099bc1227ee86c45aea9870108af28:
+    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/9ad9871841099bc1227ee86c45aea9870108af28}
     version: 0.1.0
     engines: {node: 24.x, pnpm: 10.x}
     peerDependencies:
@@ -2088,7 +2088,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/a8a46e47099ee89e717a8c3214bd8012d858db83(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3)):
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/9ad9871841099bc1227ee86c45aea9870108af28(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3)):
     dependencies:
       '@noble/curves': 1.7.0
       chai: 5.1.1
