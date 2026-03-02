@@ -12,8 +12,8 @@ importers:
         specifier: 9.2.1
         version: 9.2.1(typescript@5.9.3)
       starknet-dev-toolkit:
-        specifier: github:argentlabs/starknet-dev-toolkit#0.1.0-rc.0
-        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/94772e3c6c0e95244f399c6831dd8c4213c76454(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3))
+        specifier: github:argentlabs/starknet-dev-toolkit#0.1.0-rc.1
+        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/321ee5c43e98bf08c7e4e8e40c2a51a7705fe94c(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3))
     devDependencies:
       '@eslint/js':
         specifier: 9.39.2
@@ -978,8 +978,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/94772e3c6c0e95244f399c6831dd8c4213c76454:
-    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/94772e3c6c0e95244f399c6831dd8c4213c76454}
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/321ee5c43e98bf08c7e4e8e40c2a51a7705fe94c:
+    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/321ee5c43e98bf08c7e4e8e40c2a51a7705fe94c}
     version: 0.1.0-rc.0
     engines: {node: 24.x, pnpm: 10.x}
     peerDependencies:
@@ -1981,7 +1981,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/94772e3c6c0e95244f399c6831dd8c4213c76454(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3)):
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/321ee5c43e98bf08c7e4e8e40c2a51a7705fe94c(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3)):
     dependencies:
       '@noble/curves': 1.7.0
       chai: 5.1.1
