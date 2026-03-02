@@ -10,10 +10,6 @@
     "verbatimModuleSyntax": true,
     "noEmit": true
   },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  },
   "include": ["**/*.ts", "eslint.config.js"],
   "exclude": ["node_modules", "cairo", "examples", "dist"]
 }
