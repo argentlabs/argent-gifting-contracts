@@ -8,7 +8,7 @@ let cachedFactory: GiftFactoryContract | undefined;
 export async function deployMockERC20(): Promise<Erc20Contract> {
   if (cachedMockERC20) return cachedMockERC20;
 
-  return await manager.declareAndDeployContract("MockERC20", {
+  cachedMockERC20 = (await manager.declareAndDeployContract("MockERC20", {
     unique: true,
     constructorCalldata: [
       byteArray.byteArrayFromString("USDC"),
@@ -17,7 +17,9 @@ export async function deployMockERC20(): Promise<Erc20Contract> {
       deployer.address,
       deployer.address,
     ],
-  });
+  })) as Erc20Contract;
+
+  return cachedMockERC20;
 }
 
 export async function setupGiftProtocol(): Promise<{
