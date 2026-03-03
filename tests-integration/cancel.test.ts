@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import type { Erc20Contract } from "starknet-dev-toolkit";
-import { deployer, expectRevertWithErrorMessage, manager } from "starknet-dev-toolkit";
+import { deployer, expectRevertWithErrorMessage, getPredeployedDevnetAccount, manager } from "starknet-dev-toolkit";
 import { cancelGift, claimInternal, randomReceiver } from "../lib/claim.js";
 import { defaultDepositTestSetup } from "../lib/deposit.js";
-import { deployMockERC20, devnetAccount, setupGiftProtocol } from "../lib/protocol.js";
+import { deployMockERC20, setupGiftProtocol } from "../lib/protocol.js";
 
 describe("Cancel Gift", function () {
   it(`fee_token == gift_token`, async function () {
@@ -59,7 +59,7 @@ describe("Cancel Gift", function () {
   it(`wrong sender`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
-    const senderAccount = await devnetAccount();
+    const senderAccount = await getPredeployedDevnetAccount(manager, deployer.address);
     // original: "escr-lib/wrong-sender" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", cancelGift({ gift, senderAccount }));
   });

@@ -1,8 +1,14 @@
 import { expect } from "chai";
 import { CallData, hash, num, type BigNumberish } from "starknet";
-import { deployer, expectEvent, expectRevertWithErrorMessage, manager } from "starknet-dev-toolkit";
+import {
+  deployer,
+  expectEvent,
+  expectRevertWithErrorMessage,
+  getPredeployedDevnetAccount,
+  manager,
+} from "starknet-dev-toolkit";
 import type { FutureFactoryContract } from "../lib/contract-types.js";
-import { devnetAccount, resetProtocolCache, setupGiftProtocol } from "../lib/protocol.js";
+import { resetProtocolCache, setupGiftProtocol } from "../lib/protocol.js";
 // Time window which must pass before the upgrade can be performed
 const MIN_SECURITY_PERIOD = 7n * 24n * 60n * 60n; // 7 day
 
@@ -73,8 +79,7 @@ describe("Test Factory Upgrade", function () {
     await factory.propose_upgrade(newFactoryClassHash, []);
 
     await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD + 1n);
-    const account = await devnetAccount();
-    factory.providerOrAccount = account;
+    factory.providerOrAccount = await getPredeployedDevnetAccount(manager, deployer.address);
     await expectRevertWithErrorMessage("Caller is not the owner", factory.upgrade([]));
   });
 
@@ -137,7 +142,7 @@ describe("Test Factory Upgrade", function () {
       const { factory } = await setupGiftProtocol();
       const newFactoryClassHash = "0x1";
 
-      factory.providerOrAccount = await devnetAccount();
+      factory.providerOrAccount = await getPredeployedDevnetAccount(manager, deployer.address);
       await expectRevertWithErrorMessage("Caller is not the owner", factory.propose_upgrade(newFactoryClassHash, []));
     });
 
@@ -223,7 +228,7 @@ describe("Test Factory Upgrade", function () {
     it("Only Owner", async function () {
       const { factory } = await setupGiftProtocol();
 
-      factory.providerOrAccount = await devnetAccount();
+      factory.providerOrAccount = await getPredeployedDevnetAccount(manager, deployer.address);
       await expectRevertWithErrorMessage("Caller is not the owner", factory.cancel_upgrade());
     });
   });

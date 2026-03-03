@@ -1,10 +1,16 @@
 import { expect } from "chai";
 import { num } from "starknet";
 import type { Erc20Contract } from "starknet-dev-toolkit";
-import { deployer, expectRevertWithErrorMessage, LegacyStarknetKeyPair, manager } from "starknet-dev-toolkit";
+import {
+  deployer,
+  expectRevertWithErrorMessage,
+  getPredeployedDevnetAccount,
+  LegacyStarknetKeyPair,
+  manager,
+} from "starknet-dev-toolkit";
 import { claimDust, claimInternal, randomReceiver } from "../lib/claim.js";
 import { defaultDepositTestSetup, deposit, STRK_GIFT_AMOUNT, STRK_GIFT_MAX_FEE } from "../lib/deposit.js";
-import { devnetAccount, setupGiftProtocol } from "../lib/protocol.js";
+import { setupGiftProtocol } from "../lib/protocol.js";
 
 describe("Test Core Factory Functions", function () {
   it(`Calculate escrow address`, async function () {
@@ -103,7 +109,7 @@ describe("Test Core Factory Functions", function () {
     it("Pause", async function () {
       const { factory } = await setupGiftProtocol();
 
-      factory.providerOrAccount = await devnetAccount();
+      factory.providerOrAccount = await getPredeployedDevnetAccount(manager, deployer.address);
       await expectRevertWithErrorMessage("Caller is not the owner", factory.pause());
     });
 
@@ -113,7 +119,7 @@ describe("Test Core Factory Functions", function () {
       factory.providerOrAccount = deployer;
       await factory.pause();
 
-      factory.providerOrAccount = await devnetAccount();
+      factory.providerOrAccount = await getPredeployedDevnetAccount(manager, deployer.address);
       await expectRevertWithErrorMessage("Caller is not the owner", factory.unpause());
 
       // needed for next tests
@@ -129,7 +135,11 @@ describe("Test Core Factory Functions", function () {
       // original: "escr-lib/only-factory-owner" (cfr README ## Error handling)
       await expectRevertWithErrorMessage(
         "Result::unwrap failed.",
-        claimDust({ gift, receiver: dustReceiver, factoryOwner: await devnetAccount() }),
+        claimDust({
+          gift,
+          receiver: dustReceiver,
+          factoryOwner: await getPredeployedDevnetAccount(manager, deployer.address),
+        }),
       );
     });
   });
