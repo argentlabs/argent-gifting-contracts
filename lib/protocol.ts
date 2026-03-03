@@ -1,10 +1,5 @@
 import { Account, byteArray, uint256 } from "starknet";
-import {
-  deployer,
-  getPredeployedDevnetAccount,
-  manager,
-  type Erc20Contract,
-} from "starknet-dev-toolkit";
+import { deployer, getPredeployedDevnetAccount, manager, type Erc20Contract } from "starknet-dev-toolkit";
 import type { GiftFactoryContract } from "./contract-types.js";
 
 let cachedMockERC20: Erc20Contract | undefined;
