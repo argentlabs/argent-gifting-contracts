@@ -59,8 +59,8 @@ describe("Cancel Gift", function () {
   it(`wrong sender`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
-    const senderAccount = devnetAccount();
-    // original: "escr-lib/wrong-sender"
+    const senderAccount = await devnetAccount();
+    // original: "escr-lib/wrong-sender" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", cancelGift({ gift, senderAccount }));
   });
 
@@ -69,7 +69,7 @@ describe("Cancel Gift", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
     await claimInternal({ gift, receiver, giftPrivateKey });
-    // original: "escr-lib/claimed-or-cancel"
+    // original: "escr-lib/claimed-or-cancel" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", cancelGift({ gift }));
   });
 
@@ -83,7 +83,7 @@ describe("Cancel Gift", function () {
     const receiver = randomReceiver();
 
     await claimInternal({ gift, receiver, giftPrivateKey });
-    // original: "escr-lib/claimed-or-cancel"
+    // original: "escr-lib/claimed-or-cancel" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", cancelGift({ gift }));
   });
 });

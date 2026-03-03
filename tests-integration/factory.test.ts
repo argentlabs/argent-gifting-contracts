@@ -53,7 +53,7 @@ describe("Test Core Factory Functions", function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
     const dustReceiver = randomReceiver();
-    // original: "escr-lib/not-yet-claimed"
+    // original: "escr-lib/not-yet-claimed" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", claimDust({ gift, receiver: dustReceiver }));
   });
 
@@ -103,7 +103,7 @@ describe("Test Core Factory Functions", function () {
     it("Pause", async function () {
       const { factory } = await setupGiftProtocol();
 
-      factory.providerOrAccount = devnetAccount();
+      factory.providerOrAccount = await devnetAccount();
       await expectRevertWithErrorMessage("Caller is not the owner", factory.pause());
     });
 
@@ -113,7 +113,7 @@ describe("Test Core Factory Functions", function () {
       factory.providerOrAccount = deployer;
       await factory.pause();
 
-      factory.providerOrAccount = devnetAccount();
+      factory.providerOrAccount = await devnetAccount();
       await expectRevertWithErrorMessage("Caller is not the owner", factory.unpause());
 
       // needed for next tests
@@ -126,10 +126,10 @@ describe("Test Core Factory Functions", function () {
       const { gift } = await defaultDepositTestSetup({ factory });
       const dustReceiver = randomReceiver();
 
-      // original: "escr-lib/only-factory-owner"
+      // original: "escr-lib/only-factory-owner" (cfr README ## Error handling)
       await expectRevertWithErrorMessage(
         "Result::unwrap failed.",
-        claimDust({ gift, receiver: dustReceiver, factoryOwner: devnetAccount() }),
+        claimDust({ gift, receiver: dustReceiver, factoryOwner: await devnetAccount() }),
       );
     });
   });

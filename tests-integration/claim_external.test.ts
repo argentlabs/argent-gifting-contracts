@@ -86,7 +86,7 @@ describe("Claim External", function () {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({ factory });
     const receiver = "0x0";
 
-    // original: "escr-lib/zero-receiver"
+    // original: "escr-lib/zero-receiver" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
@@ -96,7 +96,7 @@ describe("Claim External", function () {
     const receiver = randomReceiver();
 
     await claimExternal({ gift, receiver, giftPrivateKey });
-    // original: "escr-lib/claimed-or-cancel"
+    // original: "escr-lib/claimed-or-cancel" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
@@ -104,7 +104,7 @@ describe("Claim External", function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
     const receiver = randomReceiver();
-    // original: "escr-lib/invalid-ext-signature"
+    // original: "escr-lib/invalid-ext-signature" (cfr README ## Error handling)
     await expectRevertWithErrorMessage(
       "Result::unwrap failed.",
       claimExternal({ gift: gift, receiver, giftPrivateKey: "0x1234" }),
@@ -128,7 +128,7 @@ describe("Claim External", function () {
     // Check balance gift address address == 0
     expect(await giftToken.balance_of(escrowAddress)).to.equal(0n);
 
-    // original: "escr-lib/claimed-or-cancel"
+    // original: "escr-lib/claimed-or-cancel" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 
@@ -158,7 +158,7 @@ describe("Claim External", function () {
     const response = await reentrant.set_gift_data(gift.toCallData(), receiver, "0x0", claimSig);
     await manager.ensureSuccess(response);
 
-    // original: "ERC20: insufficient balance"
+    // original: "ERC20: insufficient balance" (cfr README ## Error handling)
     await expectRevertWithErrorMessage("Result::unwrap failed.", claimExternal({ gift, receiver, giftPrivateKey }));
   });
 });

@@ -73,7 +73,7 @@ describe("Test Factory Upgrade", function () {
     await factory.propose_upgrade(newFactoryClassHash, []);
 
     await manager.setTime(CURRENT_TIME + MIN_SECURITY_PERIOD + 1n);
-    const account = devnetAccount();
+    const account = await devnetAccount();
     factory.providerOrAccount = account;
     await expectRevertWithErrorMessage("Caller is not the owner", factory.upgrade([]));
   });
@@ -137,7 +137,7 @@ describe("Test Factory Upgrade", function () {
       const { factory } = await setupGiftProtocol();
       const newFactoryClassHash = "0x1";
 
-      factory.providerOrAccount = devnetAccount();
+      factory.providerOrAccount = await devnetAccount();
       await expectRevertWithErrorMessage("Caller is not the owner", factory.propose_upgrade(newFactoryClassHash, []));
     });
 
@@ -223,7 +223,7 @@ describe("Test Factory Upgrade", function () {
     it("Only Owner", async function () {
       const { factory } = await setupGiftProtocol();
 
-      factory.providerOrAccount = devnetAccount();
+      factory.providerOrAccount = await devnetAccount();
       await expectRevertWithErrorMessage("Caller is not the owner", factory.cancel_upgrade());
     });
   });

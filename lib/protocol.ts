@@ -1,20 +1,23 @@
 import { Account, byteArray, uint256 } from "starknet";
-import { deployer, manager, type Erc20Contract } from "starknet-dev-toolkit";
+import {
+  deployer,
+  getPredeployedDevnetAccount,
+  manager,
+  type Erc20Contract,
+} from "starknet-dev-toolkit";
 import type { GiftFactoryContract } from "./contract-types.js";
 
 let cachedMockERC20: Erc20Contract | undefined;
 let cachedFactory: GiftFactoryContract | undefined;
 
-export function devnetAccount(): Account {
-  const devnetAddress = "0x78662e7352d062084b0010068b99288486c2d8b914f6e2a55ce945f8792c8b1";
-  const devnetPrivateKey = "0xe1406455b7d66b1690803be066cbe5e";
-  return new Account({ provider: manager, address: devnetAddress, signer: devnetPrivateKey });
+export async function devnetAccount(): Promise<Account> {
+  const { address, privateKey } = await getPredeployedDevnetAccount(manager, deployer.address);
+  return new Account({ provider: manager, address, signer: privateKey });
 }
 
 export async function deployMockERC20(): Promise<Erc20Contract> {
   if (cachedMockERC20) return cachedMockERC20;
 
-  // manager.deployContract returns Contract, cast once here
   return await manager.declareAndDeployContract("MockERC20", {
     unique: true,
     constructorCalldata: [
