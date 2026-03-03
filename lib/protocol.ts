@@ -1,4 +1,4 @@
-import { Account, byteArray, uint256 } from "starknet";
+import { byteArray, uint256, type Account } from "starknet";
 import { deployer, getPredeployedDevnetAccount, manager, type Erc20Contract } from "starknet-dev-toolkit";
 import type { GiftFactoryContract } from "./contract-types.js";
 
@@ -6,8 +6,7 @@ let cachedMockERC20: Erc20Contract | undefined;
 let cachedFactory: GiftFactoryContract | undefined;
 
 export async function devnetAccount(): Promise<Account> {
-  const { address, privateKey } = await getPredeployedDevnetAccount(manager, deployer.address);
-  return new Account({ provider: manager, address, signer: privateKey });
+  return getPredeployedDevnetAccount(manager, deployer.address);
 }
 
 export async function deployMockERC20(): Promise<Erc20Contract> {
