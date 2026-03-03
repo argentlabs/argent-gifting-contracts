@@ -94,8 +94,5 @@ jobs:
       - name: Start devnet in background
         run: scarb run start-devnet
 
-      - name: Installing USC
-        run: curl -L https://raw.githubusercontent.com/software-mansion/universal-sierra-compiler/master/scripts/install.sh | sh -s -- v2.4.0
-
       - name: Gas report
         run: scarb run profile --check
