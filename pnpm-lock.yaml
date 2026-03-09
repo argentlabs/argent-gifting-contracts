@@ -13,7 +13,7 @@ importers:
         version: 9.2.1(typescript@5.9.3)
       starknet-dev-toolkit:
         specifier: github:argentlabs/starknet-dev-toolkit#0.1.0-rc.2
-        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/ee9da8d25076590d2b2efcc1d5a594300f1006fe(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3))
+        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/35b5513f1f84ce2e8acc02dcb01fd5c2a900f9d3(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3))
     devDependencies:
       '@eslint/js':
         specifier: 9.39.2
@@ -238,8 +238,8 @@ packages:
     resolution: {integrity: sha512-EriSTlt5OC9/7SXkRSCAhfSxxoSUgBm33OH+IkwbdpgoqsSsUg7y3uh+IICI/Qg4BBWr3U2i39RpmycbxMq4ew==}
     engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
 
-  '@eslint/config-array@0.21.1':
-    resolution: {integrity: sha512-aw1gNayWpdI/jSYVgzN5pL0cfzU02GT3NBpeT/DXbx1/1x7ZKxFPd9bwrzygx/qiwIQiJ1sw/zD8qY/kRvlGHA==}
+  '@eslint/config-array@0.21.2':
+    resolution: {integrity: sha512-nJl2KGTlrf9GjLimgIru+V/mzgSK0ABCDQRvxw5BjURL7WfH5uoWmizbH7QB6MmnMBd8cIC9uceWnezL1VZWWw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@eslint/config-helpers@0.4.2':
@@ -250,8 +250,8 @@ packages:
     resolution: {integrity: sha512-yL/sLrpmtDaFEiUj1osRP4TI2MDz1AddJL+jZ7KSqvBuliN4xqYY54IfdN8qD8Toa6g1iloph1fxQNkjOxrrpQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@eslint/eslintrc@3.3.4':
-    resolution: {integrity: sha512-4h4MVF8pmBsncB60r0wSJiIeUKTSD4m7FmTFThG8RHlsg9ajqckLm9OraguFGZE4vVdpiI1Q4+hFnisopmG6gQ==}
+  '@eslint/eslintrc@3.3.5':
+    resolution: {integrity: sha512-4IlJx0X0qftVsN5E+/vGujTRIFtwuLbNsVUe7TO6zYPDR1O6nFwvwhIKEKSrl6dZchmYBITazxKoUYOjdtjlRg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@eslint/js@9.39.2':
@@ -693,8 +693,8 @@ packages:
     resolution: {integrity: sha512-b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==}
     hasBin: true
 
-  flatted@3.3.4:
-    resolution: {integrity: sha512-3+mMldrTAPdta5kjX2G2J7iX4zxtnwpdA8Tr2ZSjkyPSanvbZAcy6flmtnXbEybHrDcU9641lxrMfFuUxVz9vA==}
+  flatted@3.4.1:
+    resolution: {integrity: sha512-IxfVbRFVlV8V/yRaGzk0UVIcsKKHMSfYw66T/u4nTwlWteQePsxe//LjudR1AMX4tZW3WFCh3Zqa/sjlqpbURQ==}
 
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
@@ -978,8 +978,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/ee9da8d25076590d2b2efcc1d5a594300f1006fe:
-    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/ee9da8d25076590d2b2efcc1d5a594300f1006fe}
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/35b5513f1f84ce2e8acc02dcb01fd5c2a900f9d3:
+    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/35b5513f1f84ce2e8acc02dcb01fd5c2a900f9d3}
     version: 0.1.0-rc.0
     engines: {node: 24.x, pnpm: 10.x}
     peerDependencies:
@@ -1212,7 +1212,7 @@ snapshots:
 
   '@eslint-community/regexpp@4.12.2': {}
 
-  '@eslint/config-array@0.21.1':
+  '@eslint/config-array@0.21.2':
     dependencies:
       '@eslint/object-schema': 2.1.7
       debug: 4.4.3(supports-color@8.1.1)
@@ -1228,7 +1228,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
 
-  '@eslint/eslintrc@3.3.4':
+  '@eslint/eslintrc@3.3.5':
     dependencies:
       ajv: 6.14.0
       debug: 4.4.3(supports-color@8.1.1)
@@ -1628,10 +1628,10 @@ snapshots:
     dependencies:
       '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.2)
       '@eslint-community/regexpp': 4.12.2
-      '@eslint/config-array': 0.21.1
+      '@eslint/config-array': 0.21.2
       '@eslint/config-helpers': 0.4.2
       '@eslint/core': 0.17.0
-      '@eslint/eslintrc': 3.3.4
+      '@eslint/eslintrc': 3.3.5
       '@eslint/js': 9.39.2
       '@eslint/plugin-kit': 0.4.1
       '@humanfs/node': 0.16.7
@@ -1719,12 +1719,12 @@ snapshots:
 
   flat-cache@4.0.1:
     dependencies:
-      flatted: 3.3.4
+      flatted: 3.4.1
       keyv: 4.5.4
 
   flat@5.0.2: {}
 
-  flatted@3.3.4: {}
+  flatted@3.4.1: {}
 
   foreground-child@3.3.1:
     dependencies:
@@ -1981,7 +1981,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/ee9da8d25076590d2b2efcc1d5a594300f1006fe(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3)):
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/35b5513f1f84ce2e8acc02dcb01fd5c2a900f9d3(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3)):
     dependencies:
       '@noble/curves': 1.7.0
       chai: 5.1.1
