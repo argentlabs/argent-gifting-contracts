@@ -2,7 +2,7 @@ import { LegacyStarknetKeyPair } from "starknet-dev-toolkit";
 
 export class LongSigner extends LegacyStarknetKeyPair {
   public async signRaw(messageHash: string): Promise<string[]> {
-    return ["", ...(await super.signRaw(messageHash))];
+    return ["0x0", ...(await super.signRaw(messageHash))];
   }
 }
 

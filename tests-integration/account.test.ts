@@ -16,6 +16,17 @@ describe("Escrow Account", function () {
     );
   });
 
+  it(`Test only protocol can call execute`, async function () {
+    const { factory } = await setupGiftProtocol();
+    const { gift } = await defaultDepositTestSetup({ factory });
+    const escrowAddress = gift.escrowAddress();
+
+    await expectRevertWithErrorMessage(
+      "Invalid argument",
+      deployer.execute([{ contractAddress: escrowAddress, calldata: [0x0], entrypoint: "__execute__" }]),
+    );
+  });
+
   it(`Test escrow can only do whitelisted lib calls`, async function () {
     const { factory } = await setupGiftProtocol();
     const { gift } = await defaultDepositTestSetup({ factory });
