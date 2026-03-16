@@ -1,4 +1,5 @@
 import type { Account, Call, InvokeFunctionResponse, TransactionReceipt } from "starknet";
+import type { Erc20Contract } from "starknet-dev-toolkit";
 import { LegacyStarknetKeyPair, deployer, manager } from "starknet-dev-toolkit";
 import { Gift } from "./claim.js";
 import type { GiftFactoryContract } from "./contract-types.js";
@@ -21,8 +22,8 @@ export async function deposit(depositParams: {
   const { sender, giftAmount, feeAmount, factoryAddress, feeTokenAddress, giftTokenAddress, giftSignerPubKey } =
     depositParams;
   const factory: GiftFactoryContract = await manager.loadContract(factoryAddress);
-  const feeToken = await manager.loadContract(feeTokenAddress);
-  const giftToken = await manager.loadContract(giftTokenAddress);
+  const feeToken: Erc20Contract = await manager.loadContract(feeTokenAddress);
+  const giftToken: Erc20Contract = await manager.loadContract(giftTokenAddress);
 
   const escrowAccountClassHash =
     depositParams.overrides?.escrowAccountClassHash || (await factory.get_latest_escrow_class_hash());
@@ -38,10 +39,10 @@ export async function deposit(depositParams: {
   });
   const calls: Array<Call> = [];
   if (feeTokenAddress === giftTokenAddress) {
-    calls.push(feeToken.populateTransaction.approve(factory.address, giftAmount + feeAmount) as Call);
+    calls.push(feeToken.populateTransaction.approve(factory.address, giftAmount + feeAmount));
   } else {
-    calls.push(feeToken.populateTransaction.approve(factory.address, feeAmount) as Call);
-    calls.push(giftToken.populateTransaction.approve(factory.address, giftAmount) as Call);
+    calls.push(feeToken.populateTransaction.approve(factory.address, feeAmount));
+    calls.push(giftToken.populateTransaction.approve(factory.address, giftAmount));
   }
   calls.push(
     factory.populateTransaction.deposit(
