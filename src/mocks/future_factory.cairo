@@ -1,16 +1,15 @@
-use starknet::{ContractAddress, ClassHash};
+use starknet::{ClassHash, ContractAddress};
 
 #[starknet::contract]
 mod FutureFactory {
     use argent_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::OwnableComponent;
-    use starknet::{
-        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
-        get_block_timestamp
-    };
+    use starknet::account::Call;
+    use starknet::syscalls::deploy_syscall;
+    use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
 
-    // Ownable 
+    // Ownable
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;

@@ -1,7 +1,9 @@
-use argent_gifting::contracts::escrow_account::{AccountConstructorArguments};
-use argent_gifting::contracts::gift_data::{GiftData};
+use argent_gifting::contracts::escrow_account::AccountConstructorArguments;
+use argent_gifting::contracts::gift_data::GiftData;
 use openzeppelin::utils::deployments::calculate_contract_address_from_deploy_syscall;
-use starknet::{ContractAddress, account::Call, contract_address::contract_address_const};
+use starknet::ContractAddress;
+use starknet::account::Call;
+use starknet::contract_address::contract_address_const;
 
 pub const TX_V1: felt252 = 1; // INVOKE
 pub const TX_V1_ESTIMATE: felt252 = consteval_int!(0x100000000000000000000000000000000 + 1); // 2**128 + TX_V1
@@ -51,12 +53,12 @@ pub fn calculate_escrow_account_address(gift: GiftData) -> ContractAddress {
         gift_amount: gift.gift_amount,
         fee_token: gift.fee_token,
         fee_amount: gift.fee_amount,
-        gift_pubkey: gift.gift_pubkey
+        gift_pubkey: gift.gift_pubkey,
     };
     calculate_contract_address_from_deploy_syscall(
         0, // salt
         gift.escrow_class_hash, // escrow_class_hash
         serialize(@constructor_arguments).span(), // constructor_data
-        gift.factory
+        gift.factory,
     )
 }

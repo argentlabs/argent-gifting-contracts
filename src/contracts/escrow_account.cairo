@@ -1,4 +1,5 @@
-use starknet::{ContractAddress, ClassHash, account::Call};
+use starknet::account::Call;
+use starknet::{ClassHash, ContractAddress};
 
 #[starknet::interface]
 pub trait IAccount<TContractState> {
@@ -30,29 +31,27 @@ pub struct AccountConstructorArguments {
     pub gift_amount: u256,
     pub fee_token: ContractAddress,
     pub fee_amount: u128,
-    pub gift_pubkey: felt252
+    pub gift_pubkey: felt252,
 }
 
 #[starknet::contract(account)]
 mod EscrowAccount {
-    use argent_gifting::contracts::escrow_library::{IEscrowLibraryLibraryDispatcher, IEscrowLibraryDispatcherTrait};
+    use argent_gifting::contracts::escrow_library::{IEscrowLibraryDispatcherTrait, IEscrowLibraryLibraryDispatcher};
     use argent_gifting::contracts::gift_data::GiftData;
     use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
     use argent_gifting::contracts::outside_execution::{
-        IOutsideExecution, OutsideExecution, ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_2
+        ERC165_OUTSIDE_EXECUTION_INTERFACE_ID_VERSION_2, IOutsideExecution, OutsideExecution,
     };
-
     use argent_gifting::contracts::utils::{
-        calculate_escrow_account_address, full_deserialize, serialize, STRK_ADDRESS, ETH_ADDRESS, TX_V1_ESTIMATE, TX_V1,
-        TX_V3, TX_V3_ESTIMATE
+        ETH_ADDRESS, STRK_ADDRESS, TX_V1, TX_V1_ESTIMATE, TX_V3, TX_V3_ESTIMATE, calculate_escrow_account_address,
+        full_deserialize, serialize,
     };
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
-    use starknet::{
-        TxInfo, account::Call, VALIDATED, syscalls::library_call_syscall, ContractAddress, get_contract_address,
-        get_execution_info, ClassHash
-    };
-    use super::{IEscrowAccount, IAccount, AccountConstructorArguments};
+    use starknet::account::Call;
+    use starknet::syscalls::library_call_syscall;
+    use starknet::{ClassHash, ContractAddress, TxInfo, VALIDATED, get_contract_address, get_execution_info};
+    use super::{AccountConstructorArguments, IAccount, IEscrowAccount};
 
     // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-5.md
     const SRC5_INTERFACE_ID: felt252 = 0x3f918d17e5ee77373b56385708f855659a07f75997f365cf87748628532a055;
@@ -100,7 +99,7 @@ mod EscrowAccount {
                 check_ecdsa_signature(execution_hash, gift.gift_pubkey, *signature[0], *signature[1])
                     || tx_version == TX_V3_ESTIMATE
                     || tx_version == TX_V1_ESTIMATE,
-                'escrow/invalid-signature'
+                'escrow/invalid-signature',
             );
             if gift.fee_token == STRK_ADDRESS() {
                 assert(tx_version == TX_V3 || tx_version == TX_V3_ESTIMATE, 'escrow/invalid-tx3-version');
@@ -124,7 +123,7 @@ mod EscrowAccount {
                     || tx_version == TX_V1
                     || tx_version == TX_V3_ESTIMATE
                     || tx_version == TX_V1_ESTIMATE,
-                'escrow/invalid-tx-version'
+                'escrow/invalid-tx-version',
             );
             let Call { .., calldata }: @Call = calls[0];
             let (gift, receiver): (GiftData, ContractAddress) = full_deserialize(*calldata)
@@ -161,7 +160,7 @@ mod EscrowAccount {
     #[abi(embed_v0)]
     impl OutsideExecutionImpl of IOutsideExecution<ContractState> {
         fn execute_from_outside_v2(
-            ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>
+            ref self: ContractState, outside_execution: OutsideExecution, mut signature: Span<felt252>,
         ) -> Array<Span<felt252>> {
             let gift: GiftData = Serde::deserialize(ref signature).expect('escrow/invalid-gift');
             get_validated_lib(gift).execute_from_outside_v2(gift, outside_execution, signature)
@@ -188,14 +187,13 @@ mod EscrowAccount {
         let mut resource_bounds = tx_info.resource_bounds;
         let mut max_fee: u128 = 0;
         let mut max_tip: u128 = 0;
-        while let Option::Some(r) = resource_bounds
-            .pop_front() {
-                let max_resource_amount: u128 = (*r.max_amount).into();
-                max_fee += *r.max_price_per_unit * max_resource_amount;
-                if *r.resource == 'L2_GAS' {
-                    max_tip += tip * max_resource_amount;
-                }
-            };
+        while let Option::Some(r) = resource_bounds.pop_front() {
+            let max_resource_amount: u128 = (*r.max_amount).into();
+            max_fee += *r.max_price_per_unit * max_resource_amount;
+            if *r.resource == 'L2_GAS' {
+                max_tip += tip * max_resource_amount;
+            }
+        }
         max_fee + max_tip
     }
 }

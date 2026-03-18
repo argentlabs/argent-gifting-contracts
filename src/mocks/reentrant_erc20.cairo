@@ -1,4 +1,4 @@
-use argent_gifting::contracts::utils::{StarknetSignature};
+use argent_gifting::contracts::utils::StarknetSignature;
 use starknet::{ClassHash, ContractAddress};
 
 
@@ -11,7 +11,7 @@ struct TestGiftData {
     gift_amount: u256,
     fee_token: ContractAddress,
     fee_amount: u128,
-    gift_pubkey: felt252
+    gift_pubkey: felt252,
 }
 
 #[starknet::interface]
@@ -29,18 +29,15 @@ trait IMalicious<TContractState> {
 #[starknet::contract]
 mod ReentrantERC20 {
     use argent_gifting::contracts::escrow_account::{
-        IEscrowAccount, IEscrowAccountDispatcher, IEscrowAccountDispatcherTrait
+        IEscrowAccount, IEscrowAccountDispatcher, IEscrowAccountDispatcherTrait,
     };
     use argent_gifting::contracts::gift_data::GiftData;
-    use argent_gifting::contracts::utils::{ETH_ADDRESS, StarknetSignature};
-    use argent_gifting::contracts::utils::{calculate_escrow_account_address, serialize};
+    use argent_gifting::contracts::utils::{ETH_ADDRESS, StarknetSignature, calculate_escrow_account_address, serialize};
     use openzeppelin::token::erc20::erc20::ERC20Component::InternalTrait;
     use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
-    use starknet::{
-        get_caller_address, ContractAddress, get_contract_address, contract_address_const,
-        syscalls::call_contract_syscall
-    };
+    use starknet::syscalls::call_contract_syscall;
+    use starknet::{ContractAddress, contract_address_const, get_caller_address, get_contract_address};
     use super::{IMalicious, TestGiftData};
 
 
@@ -81,13 +78,13 @@ mod ReentrantERC20 {
     ) {
         self.factory.write(factory);
         self.erc20.initializer(name, symbol);
-        self.erc20._mint(recipient, fixed_supply);
+        self.erc20.mint(recipient, fixed_supply);
     }
 
     #[abi(embed_v0)]
     impl Erc20MockImpl of IERC20<ContractState> {
         fn transfer_from(
-            ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256
+            ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256,
         ) -> bool {
             self.erc20.transfer_from(sender, recipient, amount)
         }
@@ -122,7 +119,7 @@ mod ReentrantERC20 {
                 };
                 let escrow_account_address = calculate_escrow_account_address(gift);
                 let calldata = serialize(
-                    @(gift, self.receiver.read(), self.dust_receiver.read(), self.signature.read())
+                    @(gift, self.receiver.read(), self.dust_receiver.read(), self.signature.read()),
                 );
                 IEscrowAccountDispatcher { contract_address: escrow_account_address }
                     .execute_action(selector!("claim_external"), calldata);

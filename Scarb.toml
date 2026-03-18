@@ -6,13 +6,17 @@ edition = "2023_11"
 
 [dependencies]
 starknet = "2.6.3"
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.24.0" }
-openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.13.0" }
-alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.6.0" }
+openzeppelin = "1.0.0"
+alexandria_math = "0.5.0"
 
 [[target.starknet-contract]]
 sierra = true
 casm = true
+
+
+[dev-dependencies]
+snforge_std = "0.57.0"
+assert_macros = "2.10.1"
 
 [tool.fmt]
 max-line-length = 120

@@ -1,13 +1,13 @@
-use argent_gifting::contracts::gift_factory::{IGiftFactory, IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
-
-use argent_gifting::contracts::utils::{STRK_ADDRESS, ETH_ADDRESS};
+use argent_gifting::contracts::gift_factory::{IGiftFactoryDispatcher, IGiftFactoryDispatcherTrait};
+use argent_gifting::contracts::utils::{ETH_ADDRESS, STRK_ADDRESS};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin::utils::serde::SerializedAppend;
-
-use snforge_std::{declare, ContractClassTrait, ContractClass, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    ContractClass, ContractClassTrait, DeclareResultTrait, Token, TokenTrait, declare, replace_bytecode, set_balance,
+    start_cheat_caller_address, stop_cheat_caller_address,
+};
 use starknet::{ClassHash, ContractAddress};
-
-use super::constants::{OWNER, DEPOSITOR, CLAIMER};
+use super::constants::{DEPOSITOR, OWNER};
 
 const ERC20_SUPPLY: u256 = 1_000_000_000_000_000_000;
 
@@ -20,25 +20,24 @@ pub struct GiftingSetup {
 
 // This will return a valid ETH but a broken STRK at their respective addresses
 pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
-    let mock_erc20 = declare("MockERC20").expect('Failed to declare ERC20');
-
     // mock ETH contract
-    let mock_eth = deploy_erc20_at(mock_erc20, "ETHER", "ETH", ETH_ADDRESS());
+    const ETH: Token = Token::ETH;
+    let mock_eth = IERC20Dispatcher { contract_address: ETH.contract_address() };
+    set_balance(OWNER(), ERC20_SUPPLY, ETH);
 
     let broken_erc20 = deploy_broken_erc20_at(STRK_ADDRESS());
 
     // escrow contract
-    let escrow_contract = declare("EscrowAccount").expect('Failed to declare escrow');
+    let escrow_contract = *declare("EscrowAccount").expect('Failed to declare escrow').contract_class();
 
     // escrow lib contract
-    let escrow_lib_contract = declare("EscrowLibrary").expect('Failed to declare escrow lib');
+    let escrow_lib_contract = *declare("EscrowLibrary").expect('Failed to declare escrow lib').contract_class();
 
     // gift factory
-    let factory_contract = declare("GiftFactory").expect('Failed to declare factory');
+    let factory_contract = *declare("GiftFactory").expect('Failed to declare factory').contract_class();
     let mut factory_calldata: Array<felt252> = array![
-        escrow_contract.class_hash.try_into().unwrap(),
-        escrow_lib_contract.class_hash.try_into().unwrap(),
-        OWNER().try_into().unwrap()
+        escrow_contract.class_hash.try_into().unwrap(), escrow_lib_contract.class_hash.try_into().unwrap(),
+        OWNER().try_into().unwrap(),
     ];
     let (factory_contract_address, _) = factory_contract.deploy(@factory_calldata).expect('Failed to deploy factory');
     let gift_factory = IGiftFactoryDispatcher { contract_address: factory_contract_address };
@@ -55,17 +54,14 @@ pub fn deploy_gifting_broken_erc20() -> GiftingSetup {
 }
 
 pub fn deploy_broken_erc20_at(at: ContractAddress) -> IERC20Dispatcher {
-    let broken_erc20 = declare("BrokenERC20").expect('Failed to declare broken ERC20');
-    let mut broken_erc20_calldata: Array<felt252> = array![];
-    let (broken_erc20_address, _) = broken_erc20
-        .deploy_at(@broken_erc20_calldata, at)
-        .expect('Failed to deploy broken ERC20');
-    IERC20Dispatcher { contract_address: broken_erc20_address }
+    let broken_erc20 = *declare("BrokenERC20").expect('Failed to declare broken ERC20').contract_class();
+    replace_bytecode(at, broken_erc20.class_hash).expect('Failed to replace bytecode');
+    IERC20Dispatcher { contract_address: at }
 }
 
 
 pub fn deploy_erc20_at(
-    mock_erc20: ContractClass, name: ByteArray, symbol: ByteArray, at: ContractAddress
+    mock_erc20: ContractClass, name: ByteArray, symbol: ByteArray, at: ContractAddress,
 ) -> IERC20Dispatcher {
     // mock ETH contract
     let mut mock_eth_calldata: Array<felt252> = array![];
@@ -80,28 +76,29 @@ pub fn deploy_erc20_at(
 }
 
 pub fn deploy_gifting_normal() -> GiftingSetup {
-    let mock_erc20 = declare("MockERC20").expect('Failed to declare ERC20');
-
     // mock ETH contract
-    let mock_eth = deploy_erc20_at(mock_erc20, "ETHER", "ETH", ETH_ADDRESS());
+    const ETH: Token = Token::ETH;
+    let mock_eth = IERC20Dispatcher { contract_address: ETH.contract_address() };
+    set_balance(OWNER(), ERC20_SUPPLY, ETH);
     assert(mock_eth.balance_of(OWNER()) == ERC20_SUPPLY, 'Failed to mint ETH');
 
     // mock STRK contract
-    let mock_strk = deploy_erc20_at(mock_erc20, "STARK", "STRK", STRK_ADDRESS());
+    const STRK: Token = Token::STRK;
+    let mock_strk = IERC20Dispatcher { contract_address: STRK.contract_address() };
+    set_balance(OWNER(), ERC20_SUPPLY, STRK);
     assert(mock_strk.balance_of(OWNER()) == ERC20_SUPPLY, 'Failed to mint STRK');
 
     // escrow contract
-    let escrow_contract = declare("EscrowAccount").expect('Failed to declare escrow');
+    let escrow_contract = *declare("EscrowAccount").expect('Failed to declare escrow').contract_class();
 
     // escrow lib contract
-    let escrow_lib_contract = declare("EscrowLibrary").expect('Failed to declare escrow lib');
+    let escrow_lib_contract = *declare("EscrowLibrary").expect('Failed to declare escrow lib').contract_class();
 
     // gift factory
-    let factory_contract = declare("GiftFactory").expect('Failed to declare factory');
+    let factory_contract = *declare("GiftFactory").expect('Failed to declare factory').contract_class();
     let mut factory_calldata: Array<felt252> = array![
-        escrow_contract.class_hash.try_into().unwrap(),
-        escrow_lib_contract.class_hash.try_into().unwrap(),
-        OWNER().try_into().unwrap()
+        escrow_contract.class_hash.try_into().unwrap(), escrow_lib_contract.class_hash.try_into().unwrap(),
+        OWNER().try_into().unwrap(),
     ];
     let (factory_contract_address, _) = factory_contract.deploy(@factory_calldata).expect('Failed to deploy factory');
     let gift_factory = IGiftFactoryDispatcher { contract_address: factory_contract_address };

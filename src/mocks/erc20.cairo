@@ -3,7 +3,7 @@ mod MockERC20 {
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::IERC20Metadata;
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
-    use starknet::{ContractAddress, ClassHash};
+    use starknet::{ClassHash, ContractAddress};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -46,10 +46,10 @@ mod MockERC20 {
         symbol: ByteArray,
         fixed_supply: u256,
         recipient: ContractAddress,
-        owner: ContractAddress
+        owner: ContractAddress,
     ) {
         self.ownable.initializer(owner);
         self.erc20.initializer(name, symbol);
-        self.erc20._mint(recipient, fixed_supply);
+        self.erc20.mint(recipient, fixed_supply);
     }
 }

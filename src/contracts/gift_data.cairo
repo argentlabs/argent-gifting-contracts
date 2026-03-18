@@ -1,4 +1,4 @@
-use starknet::{ContractAddress, ClassHash};
+use starknet::{ClassHash, ContractAddress};
 
 
 /// @notice Struct representing the data required for a claiming a gift
@@ -19,5 +19,5 @@ pub struct GiftData {
     pub gift_amount: u256,
     pub fee_token: ContractAddress,
     pub fee_amount: u128,
-    pub gift_pubkey: felt252
+    pub gift_pubkey: felt252,
 }

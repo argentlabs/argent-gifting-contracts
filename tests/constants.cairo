@@ -1,6 +1,5 @@
-use snforge_std::signature::{
-    KeyPair, KeyPairTrait, stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl},
-};
+use snforge_std::signature::KeyPairTrait;
+use snforge_std::signature::stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl};
 use starknet::ContractAddress;
 
 pub fn OWNER() -> ContractAddress {
