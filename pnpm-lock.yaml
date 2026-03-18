@@ -12,8 +12,8 @@ importers:
         specifier: 9.2.1
         version: 9.2.1(typescript@5.9.3)
       starknet-dev-toolkit:
-        specifier: github:argentlabs/starknet-dev-toolkit#4121930dfd65672ba307d9c794d6c4494552e7b6
-        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/4121930dfd65672ba307d9c794d6c4494552e7b6(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3))
+        specifier: github:argentlabs/starknet-dev-toolkit#ff26592
+        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/ff26592152f3e1af63ba0774c2c34cd6d704c17e(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(dotenv@17.2.3)(ethers@6.16.0)(lodash-es@4.17.23)(starknet@9.2.1(typescript@5.9.3))
     devDependencies:
       '@eslint/js':
         specifier: 9.39.2
@@ -693,8 +693,8 @@ packages:
     resolution: {integrity: sha512-b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==}
     hasBin: true
 
-  flatted@3.4.1:
-    resolution: {integrity: sha512-IxfVbRFVlV8V/yRaGzk0UVIcsKKHMSfYw66T/u4nTwlWteQePsxe//LjudR1AMX4tZW3WFCh3Zqa/sjlqpbURQ==}
+  flatted@3.4.2:
+    resolution: {integrity: sha512-PjDse7RzhcPkIJwy5t7KPWQSZ9cAbzQXcafsetQoD7sOJRQlGikNbx7yZp2OotDnJyrDcbyRq3Ttb18iYOqkxA==}
 
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
@@ -978,13 +978,16 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/4121930dfd65672ba307d9c794d6c4494552e7b6:
-    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/4121930dfd65672ba307d9c794d6c4494552e7b6}
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/ff26592152f3e1af63ba0774c2c34cd6d704c17e:
+    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/ff26592152f3e1af63ba0774c2c34cd6d704c17e}
     version: 0.1.0-rc.0
     engines: {node: 24.x, pnpm: 10.x}
     peerDependencies:
       chai: 5.1.1
       chai-as-promised: 8.0.2
+      dotenv: 17.2.3
+      ethers: 6.16.0
+      lodash-es: 4.17.23
       starknet: 9.2.1
 
   starknet@9.2.1:
@@ -1719,12 +1722,12 @@ snapshots:
 
   flat-cache@4.0.1:
     dependencies:
-      flatted: 3.4.1
+      flatted: 3.4.2
       keyv: 4.5.4
 
   flat@5.0.2: {}
 
-  flatted@3.4.1: {}
+  flatted@3.4.2: {}
 
   foreground-child@3.3.1:
     dependencies:
@@ -1981,7 +1984,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/4121930dfd65672ba307d9c794d6c4494552e7b6(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(starknet@9.2.1(typescript@5.9.3)):
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/ff26592152f3e1af63ba0774c2c34cd6d704c17e(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(dotenv@17.2.3)(ethers@6.16.0)(lodash-es@4.17.23)(starknet@9.2.1(typescript@5.9.3)):
     dependencies:
       '@noble/curves': 1.7.0
       chai: 5.1.1
@@ -1990,9 +1993,6 @@ snapshots:
       ethers: 6.16.0
       lodash-es: 4.17.23
       starknet: 9.2.1(typescript@5.9.3)
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
 
   starknet@9.2.1(typescript@5.9.3):
     dependencies:

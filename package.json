@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "starknet": "9.2.1",
-    "starknet-dev-toolkit": "github:argentlabs/starknet-dev-toolkit#4121930dfd65672ba307d9c794d6c4494552e7b6"
+    "starknet-dev-toolkit": "github:argentlabs/starknet-dev-toolkit#ff26592"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",
