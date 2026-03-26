@@ -13,7 +13,7 @@ importers:
         version: 9.2.1(typescript@5.9.3)
       starknet-dev-toolkit:
         specifier: github:argentlabs/starknet-dev-toolkit#0.1.0-rc.0
-        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/40a1171b052c6700701b77de19a20e80709709f9(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(dotenv@17.2.3)(ethers@6.16.0)(lodash-es@4.17.23)(starknet@9.2.1(typescript@5.9.3))
+        version: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/e1c1ed14a17ed1f34ae12d30c832e34d14a4a6dd(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(dotenv@17.2.3)(ethers@6.16.0)(lodash-es@4.17.23)(starknet@9.2.1(typescript@5.9.3))
     devDependencies:
       '@eslint/js':
         specifier: 9.39.2
@@ -978,9 +978,9 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/40a1171b052c6700701b77de19a20e80709709f9:
-    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/40a1171b052c6700701b77de19a20e80709709f9}
-    version: 0.1.0-rc.0
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/e1c1ed14a17ed1f34ae12d30c832e34d14a4a6dd:
+    resolution: {tarball: https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/e1c1ed14a17ed1f34ae12d30c832e34d14a4a6dd}
+    version: 0.0.0-unused-github-only
     engines: {node: 24.x, pnpm: 10.x}
     peerDependencies:
       chai: 5.1.1
@@ -1984,7 +1984,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/40a1171b052c6700701b77de19a20e80709709f9(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(dotenv@17.2.3)(ethers@6.16.0)(lodash-es@4.17.23)(starknet@9.2.1(typescript@5.9.3)):
+  starknet-dev-toolkit@https://codeload.github.com/argentlabs/starknet-dev-toolkit/tar.gz/e1c1ed14a17ed1f34ae12d30c832e34d14a4a6dd(chai-as-promised@8.0.2(chai@5.1.1))(chai@5.1.1)(dotenv@17.2.3)(ethers@6.16.0)(lodash-es@4.17.23)(starknet@9.2.1(typescript@5.9.3)):
     dependencies:
       '@noble/curves': 1.7.0
       chai: 5.1.1
