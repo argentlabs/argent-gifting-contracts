@@ -54,6 +54,22 @@ Gifts can be cancelled by the sender provided that they have not been claimed ye
 
 For more details please see the `cancelGift` function at [Cancel example](./lib/claim.ts).
 
+## Error handling
+
+Operations that go through the `execute_action` entrypoint (`cancel`, `claim_external`, `claim_dust`) return a generic `"Result::unwrap failed."` error instead of the original revert reason. This is because Starknet v0.13.4 changed the OS so that contract panics no longer abort execution. Instead, panics are caught and returned as `Err(panic_data)` in the `SyscallResult`. Since `execute_action` calls `library_call_syscall(...).unwrap()`, the `.unwrap()` discards the original panic data and replaces it with the generic message.
+
+`claim_internal` is not affected because it goes through `__validate__`/`__execute__`, which propagates panic data directly.
+
+The underlying error could be any of:
+
+- `escr-lib/claimed-or-cancel`: the gift has already been claimed or cancelled
+- `escr-lib/wrong-sender`: the caller is not the original sender (cancel only)
+- `escr-lib/only-factory-owner`: the caller is not the factory owner (claim dust only)
+- `escr-lib/not-yet-claimed`: the gift hasn't been claimed yet (claim dust only)
+- `escr-lib/invalid-ext-signature`: invalid signature for external claim
+- `escr-lib/transfer-failed`: the token transfer failed
+- `escr-lib/zero-receiver`: the receiver address is zero
+
 ## Operator
 
 This section outlines all the operations that the factory owner is allowed to perform.
@@ -108,7 +124,7 @@ scarb run start-devnet
 Install all packages:
 
 ```shell
-yarn
+pnpm install
 ```
 
 Run all integration tests:

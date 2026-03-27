@@ -1,7 +1,6 @@
 import { CallData } from "starknet";
-import { calculateEscrowAddress } from "../lib";
-import { Gift, buildGiftCallData, executeActionOnAccount } from "../lib/claim";
-import { logTransactionJson } from "./json_tx_builder";
+import { EscrowAction, Gift, executeActionOnAccount } from "../lib/claim.js";
+import { logTransactionJson } from "./json_tx_builder.js";
 
 /// To use this script, fill in the following value:
 /// - factoryAddress: the address of the factory contract
@@ -10,16 +9,16 @@ import { logTransactionJson } from "./json_tx_builder";
 
 const factoryAddress = "";
 const dustReceiver = "";
-const claim: Gift = {
+const claim = new Gift({
   factory: factoryAddress,
-  escrow_class_hash: "",
+  escrowClassHash: "",
   sender: "",
-  gift_token: "",
-  gift_amount: 0n,
-  fee_token: "",
-  fee_amount: 0n,
-  gift_pubkey: 0n,
-};
+  giftToken: "",
+  giftAmount: 0n,
+  feeToken: "",
+  feeAmount: 0n,
+  giftPubkey: 0n,
+});
 
 if (!factoryAddress) {
   throw new Error("Factory contract address is not set. Please set it in the script file.");
@@ -36,8 +35,8 @@ for (const key in claim) {
 }
 
 const tx = executeActionOnAccount(
-  "claim_dust",
-  calculateEscrowAddress(claim),
-  CallData.compile([(buildGiftCallData(claim), dustReceiver)]),
+  EscrowAction.ClaimDust,
+  claim.escrowAddress(),
+  CallData.compile([claim.toCallData(), dustReceiver]),
 );
 logTransactionJson([tx]);

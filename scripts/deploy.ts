@@ -1,5 +1,6 @@
 import { num } from "starknet";
-import { manager, protocolCache, setupGiftProtocol } from "../lib";
+import { manager } from "starknet-dev-toolkit";
+import { resetProtocolCache, setupGiftProtocol } from "../lib/protocol.js";
 
 const { factory, escrowAccountClassHash, escrowLibraryClassHash } = await setupGiftProtocol();
 
@@ -10,6 +11,4 @@ console.log("EscrowAccount class hash:", escrowAccountClassHash);
 console.log("EscrowLibrary class hash:", escrowLibraryClassHash);
 
 // clear from cache just in case
-delete protocolCache["GiftFactory"];
-delete protocolCache["EscrowLibrary"];
-delete protocolCache["EscrowAccount"];
+resetProtocolCache();

@@ -44,3 +44,6 @@ target
 .env
 dist
 .DS_STORE
+
+.claude/*.local.json
+.pnpm-store
