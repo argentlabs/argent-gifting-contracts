@@ -1,13 +1,14 @@
-import { Contract, byteArray, uint256 } from "starknet";
-import { deployer, manager } from ".";
+import { byteArray, uint256 } from "starknet";
+import { deployer, manager, type Erc20Contract } from "starknet-dev-toolkit";
+import type { GiftFactoryContract } from "./contract-types.js";
 
-export const protocolCache: Record<string, Contract> = {};
+let cachedMockERC20: Erc20Contract | undefined;
+let cachedFactory: GiftFactoryContract | undefined;
 
-export async function deployMockERC20(): Promise<Contract> {
-  if (protocolCache["MockERC20"]) {
-    return protocolCache["MockERC20"];
-  }
-  const mockERC20 = await manager.deployContract("MockERC20", {
+export async function deployMockERC20(): Promise<Erc20Contract> {
+  if (cachedMockERC20) return cachedMockERC20;
+
+  cachedMockERC20 = (await manager.declareAndDeployContract("MockERC20", {
     unique: true,
     constructorCalldata: [
       byteArray.byteArrayFromString("USDC"),
@@ -16,27 +17,33 @@ export async function deployMockERC20(): Promise<Contract> {
       deployer.address,
       deployer.address,
     ],
-  });
-  protocolCache["MockERC20"] = mockERC20;
-  return mockERC20;
+  })) as Erc20Contract;
+
+  return cachedMockERC20;
 }
 
 export async function setupGiftProtocol(): Promise<{
-  factory: Contract;
+  factory: GiftFactoryContract;
   escrowAccountClassHash: string;
   escrowLibraryClassHash: string;
 }> {
   const escrowAccountClassHash = await manager.declareLocalContract("EscrowAccount");
   const escrowLibraryClassHash = await manager.declareLocalContract("EscrowLibrary");
-  const cachedFactory = protocolCache["GiftFactory"];
+
   if (cachedFactory) {
     return { factory: cachedFactory, escrowAccountClassHash, escrowLibraryClassHash };
   }
-  const factory = await manager.deployContract("GiftFactory", {
+
+  // manager.deployContract returns Contract, cast once here
+  cachedFactory = (await manager.declareAndDeployContract("GiftFactory", {
     unique: true,
     constructorCalldata: [escrowAccountClassHash, escrowLibraryClassHash, deployer.address],
-  });
+  })) as GiftFactoryContract;
 
-  protocolCache["GiftFactory"] = factory;
-  return { factory, escrowAccountClassHash, escrowLibraryClassHash };
+  return { factory: cachedFactory, escrowAccountClassHash, escrowLibraryClassHash };
+}
+
+export function resetProtocolCache(): void {
+  cachedFactory = undefined;
+  cachedMockERC20 = undefined;
 }

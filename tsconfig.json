@@ -1,16 +1,15 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
+  "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
     "esModuleInterop": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "lib": ["es2020", "dom"]
+    "allowJs": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2024",
+    "lib": ["es2024"],
+    "verbatimModuleSyntax": true,
+    "noEmit": true
   },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  },
-  "include": ["/**/*.ts"],
-  "exclude": ["node_modules", "cairo", "examples"]
+  "include": ["**/*.ts", "eslint.config.js"],
+  "exclude": ["node_modules", "cairo", "examples", "dist"]
 }

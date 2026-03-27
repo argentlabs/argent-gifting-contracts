@@ -1,19 +1,15 @@
 import { CallData } from "starknet";
+import { deployer, manager, newProfiler } from "starknet-dev-toolkit";
 import {
-  buildGiftCallData,
-  calculateEscrowAddress,
   claimDust,
   claimExternal,
   claimInternal,
-  defaultDepositTestSetup,
-  deployer,
+  EscrowAction,
   executeActionOnAccount,
-  manager,
   randomReceiver,
-  setDefaultTransactionVersionV3,
-  setupGiftProtocol,
-} from "../lib";
-import { newProfiler } from "../lib/gas";
+} from "../lib/claim.js";
+import { defaultDepositTestSetup } from "../lib/deposit.js";
+import { setupGiftProtocol } from "../lib/protocol.js";
 
 // TODO add this in CI, skipped atm to avoid false failing tests
 
@@ -30,64 +26,47 @@ const tokens = [
   { giftTokenContract: strkContract, unit: "FRI" },
 ];
 
-ethContract.connect(deployer);
-await profiler.profile(
-  `Transfer ETH (FeeToken: ${manager.tokens.unitTokenContract(false)})`,
-  await ethContract.transfer(randomReceiver(), 1),
-);
+ethContract.providerOrAccount = deployer;
+await profiler.profile(`Transfer ETH`, await ethContract.transfer(randomReceiver(), 1));
 
-strkContract.connect(deployer);
-await profiler.profile(
-  `Transfer STRK (FeeToken: ${manager.tokens.unitTokenContract(false)})`,
-  await strkContract.transfer(randomReceiver(), 1),
-);
+strkContract.providerOrAccount = deployer;
+await profiler.profile(`Transfer STRK`, await strkContract.transfer(randomReceiver(), 1));
 
 const receiver = "0x42";
 const { factory } = await setupGiftProtocol();
 
 for (const { giftTokenContract, unit } of tokens) {
-  for (const useTxV3 of [false, true]) {
-    // Profiling deposit
-    const { txReceipt, gift, giftPrivateKey } = await defaultDepositTestSetup({
-      factory,
-      useTxV3,
-      overrides: {
-        giftPrivateKey: 42n,
-        giftTokenAddress: giftTokenContract.address,
-      },
-    });
+  // Profiling deposit
+  const { txReceipt, gift, giftPrivateKey } = await defaultDepositTestSetup({
+    factory,
+    overrides: {
+      giftPrivateKey: 42n,
+      giftTokenAddress: giftTokenContract.address,
+    },
+  });
 
-    const { gift: claimExternalGift, giftPrivateKey: giftPrivateKeyExternal } = await defaultDepositTestSetup({
-      factory,
-      useTxV3,
-      overrides: {
-        giftPrivateKey: 43n,
-        giftTokenAddress: giftTokenContract.address,
-      },
-    });
+  const { gift: claimExternalGift, giftPrivateKey: giftPrivateKeyExternal } = await defaultDepositTestSetup({
+    factory,
+    overrides: {
+      giftPrivateKey: 43n,
+      giftTokenAddress: giftTokenContract.address,
+    },
+  });
 
-    await profiler.profile(`Gifting ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`, txReceipt);
+  await profiler.profile(`Gifting ${unit}`, txReceipt);
 
-    // Profiling claim internal
-    await profiler.profile(
-      `Claiming ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey }),
-    );
+  // Profiling claim internal
+  await profiler.profile(`Claiming ${unit}`, await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey }));
 
-    // Profiling claim external
-    await profiler.profile(
-      `Claiming external ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimExternal({ gift: claimExternalGift, receiver, useTxV3, giftPrivateKey: giftPrivateKeyExternal }),
-    );
+  // Profiling claim external
+  await profiler.profile(
+    `Claiming external ${unit}`,
+    await claimExternal({ gift: claimExternalGift, receiver, giftPrivateKey: giftPrivateKeyExternal }),
+  );
 
-    // Profiling getting the dust
-    const account = useTxV3 ? setDefaultTransactionVersionV3(deployer) : deployer;
-    factory.connect(account);
-    await profiler.profile(
-      `Get dust ${unit} (FeeToken: ${manager.tokens.unitTokenContract(useTxV3)})`,
-      await claimDust({ gift, receiver: deployer.address }),
-    );
-  }
+  // Profiling getting the dust
+  factory.providerOrAccount = deployer;
+  await profiler.profile(`Get dust ${unit}`, await claimDust({ gift, receiver: deployer.address }));
 }
 
 const limits = [2, 3, 4, 5];
@@ -97,21 +76,18 @@ for (const limit of limits) {
     const { gift, giftPrivateKey } = await defaultDepositTestSetup({
       factory,
       overrides: {
-        giftTokenAddress: ethContract.address,
+        giftTokenAddress: strkContract.address,
       },
     });
 
     await claimInternal({ gift, receiver, giftPrivateKey: giftPrivateKey });
-    const claimDustCallData = CallData.compile([buildGiftCallData(gift), receiver]);
-    const call = executeActionOnAccount("claim_dust", calculateEscrowAddress(gift), claimDustCallData);
+    const claimDustCallData = CallData.compile([gift.toCallData(), receiver]);
+    const call = executeActionOnAccount(EscrowAction.ClaimDust, gift.escrowAddress(), claimDustCallData);
 
     claimDustCalls.push(call);
   }
 
-  await profiler.profile(
-    `Get dust ${limit} (FeeToken: ${manager.tokens.unitTokenContract(false)})`,
-    await deployer.execute(claimDustCalls),
-  );
+  await profiler.profile(`Get dust ${limit}`, await deployer.execute(claimDustCalls));
 }
 
 profiler.printSummary();
