@@ -2,7 +2,7 @@
 mod BrokenERC20 {
     use openzeppelin::token::erc20::interface::IERC20;
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
-    use starknet::{get_caller_address, ContractAddress};
+    use starknet::{ContractAddress, get_caller_address};
 
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -25,7 +25,7 @@ mod BrokenERC20 {
     #[abi(embed_v0)]
     impl Erc20MockImpl of IERC20<ContractState> {
         fn transfer_from(
-            ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256
+            ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256,
         ) -> bool {
             false
         }

@@ -1,12 +1,12 @@
 use argent_gifting::contracts::gift_data::GiftData;
 use argent_gifting::contracts::outside_execution::OutsideExecution;
 use argent_gifting::contracts::utils::StarknetSignature;
-use starknet::{ContractAddress, ClassHash};
+use starknet::{ClassHash, ContractAddress};
 
 #[starknet::interface]
 pub trait IEscrowLibrary<TContractState> {
     fn execute_action(
-        ref self: TContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
+        ref self: TContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>,
     ) -> Span<felt252>;
 
     fn claim_internal(ref self: TContractState, gift: GiftData, receiver: ContractAddress) -> Array<Span<felt252>>;
@@ -16,7 +16,7 @@ pub trait IEscrowLibrary<TContractState> {
         gift: GiftData,
         receiver: ContractAddress,
         dust_receiver: ContractAddress,
-        signature: StarknetSignature
+        signature: StarknetSignature,
     );
 
     /// @notice Allows the sender of a gift to cancel their gift
@@ -26,16 +26,16 @@ pub trait IEscrowLibrary<TContractState> {
 
     /// @notice Allows the owner of the factory to claim the dust (leftovers) of a gift
     /// @dev Only allowed if the gift has been claimed
-    /// @param gift The gift data 
+    /// @param gift The gift data
     /// @param receiver The address of the receiver
     fn claim_dust(ref self: TContractState, gift: GiftData, receiver: ContractAddress);
 
     fn is_valid_account_signature(
-        self: @TContractState, gift: GiftData, hash: felt252, remaining_signature: Span<felt252>
+        self: @TContractState, gift: GiftData, hash: felt252, remaining_signature: Span<felt252>,
     ) -> felt252;
 
     fn execute_from_outside_v2(
-        ref self: TContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
+        ref self: TContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>,
     ) -> Array<Span<felt252>>;
 }
 
@@ -48,11 +48,10 @@ mod EscrowLibrary {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
-    use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcherTrait, IOwnableDispatcher};
-    use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
-    use starknet::{
-        ClassHash, ContractAddress, get_caller_address, get_contract_address, syscalls::library_call_syscall
-    };
+    use openzeppelin::access::ownable::interface::{IOwnable, IOwnableDispatcher, IOwnableDispatcherTrait};
+    use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
+    use starknet::syscalls::library_call_syscall;
+    use starknet::{ClassHash, ContractAddress, get_caller_address, get_contract_address};
 
     #[storage]
     struct Storage {}
@@ -67,7 +66,7 @@ mod EscrowLibrary {
     #[derive(Drop, starknet::Event)]
     struct GiftClaimed {
         receiver: ContractAddress,
-        dust_receiver: ContractAddress
+        dust_receiver: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -75,8 +74,9 @@ mod EscrowLibrary {
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        // This prevents creating instances of this classhash by mistake, as it's not needed. 
-        // While it is technically possible to create instances by replacing classhashes, this practice is not recommended. 
+        // This prevents creating instances of this classhash by mistake, as it's not needed.
+        // While it is technically possible to create instances by replacing classhashes, this practice is not
+        // recommended.
         // This contract is intended to be used exclusively through library calls.
         panic_with_felt252('escr-lib/instance-not-recommend')
     }
@@ -89,10 +89,11 @@ mod EscrowLibrary {
         }
 
         fn execute_action(
-            ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>
+            ref self: ContractState, this_class_hash: ClassHash, selector: felt252, args: Span<felt252>,
         ) -> Span<felt252> {
-            // This is needed to make sure no arbitrary methods can be called directly using `execute_action` in the escrow account
-            // Some methods like `claim_internal` should only be called after some checks are performed in the escrow account
+            // This is needed to make sure no arbitrary methods can be called directly using `execute_action` in the
+            // escrow account Some methods like `claim_internal` should only be called after some checks are performed
+            // in the escrow account
             let is_whitelisted = selector == selector!("claim_external")
                 || selector == selector!("claim_dust")
                 || selector == selector!("cancel");
@@ -105,13 +106,13 @@ mod EscrowLibrary {
             gift: GiftData,
             receiver: ContractAddress,
             dust_receiver: ContractAddress,
-            signature: StarknetSignature
+            signature: StarknetSignature,
         ) {
             let claim_external_hash = ClaimExternal { receiver, dust_receiver }
                 .get_message_hash_rev_1(get_contract_address());
             assert(
                 check_ecdsa_signature(claim_external_hash, gift.gift_pubkey, signature.r, signature.s),
-                'escr-lib/invalid-ext-signature'
+                'escr-lib/invalid-ext-signature',
             );
             self.proceed_with_claim(gift, receiver, dust_receiver);
         }
@@ -148,13 +149,13 @@ mod EscrowLibrary {
         }
 
         fn is_valid_account_signature(
-            self: @ContractState, gift: GiftData, hash: felt252, mut remaining_signature: Span<felt252>
+            self: @ContractState, gift: GiftData, hash: felt252, mut remaining_signature: Span<felt252>,
         ) -> felt252 {
             0 // Accounts don't support off-chain signatures yet
         }
 
         fn execute_from_outside_v2(
-            ref self: ContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>
+            ref self: ContractState, gift: GiftData, outside_execution: OutsideExecution, signature: Span<felt252>,
         ) -> Array<Span<felt252>> {
             panic_with_felt252('escr-lib/not-allowed-yet')
         }
@@ -163,7 +164,7 @@ mod EscrowLibrary {
     #[generate_trait]
     impl Private of PrivateTrait {
         fn proceed_with_claim(
-            ref self: ContractState, gift: GiftData, receiver: ContractAddress, dust_receiver: ContractAddress
+            ref self: ContractState, gift: GiftData, receiver: ContractAddress, dust_receiver: ContractAddress,
         ) {
             assert(receiver.is_non_zero(), 'escr-lib/zero-receiver');
             let contract_address = get_contract_address();
@@ -192,7 +193,7 @@ mod EscrowLibrary {
         }
     }
 
-    fn transfer_from_account(token: ContractAddress, receiver: ContractAddress, amount: u256,) {
+    fn transfer_from_account(token: ContractAddress, receiver: ContractAddress, amount: u256) {
         assert(IERC20Dispatcher { contract_address: token }.transfer(receiver, amount), 'escr-lib/transfer-failed');
     }
 

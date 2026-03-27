@@ -1,5 +1,5 @@
 use core::num::traits::Zero;
-use starknet::{ClassHash};
+use starknet::ClassHash;
 
 #[derive(Serde, Drop, Copy, Default, PartialEq, starknet::Store)]
 struct PendingUpgrade {
@@ -47,11 +47,12 @@ pub trait ITimelockUpgradeCallback<TContractState> {
 pub mod TimelockUpgradeComponent {
     use core::num::traits::Zero;
     use core::poseidon::poseidon_hash_span;
-    use openzeppelin::access::ownable::{OwnableComponent, OwnableComponent::InternalTrait};
-    use starknet::{get_block_timestamp, ClassHash};
+    use openzeppelin::access::ownable::OwnableComponent;
+    use openzeppelin::access::ownable::OwnableComponent::InternalTrait;
+    use starknet::{ClassHash, get_block_timestamp};
     use super::{
-        ITimelockUpgrade, ITimelockUpgradeCallback, ITimelockUpgradeCallbackLibraryDispatcher,
-        ITimelockUpgradeCallbackDispatcherTrait, PendingUpgrade
+        ITimelockUpgrade, ITimelockUpgradeCallback, ITimelockUpgradeCallbackDispatcherTrait,
+        ITimelockUpgradeCallbackLibraryDispatcher, PendingUpgrade,
     };
 
     /// Time before the upgrade can be performed
@@ -79,18 +80,18 @@ pub mod TimelockUpgradeComponent {
     struct UpgradeProposed {
         new_implementation: ClassHash,
         ready_at: u64,
-        calldata: Array<felt252>
+        calldata: Array<felt252>,
     }
 
     #[derive(Drop, starknet::Event)]
     struct UpgradeCancelled {
-        cancelled_upgrade: PendingUpgrade
+        cancelled_upgrade: PendingUpgrade,
     }
 
     #[derive(Drop, starknet::Event)]
     struct UpgradeExecuted {
         new_implementation: ClassHash,
-        calldata: Array<felt252>
+        calldata: Array<felt252>,
     }
 
     #[embeddable_as(TimelockUpgradeImpl)]
@@ -101,7 +102,7 @@ pub mod TimelockUpgradeComponent {
         +ITimelockUpgradeCallback<TContractState>,
     > of ITimelockUpgrade<ComponentState<TContractState>> {
         fn propose_upgrade(
-            ref self: ComponentState<TContractState>, new_implementation: ClassHash, calldata: Array<felt252>
+            ref self: ComponentState<TContractState>, new_implementation: ClassHash, calldata: Array<felt252>,
         ) {
             self.assert_only_owner();
             assert(new_implementation.is_non_zero(), 'upgrade/new-implementation-null');
@@ -116,8 +117,10 @@ pub mod TimelockUpgradeComponent {
                 .pending_upgrade
                 .write(
                     PendingUpgrade {
-                        implementation: new_implementation, ready_at, calldata_hash: poseidon_hash_span(calldata.span())
-                    }
+                        implementation: new_implementation,
+                        ready_at,
+                        calldata_hash: poseidon_hash_span(calldata.span()),
+                    },
                 );
             self.emit(UpgradeProposed { new_implementation, ready_at, calldata });
         }
@@ -158,15 +161,16 @@ pub mod TimelockUpgradeComponent {
 
     #[generate_trait]
     pub impl TimelockUpgradeInternalImpl<
-        TContractState, +HasComponent<TContractState>
+        TContractState, +HasComponent<TContractState>,
     > of ITimelockUpgradeInternal<TContractState> {
-        /// @notice Should be called by the `perform_upgrade` method to make sure this method can only by called when upgrading
+        /// @notice Should be called by the `perform_upgrade` method to make sure this method can only by called when
+        /// upgrading
         fn assert_and_reset_lock(ref self: ComponentState<TContractState>) {
             assert(self.upgrade_lock.read(), 'upgrade/only-during-upgrade');
             self.upgrade_lock.write(false);
         }
         fn emit_upgrade_executed(
-            ref self: ComponentState<TContractState>, new_implementation: ClassHash, calldata: Array<felt252>
+            ref self: ComponentState<TContractState>, new_implementation: ClassHash, calldata: Array<felt252>,
         ) {
             self.emit(UpgradeExecuted { new_implementation, calldata });
         }
@@ -175,7 +179,7 @@ pub mod TimelockUpgradeComponent {
 
     #[generate_trait]
     impl PrivateImpl<
-        TContractState, impl Ownable: OwnableComponent::HasComponent<TContractState>, +HasComponent<TContractState>
+        TContractState, impl Ownable: OwnableComponent::HasComponent<TContractState>, +HasComponent<TContractState>,
     > of PrivateTrait<TContractState> {
         fn assert_only_owner(self: @ComponentState<TContractState>) {
             get_dep_component!(self, Ownable).assert_only_owner();

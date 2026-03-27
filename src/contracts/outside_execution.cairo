@@ -1,4 +1,5 @@
-use starknet::{ContractAddress, ClassHash, account::Call};
+use starknet::account::Call;
+use starknet::{ClassHash, ContractAddress};
 
 
 // https://github.com/starknet-io/SNIPs/blob/main/SNIPS/snip-9.md
@@ -19,13 +20,13 @@ pub struct OutsideExecution {
     pub nonce: felt252,
     pub execute_after: u64,
     pub execute_before: u64,
-    pub calls: Span<Call>
+    pub calls: Span<Call>,
 }
 
 #[starknet::interface]
 pub trait IOutsideExecution<TContractState> {
     fn execute_from_outside_v2(
-        ref self: TContractState, outside_execution: OutsideExecution, signature: Span<felt252>
+        ref self: TContractState, outside_execution: OutsideExecution, signature: Span<felt252>,
     ) -> Array<Span<felt252>>;
 
     /// Get the status of a given nonce, true if the nonce is available to use

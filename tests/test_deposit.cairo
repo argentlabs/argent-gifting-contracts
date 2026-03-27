@@ -1,6 +1,6 @@
-use argent_gifting::contracts::gift_factory::{IGiftFactoryDispatcherTrait};
+use argent_gifting::contracts::gift_factory::IGiftFactoryDispatcherTrait;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use snforge_std::{start_cheat_caller_address};
+use snforge_std::start_cheat_caller_address;
 use super::constants::DEPOSITOR;
 use super::setup::{GiftingSetup, deploy_gifting_broken_erc20};
 

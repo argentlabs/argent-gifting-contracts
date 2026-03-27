@@ -1,8 +1,8 @@
 use argent_gifting::contracts::claim_hash::{
-    IStructHashRev1, StarknetDomain, MAINNET_FIRST_HADES_PERMUTATION, SEPOLIA_FIRST_HADES_PERMUTATION
+    IStructHashRev1, MAINNET_FIRST_HADES_PERMUTATION, SEPOLIA_FIRST_HADES_PERMUTATION, StarknetDomain,
 };
 use core::poseidon::hades_permutation;
-use snforge_std::cheat_chain_id_global;
+use snforge_std::start_cheat_chain_id_global;
 use starknet::get_tx_info;
 
 
@@ -15,13 +15,13 @@ fn get_domain_hash() -> felt252 {
 
 #[test]
 fn precalculated_hash_sepolia() {
-    cheat_chain_id_global('SN_SEPOLIA');
+    start_cheat_chain_id_global('SN_SEPOLIA');
     let domain_hash = get_domain_hash();
 
     assert_eq!(
         domain_hash,
         1044702367038635622945218048687216661819128576871663722017781331499517520675,
-        "Precalculated domain hash is incorrect"
+        "Precalculated domain hash is incorrect",
     );
     let (ch0, ch1, ch2) = hades_permutation('StarkNet Message', domain_hash, 0);
     let (pch0, pch1, pch2) = SEPOLIA_FIRST_HADES_PERMUTATION;
@@ -32,13 +32,13 @@ fn precalculated_hash_sepolia() {
 
 #[test]
 fn precalculated_hash_mainnet() {
-    cheat_chain_id_global('SN_MAIN');
+    start_cheat_chain_id_global('SN_MAIN');
     let domain_hash = get_domain_hash();
 
     assert_eq!(
         domain_hash,
         234325029197410387606259685107849809841952619146295364245967447938203337307,
-        "Precalculated domain hash is incorrect"
+        "Precalculated domain hash is incorrect",
     );
     let (ch0, ch1, ch2) = hades_permutation('StarkNet Message', domain_hash, 0);
     let (pch0, pch1, pch2) = MAINNET_FIRST_HADES_PERMUTATION;

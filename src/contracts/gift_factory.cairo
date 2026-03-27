@@ -1,4 +1,4 @@
-use starknet::{ContractAddress, ClassHash};
+use starknet::{ClassHash, ContractAddress};
 
 #[starknet::interface]
 pub trait IGiftFactory<TContractState> {
@@ -7,8 +7,8 @@ pub trait IGiftFactory<TContractState> {
     /// @param escrow_class_hash The class hash of the escrow account (needed in FE to have an optimistic UI)
     /// @param gift_token The ERC-20 token address of the gift
     /// @param gift_amount The amount of the gift
-    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift through claim_internal
-    /// @param fee_amount The amount of the fee
+    /// @param fee_token The ERC-20 token address of the fee (can ONLY be ETH or STARK address) used to claim the gift
+    /// through claim_internal @param fee_amount The amount of the fee
     /// @param gift_pubkey The public key associated with the gift
     fn deposit(
         ref self: TContractState,
@@ -17,7 +17,7 @@ pub trait IGiftFactory<TContractState> {
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
-        gift_pubkey: felt252
+        gift_pubkey: felt252,
     );
 
     /// @notice Retrieves the current clash hash used for creating an escrow account
@@ -42,7 +42,7 @@ pub trait IGiftFactory<TContractState> {
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
-        gift_pubkey: felt252
+        gift_pubkey: felt252,
     ) -> ContractAddress;
 }
 
@@ -51,26 +51,25 @@ pub trait IGiftFactory<TContractState> {
 mod GiftFactory {
     use argent_gifting::contracts::claim_hash::{ClaimExternal, IOffChainMessageHashRev1};
     use argent_gifting::contracts::escrow_account::{
-        IEscrowAccount, IEscrowAccountDispatcher, AccountConstructorArguments
+        AccountConstructorArguments, IEscrowAccount, IEscrowAccountDispatcher,
     };
     use argent_gifting::contracts::gift_data::GiftData;
     use argent_gifting::contracts::gift_factory::IGiftFactory;
     use argent_gifting::contracts::timelock_upgrade::{ITimelockUpgradeCallback, TimelockUpgradeComponent};
     use argent_gifting::contracts::utils::{
-        calculate_escrow_account_address, STRK_ADDRESS, ETH_ADDRESS, serialize, full_deserialize
+        ETH_ADDRESS, STRK_ADDRESS, calculate_escrow_account_address, full_deserialize, serialize,
     };
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::zero::Zero;
     use core::panic_with_felt252;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::PausableComponent;
-    use openzeppelin::token::erc20::interface::{IERC20, IERC20DispatcherTrait, IERC20Dispatcher};
-    use starknet::{
-        ClassHash, ContractAddress, syscalls::deploy_syscall, get_caller_address, get_contract_address, account::Call,
-        get_block_timestamp
-    };
+    use openzeppelin::token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
+    use starknet::account::Call;
+    use starknet::syscalls::deploy_syscall;
+    use starknet::{ClassHash, ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
 
-    // Ownable 
+    // Ownable
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -124,12 +123,12 @@ mod GiftFactory {
         gift_amount: u256,
         fee_token: ContractAddress,
         fee_amount: u128,
-        gift_pubkey: felt252
+        gift_pubkey: felt252,
     }
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, escrow_class_hash: ClassHash, escrow_lib_class_hash: ClassHash, owner: ContractAddress
+        ref self: ContractState, escrow_class_hash: ClassHash, escrow_lib_class_hash: ClassHash, owner: ContractAddress,
     ) {
         self.escrow_class_hash.write(escrow_class_hash);
         self.escrow_lib_class_hash.write(escrow_lib_class_hash);
@@ -145,7 +144,7 @@ mod GiftFactory {
             gift_amount: u256,
             fee_token: ContractAddress,
             fee_amount: u128,
-            gift_pubkey: felt252
+            gift_pubkey: felt252,
         ) {
             self.pausable.assert_not_paused();
             assert(fee_token == STRK_ADDRESS() || fee_token == ETH_ADDRESS(), 'gift-fac/invalid-fee-token');
@@ -158,11 +157,11 @@ mod GiftFactory {
             let escrow_class_hash_storage = self.escrow_class_hash.read();
             assert(escrow_class_hash_storage == escrow_class_hash, 'gift-fac/invalid-class-hash');
             let constructor_arguments = AccountConstructorArguments {
-                sender, gift_token, gift_amount, fee_token, fee_amount, gift_pubkey
+                sender, gift_token, gift_amount, fee_token, fee_amount, gift_pubkey,
             };
             let (escrow_contract, _) = deploy_syscall(
                 escrow_class_hash, 0, // salt
-                 serialize(@constructor_arguments).span(), false // deploy_from_zero
+                serialize(@constructor_arguments).span(), false // deploy_from_zero
             )
                 .expect('gift-fac/deploy-failed');
             self
@@ -175,8 +174,8 @@ mod GiftFactory {
                         gift_amount,
                         fee_token,
                         fee_amount,
-                        gift_pubkey
-                    }
+                        gift_pubkey,
+                    },
                 );
 
             if (gift_token == fee_token) {
@@ -209,7 +208,7 @@ mod GiftFactory {
             gift_amount: u256,
             fee_token: ContractAddress,
             fee_amount: u128,
-            gift_pubkey: felt252
+            gift_pubkey: felt252,
         ) -> ContractAddress {
             calculate_escrow_account_address(
                 GiftData {
@@ -221,7 +220,7 @@ mod GiftFactory {
                     fee_token,
                     fee_amount,
                     gift_pubkey,
-                }
+                },
             )
         }
     }
@@ -233,7 +232,7 @@ mod GiftFactory {
             // This should do some sanity checks and ensure that the new implementation is a valid implementation,
             // then it can call replace_class_syscall and emit the UpgradeExecuted event
             panic_with_felt252(
-                'gift-fac/downgrade-not-allowed'
+                'gift-fac/downgrade-not-allowed',
             ); // since this is the first version nobody should be calling this method
         }
     }
@@ -241,12 +240,12 @@ mod GiftFactory {
     #[external(v0)]
     fn pause(ref self: ContractState) {
         self.ownable.assert_only_owner();
-        self.pausable._pause();
+        self.pausable.pause();
     }
 
     #[external(v0)]
     fn unpause(ref self: ContractState) {
         self.ownable.assert_only_owner();
-        self.pausable._unpause();
+        self.pausable.unpause();
     }
 }
